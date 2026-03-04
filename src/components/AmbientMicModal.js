@@ -6,6 +6,88 @@ import { useWebRTC } from "@/hooks/useWebRTC";
 import { useSocket } from "@/context/SocketContext";
 import { useTranslations } from "next-intl";
 
+// --- Custom Audio Waveform Component ---
+function AudioWaveform({ stream, isPlaying }) {
+    const canvasRef = useRef(null);
+    const audioCtxRef = useRef(null);
+    const analyserRef = useRef(null);
+    const sourceRef = useRef(null);
+    const animationRef = useRef(null);
+
+    useEffect(() => {
+        if (!stream || !isPlaying || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Initialize Web Audio API
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtxRef.current = new AudioContext();
+        analyserRef.current = audioCtxRef.current.createAnalyser();
+
+        // Fast Fourier Transform size (determines number of frequency bins)
+        analyserRef.current.fftSize = 128;
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        sourceRef.current = audioCtxRef.current.createMediaStreamSource(stream);
+        sourceRef.current.connect(analyserRef.current);
+        // Do NOT connect to destination to avoid feedback loop (the <audio> tag plays the sound)
+
+        const draw = () => {
+            animationRef.current = requestAnimationFrame(draw);
+            analyserRef.current.getByteFrequencyData(dataArray);
+
+            // Responsive sizing
+            const width = canvas.width;
+            const height = canvas.height;
+            ctx.clearRect(0, 0, width, height);
+
+            const barWidth = (width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] * (height / 255); // Normalize to canvas height
+
+                // Color gradient based on frequency magnitude
+                const hue = 150 + (barHeight / height) * 100; // Emerald/Teal to Reddish
+                ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.8)`;
+
+                // Draw vertically centered bars
+                const y = (height - barHeight) / 2;
+
+                // Draw with rounded caps
+                ctx.beginPath();
+                ctx.roundRect(x, y, barWidth - 2, Math.max(4, barHeight), 4);
+                ctx.fill();
+
+                x += barWidth + 2;
+            }
+        };
+
+        draw();
+
+        return () => {
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+            if (sourceRef.current) sourceRef.current.disconnect();
+            if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+                audioCtxRef.current.close().catch(console.error);
+            }
+        };
+    }, [stream, isPlaying]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            width={300}
+            height={100}
+            className="w-full h-full"
+        />
+    );
+}
+
 export default function AmbientMicModal({ childId, childName, onClose }) {
     const t = useTranslations('WebRTC');
     const socket = useSocket();
@@ -146,19 +228,25 @@ function ActiveMicStream({ t, childId, childName, duration, timeLeft, setTimeLef
             {/* Audio Element */}
             <audio ref={audioRef} autoPlay playsInline />
 
-            {/* Radar Animation / Visualizer */}
-            <div className="relative w-64 h-64 flex items-center justify-center mb-12">
-                {status === 'connected' && (
-                    <>
-                        <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-                        <div className="absolute inset-4 bg-red-500/20 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
-                        <div className="absolute inset-8 bg-red-500/20 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
-                    </>
+            {/* Waveform Visualizer */}
+            <div className="relative w-full max-w-md h-48 flex items-center justify-center mb-8">
+                {status === 'connected' ? (
+                    <div className="w-full h-full bg-slate-900/50 rounded-3xl border border-slate-700 shadow-inner overflow-hidden p-6 flex items-center">
+                        <AudioWaveform stream={stream} isPlaying={status === 'connected'} />
+                    </div>
+                ) : (
+                    <div className="relative w-32 h-32 flex items-center justify-center mb-4">
+                        {status === 'connecting' && (
+                            <>
+                                <div className="absolute inset-0 border-2 border-emerald-500/30 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
+                                <div className="absolute inset-4 border-2 border-emerald-500/20 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
+                            </>
+                        )}
+                        <div className={`relative w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 bg-slate-800 border border-slate-700`}>
+                            <Mic className="w-8 h-8 text-slate-400" />
+                        </div>
+                    </div>
                 )}
-                <div className={`relative w-24 h-24 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500
-                    ${status === 'connected' ? 'bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/50' : 'bg-slate-700 shadow-slate-900'}`}>
-                    {status === 'connected' ? <Volume2 className="w-10 h-10 text-white animate-pulse" /> : <Mic className="w-10 h-10 text-slate-400" />}
-                </div>
             </div>
 
             {/* Status Information */}
