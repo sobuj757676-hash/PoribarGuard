@@ -54,7 +54,13 @@
     "noRecentAlerts": "কোনো সাম্প্রতিক অ্যালার্ট নেই",
     "viewHistory": "ইতিহাস দেখুন",
     "setGeofence": "জিওফেন্স সেট করুন",
-    "reconnect": "পুনরায় সংযোগ করুন"
+    "reconnect": "পুনরায় সংযোগ করুন",
+    "waitingLocation": "অবস্থানের অপেক্ষায়...",
+    "waitingLocationDesc": "সন্তানের ডিভাইসটি শীঘ্রই এর অবস্থান পাঠাবে।",
+    "waitingGpsFix": "GPS ফিক্সের অপেক্ষায়...",
+    "forceRefresh": "ফোর্স রিফ্রেশ",
+    "lastSeenAtLoc": "সর্বশেষ দেখা গেছে {location} এ {time} আগে",
+    "searching": "সিগন্যাল খোঁজা হচ্ছে..."
   },
   "Admin": {
     "dashboard": "ড্যাশবোর্ড",

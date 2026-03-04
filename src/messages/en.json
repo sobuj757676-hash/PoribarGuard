@@ -54,7 +54,13 @@
     "noRecentAlerts": "No recent alerts",
     "viewHistory": "View History",
     "setGeofence": "Set Geofence",
-    "reconnect": "Re-pair Phone Connection"
+    "reconnect": "Re-pair Phone Connection",
+    "waitingLocation": "Waiting for location...",
+    "waitingLocationDesc": "The child's device will send its location shortly.",
+    "waitingGpsFix": "Waiting for GPS fix...",
+    "forceRefresh": "Force Refresh",
+    "lastSeenAtLoc": "Last seen at {location} {time} ago",
+    "searching": "Searching for signal..."
   },
   "Admin": {
     "dashboard": "Dashboard",
