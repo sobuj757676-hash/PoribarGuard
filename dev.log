@@ -1,0 +1,62 @@
+
+> fsafe.com@0.1.0 dev
+> node server.js
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+> Ready on http://0.0.0.0:3000
+> Socket.IO available on path /api/socketio
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:513:16)
+    at Auth (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:5331:210)
+○ Compiling /[locale]/login ...
+⚠ Unsupported metadata themeColor is configured in metadata export in /[locale]/login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /en/login 200 in 5.8s (compile: 4.9s, proxy.ts: 223ms, render: 763ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 3.3s (compile: 3.3s, render: 27ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 55ms (compile: 48ms, render: 7ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:513:16)
+    at Auth (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:5331:210)
+⚠ Unsupported metadata themeColor is configured in metadata export in /[locale]/login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /en/login 200 in 249ms (compile: 42ms, proxy.ts: 12ms, render: 195ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 45ms (compile: 27ms, render: 17ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 13ms (compile: 4ms, render: 10ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/providers 500 in 13ms (compile: 4ms, render: 9ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 13ms (compile: 6ms, render: 7ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/error 500 in 24ms (compile: 8ms, render: 17ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:513:16)
+    at Auth (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:5331:210)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:513:16)
+    at Auth (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:5331:210)

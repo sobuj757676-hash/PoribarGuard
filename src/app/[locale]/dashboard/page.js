@@ -8,7 +8,7 @@ import {
     Clock, MapPin, Activity, CheckCircle, ShieldAlert, FileText,
     Lock, Unlock, LogOut, Moon, Sun, Globe, Camera, Loader2,
     Download, Trash2, CreditCard, Save, Edit3, Calendar, Mail, MessageSquare,
-    Navigation
+    Navigation, RefreshCw
 } from 'lucide-react';
 import InstallPrompt from '@/components/InstallPrompt';
 import LiveCameraModal from '@/components/LiveCameraModal';
@@ -270,16 +270,6 @@ export default function DashboardPage() {
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex gap-4 pr-2">
-                                    <div className="flex flex-col items-center">
-                                        <Battery className={`w-5 h-5 ${(device?.batteryLevel || 0) > 20 ? 'text-emerald-500' : 'text-red-500'} mb-1`} />
-                                        <span className="text-xs font-bold">{device?.batteryLevel ?? '—'}%</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <Wifi className="w-5 h-5 text-blue-500 mb-1" />
-                                        <span className="text-xs font-bold">{device?.networkType || '—'}</span>
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Tabs */}
@@ -299,10 +289,7 @@ export default function DashboardPage() {
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-gray-100 dark:border-gray-800 z-50 px-2 py-2 pb-safe flex justify-between items-center">
                 <BottomNavItem icon={<Home />} label={dict('home')} isActive={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                 <BottomNavItem icon={<Map />} label={dict('map')} isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
-                <div className="relative -top-6 px-1 flex gap-2">
-                    <button onClick={() => setAddChildModalOpen(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-xl shadow-emerald-500/30 transition-transform active:scale-95 bg-emerald-600 border-4 border-white dark:border-gray-900">
-                        <Plus className="w-6 h-6 text-white" />
-                    </button>
+                <div className="relative -top-5 px-1 flex justify-center">
                     {child?.id && (
                         <button onClick={() => setActiveTab('tools')} className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl shadow-red-500/30 transition-transform active:scale-95 ${activeTab === 'tools' ? 'bg-red-600' : 'bg-red-500'} border-4 border-white dark:border-gray-900`}>
                             <Video className="w-6 h-6 text-white" />
@@ -445,6 +432,13 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
 function MapTab({ dict, child, device }) {
     const socket = useSocket();
     const [liveLocation, setLiveLocation] = useState(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleForceRefresh = () => {
+        setIsRefreshing(true);
+        // Simulate a refresh delay, this could also emit a socket event if the backend supports forcing an update
+        setTimeout(() => setIsRefreshing(false), 2000);
+    };
 
     // Listen for real-time location updates via Socket.IO
     useEffect(() => {
@@ -476,20 +470,35 @@ function MapTab({ dict, child, device }) {
 
             {/* Leaflet Map */}
             {hasRealLocation ? (
-                <LeafletMap
-                    latitude={lat}
-                    longitude={lng}
-                    accuracy={acc}
-                    speed={spd}
-                    locationName={locName}
-                    isOnline={device?.isOnline}
-                    childName={child?.name || 'Child'}
-                />
+                <div className={`w-full h-full ${!device?.isOnline ? 'grayscale opacity-75' : ''}`}>
+                    <LeafletMap
+                        latitude={lat}
+                        longitude={lng}
+                        accuracy={acc}
+                        speed={spd}
+                        locationName={locName}
+                        isOnline={device?.isOnline}
+                        childName={child?.name || 'Child'}
+                    />
+                </div>
             ) : (
-                <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 flex flex-col items-center justify-center">
-                    <MapPin className="w-16 h-16 text-gray-400 dark:text-gray-600 mb-4 animate-bounce" />
-                    <p className="text-gray-500 dark:text-gray-400 font-bold text-lg">Waiting for location...</p>
-                    <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">The child&apos;s device will send its location shortly.</p>
+                <div className="absolute inset-0 bg-gray-200 dark:bg-gray-900 flex flex-col items-center justify-center overflow-hidden">
+                    <div className="relative w-32 h-32 mb-6 flex items-center justify-center">
+                        <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping"></div>
+                        <div className="absolute inset-2 rounded-full border-2 border-emerald-500/40 animate-ping" style={{ animationDelay: '0.5s' }}></div>
+                        <div className="absolute inset-0 rounded-full bg-emerald-500/10"></div>
+                        <div className="absolute w-1/2 h-1/2 top-0 right-0 bg-gradient-to-bl from-emerald-500/50 to-transparent origin-bottom-left animate-spin" style={{ animationDuration: '3s' }}></div>
+                        <MapPin className="w-10 h-10 text-emerald-500 relative z-10 drop-shadow-lg" />
+                    </div>
+                    <p className="text-emerald-600 dark:text-emerald-400 font-bold text-lg flex items-center gap-2">
+                        {dict('searching')}
+                        <span className="flex gap-0.5">
+                            <span className="w-1 h-1 bg-emerald-600 dark:bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></span>
+                            <span className="w-1 h-1 bg-emerald-600 dark:bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                            <span className="w-1 h-1 bg-emerald-600 dark:bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+                        </span>
+                    </p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">{dict('waitingLocationDesc')}</p>
                 </div>
             )}
 
@@ -505,7 +514,16 @@ function MapTab({ dict, child, device }) {
                                     Moving • {spd.toFixed(1)} km/h
                                 </span>
                             ) : (
-                                locName || (hasRealLocation ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : 'Waiting for GPS fix...')
+                                !device?.isOnline && hasRealLocation ? (
+                                    <span className="text-gray-500 dark:text-gray-400 font-medium">
+                                        {dict('lastSeenAtLoc', {
+                                            location: locName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+                                            time: lastUpdated ? timeAgo(lastUpdated) : ''
+                                        })}
+                                    </span>
+                                ) : (
+                                    locName || (hasRealLocation ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : dict('waitingGpsFix'))
+                                )
                             )}
                         </p>
                     </div>
@@ -538,9 +556,19 @@ function MapTab({ dict, child, device }) {
                 </div>
 
                 {/* Action buttons */}
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-                    <button className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">{dict('viewHistory')}</button>
-                    <button className="flex-1 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition">{dict('setGeofence')}</button>
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-2">
+                    <button
+                        onClick={handleForceRefresh}
+                        className="w-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition border border-emerald-200 dark:border-emerald-800"
+                        disabled={isRefreshing}
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        {dict('forceRefresh')}
+                    </button>
+                    <div className="flex gap-2">
+                        <button className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">{dict('viewHistory')}</button>
+                        <button className="flex-1 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition">{dict('setGeofence')}</button>
+                    </div>
                 </div>
             </div>
         </div>
