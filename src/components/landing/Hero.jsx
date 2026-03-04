@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlayCircle } from "lucide-react";
-import Link from 'next/link';
-import Image from 'next/image'; // Assuming we might use actual next/image later, for now we can use standard img if preferred or placeholders
+import { Link } from '@/i18n/routing';
+import { useTranslations } from "next-intl";
 
 const locations = [
     { host: "Dubai", home: "Jessore" },
@@ -16,6 +16,7 @@ const locations = [
 ];
 
 export default function Hero() {
+    const t = useTranslations("Landing");
     const [locIndex, setLocIndex] = useState(0);
 
     useEffect(() => {
@@ -125,12 +126,11 @@ export default function Hero() {
                                 </motion.span>
                             </AnimatePresence>
                         </div>
-                        <span>Home — See Your Child Safe 24/7</span>
+                        <span>{t("heroSubtitle")}</span>
                     </div>
 
                     <p className="text-base md:text-lg text-gray-300 font-medium mb-8 max-w-2xl mx-auto md:mx-0 leading-relaxed">
-                        Real-time location, live camera, prayer-time auto lock, SOS button & stealth monitoring.
-                        <span className="block mt-1 text-emerald-300">Made only for Bangladeshi probashi families.</span>
+                        {t("heroTitle")}
                     </p>
 
                     {/* CTA Buttons */}

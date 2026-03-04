@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/routing";
 import { Shield, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 export default function LoginPage() {
     const router = useRouter();
+    const t = useTranslations("Auth");
     const [form, setForm] = useState({ email: "", password: "" });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
@@ -52,6 +54,9 @@ export default function LoginPage() {
 
             <div className="w-full max-w-md relative z-10">
                 {/* Logo */}
+                <div className="flex justify-end mb-4 text-white">
+                    <LanguageSwitcher />
+                </div>
                 <Link href="/" className="flex items-center justify-center gap-2 mb-8 group">
                     <div className="bg-emerald-600 p-2 rounded-xl group-hover:bg-emerald-500 transition-colors">
                         <Shield className="w-7 h-7 text-white" />
@@ -64,9 +69,9 @@ export default function LoginPage() {
                 {/* Card */}
                 <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-8 backdrop-blur-sm shadow-2xl">
                     <div className="text-center mb-6">
-                        <h1 className="text-2xl font-bold text-white">Welcome Back</h1>
+                        <h1 className="text-2xl font-bold text-white">{t("loginTitle")}</h1>
                         <p className="text-gray-400 mt-1 text-sm">
-                            Sign in to monitor your children&apos;s safety
+                            {t("loginSubtitle")}
                         </p>
                     </div>
 
@@ -82,7 +87,7 @@ export default function LoginPage() {
                         {/* Email */}
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                Email Address
+                                {t("emailLabel")}
                             </label>
                             <input
                                 type="email"
@@ -97,7 +102,7 @@ export default function LoginPage() {
                         {/* Password */}
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                Password
+                                {t("passwordLabel")}
                             </label>
                             <div className="relative">
                                 <input
@@ -127,10 +132,10 @@ export default function LoginPage() {
                             {loading ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    Signing in...
+                                    ...
                                 </>
                             ) : (
-                                "Sign In"
+                                t("loginBtn")
                             )}
                         </button>
                     </form>
@@ -138,12 +143,12 @@ export default function LoginPage() {
                     {/* Divider */}
                     <div className="mt-6 pt-6 border-t border-gray-800 text-center">
                         <p className="text-gray-400 text-sm">
-                            Don&apos;t have an account?{" "}
+                            {t("noAccount")}{" "}
                             <Link
                                 href="/register"
                                 className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
                             >
-                                Start Free Trial
+                                {t("registerLink")}
                             </Link>
                         </p>
                     </div>

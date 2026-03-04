@@ -13,57 +13,8 @@ import InstallPrompt from '@/components/InstallPrompt';
 import LiveCameraModal from '@/components/LiveCameraModal';
 import AmbientMicModal from '@/components/AmbientMicModal';
 import LiveScreenModal from '@/components/LiveScreenModal';
-
-// --- TRANSLATIONS (English & Bangla) ---
-const t = {
-    en: {
-        greeting: "Assalamu Alaikum",
-        home: "Home", map: "Live Map", controls: "Controls", tools: "Live Tools",
-        feed: "Feed", reports: "Reports", settings: "Settings",
-        quickActions: "Quick Actions", reqScreen: "Screen View", reqCamera: "Front Camera",
-        reqMic: "Ambient Mic", sendAlarm: "Send Alarm",
-        liveLocation: "Live Location", accuracy: "Accuracy: ~10 meters • GPS + Cell Tower",
-        todaySummary: "Today's Summary", screenTime: "Screen Time", geofence: "Geofence Status",
-        insideSafeZone: "Inside Safe Zone", recentAlerts: "Recent Alerts",
-        online: "Online", offline: "Offline", lastSeen: "Live now",
-        addChild: "Add Child", name: "Child's Name", phone: "BD Phone Number",
-        addWorkflowStep1: "Child Information", addWorkflowStep2: "Install APK on Child's Phone",
-        addWorkflowStep3: "Connecting...", age: "Age",
-        magicLink: "Send Magic Link (SMS)", qrCode: "Show QR Code",
-        cancel: "Cancel", next: "Next Step", remoteSession: "Remote Setup Session",
-        waitingConnection: "Waiting for child's phone to connect...",
-        prayerTimes: "Auto Prayer Time Blocks",
-        appLimits: "App Limits", block: "Block", unblock: "Unblock",
-        liveToolsDesc: "High-power real-time monitoring. Uses child's data.",
-        noChildren: "No children added yet", addFirstChild: "Add your first child to start monitoring",
-        sosTriggered: "SOS Button Pressed", leftSchool: "Left School Zone",
-        appInstalled: "New App Installed",
-    },
-    bn: {
-        greeting: "আসসালামু আলাইকুম",
-        home: "হোম", map: "লাইভ ম্যাপ", controls: "কন্ট্রোলস", tools: "লাইভ টুলস",
-        feed: "ফিড", reports: "রিপোর্ট", settings: "সেটিংস",
-        quickActions: "দ্রুত অ্যাকশন", reqScreen: "স্ক্রিন দেখুন", reqCamera: "ক্যামেরা",
-        reqMic: "মাইক্রোফোন", sendAlarm: "অ্যালার্ম বাজান",
-        liveLocation: "লাইভ লোকেশন", accuracy: "নির্ভুলতা: ~১০ মিটার • GPS + সেল টাওয়ার",
-        todaySummary: "আজকের সারাংশ", screenTime: "স্ক্রিন টাইম", geofence: "জিওফেন্স স্ট্যাটাস",
-        insideSafeZone: "সেফ জোনে আছে", recentAlerts: "সাম্প্রতিক অ্যালার্ট",
-        online: "অনলাইন", offline: "অফলাইন", lastSeen: "এখন লাইভ",
-        addChild: "সন্তান যোগ করুন", name: "সন্তানের নাম", phone: "ফোন নম্বর",
-        addWorkflowStep1: "সন্তানের তথ্য", addWorkflowStep2: "সন্তানের ফোনে APK ইন্সটল",
-        addWorkflowStep3: "সংযোগ হচ্ছে...", age: "বয়স",
-        magicLink: "ম্যাজিক লিংক পাঠান (SMS)", qrCode: "QR কোড দেখান",
-        cancel: "বাতিল", next: "পরবর্তী ধাপ", remoteSession: "রিমোট সেটআপ",
-        waitingConnection: "সন্তানের ফোন সংযোগের অপেক্ষায়...",
-        prayerTimes: "স্বয়ংক্রিয় নামাজের সময় লক",
-        appLimits: "অ্যাপ লিমিট", block: "ব্লক করুন", unblock: "আনব্লক করুন",
-        liveToolsDesc: "উচ্চ ক্ষমতার রিয়েল-টাইম মনিটরিং। সন্তানের ডেটা ব্যবহার করে।",
-        noChildren: "এখনো কোনো সন্তান যোগ করা হয়নি", addFirstChild: "মনিটরিং শুরু করতে প্রথম সন্তান যোগ করুন",
-        sosTriggered: "এসওএস বাটন চাপা হয়েছে", leftSchool: "স্কুল জোন ত্যাগ করেছে",
-        appInstalled: "নতুন অ্যাপ ইন্সটল হয়েছে",
-    }
-};
-
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useTranslations } from 'next-intl';
 
 // ==========================================
 // HELPERS
@@ -98,8 +49,8 @@ const ALERT_ICONS = {
 // MAIN PAGE
 // ==========================================
 export default function DashboardPage() {
+    const dict = useTranslations('Dashboard');
     const { data: session } = useSession();
-    const [lang, setLang] = useState('en');
     const [theme, setTheme] = useState('light');
     const [activeTab, setActiveTab] = useState('home');
     const [isAddChildModalOpen, setAddChildModalOpen] = useState(false);
@@ -132,9 +83,7 @@ export default function DashboardPage() {
 
     useEffect(() => { fetchChildren(); }, [fetchChildren]);
 
-    const toggleLang = () => setLang(prev => prev === 'en' ? 'bn' : 'en');
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-    const dict = t[lang];
 
     const userName = session?.user?.name || 'Parent';
     const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -157,9 +106,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <button onClick={toggleLang} className="flex items-center gap-1 text-sm font-medium hover:text-emerald-600 transition-colors">
-                        <Globe className="w-4 h-4" /> {lang === 'en' ? 'BN' : 'EN'}
-                    </button>
+                    <LanguageSwitcher />
                     <button onClick={toggleTheme} className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                         {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                     </button>
@@ -197,18 +144,18 @@ export default function DashboardPage() {
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-                    <SidebarItem icon={<Home />} label={dict.home} isActive={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                    <SidebarItem icon={<Map />} label={dict.map} isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
-                    <SidebarItem icon={<Lock />} label={dict.controls} isActive={activeTab === 'controls'} onClick={() => setActiveTab('controls')} />
-                    <SidebarItem icon={<Video />} label={dict.tools} isActive={activeTab === 'tools'} onClick={() => setActiveTab('tools')} />
-                    <SidebarItem icon={<Activity />} label={dict.feed} isActive={activeTab === 'feed'} onClick={() => setActiveTab('feed')} />
-                    <SidebarItem icon={<FileText />} label={dict.reports} isActive={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
-                    <SidebarItem icon={<Settings />} label={dict.settings} isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                    <SidebarItem icon={<Home />} label={dict('home')} isActive={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                    <SidebarItem icon={<Map />} label={dict('map')} isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
+                    <SidebarItem icon={<Lock />} label={dict('controls')} isActive={activeTab === 'controls'} onClick={() => setActiveTab('controls')} />
+                    <SidebarItem icon={<Video />} label={dict('tools')} isActive={activeTab === 'tools'} onClick={() => setActiveTab('tools')} />
+                    <SidebarItem icon={<Activity />} label={dict('feed')} isActive={activeTab === 'feed'} onClick={() => setActiveTab('feed')} />
+                    <SidebarItem icon={<FileText />} label={dict('reports')} isActive={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
+                    <SidebarItem icon={<Settings />} label={dict('settings')} isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
                 </nav>
 
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
                     <button onClick={() => setAddChildModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 p-3 rounded-xl font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
-                        <Plus className="w-5 h-5" /> {dict.addChild}
+                        <Plus className="w-5 h-5" /> {dict('addChild')}
                     </button>
                     <button onClick={() => signOut({ callbackUrl: '/login' })} className="w-full flex items-center justify-center gap-2 text-red-500 p-2 rounded-xl font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm">
                         <LogOut className="w-4 h-4" /> Log Out
@@ -231,10 +178,10 @@ export default function DashboardPage() {
                     ) : children.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-64 text-center bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 mb-6">
                             <Shield className="w-16 h-16 text-gray-300 dark:text-gray-700 mb-4" />
-                            <h2 className="text-xl font-bold text-gray-500">{dict.noChildren}</h2>
-                            <p className="text-gray-400 text-sm mt-2 mb-4">{dict.addFirstChild}</p>
+                            <h2 className="text-xl font-bold text-gray-500">{dict('noChildren')}</h2>
+                            <p className="text-gray-400 text-sm mt-2 mb-4">{dict('addFirstChild')}</p>
                             <button onClick={() => setAddChildModalOpen(true)} className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition">
-                                <Plus className="w-4 h-4 inline mr-2" />{dict.addChild}
+                                <Plus className="w-4 h-4 inline mr-2" />{dict('addChild')}
                             </button>
                         </div>
                     ) : (
@@ -260,13 +207,13 @@ export default function DashboardPage() {
                                         )}
                                         <p className={`text-xs font-medium flex items-center gap-1 ${device?.isOnline ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
                                             <CheckCircle className="w-3 h-3" />
-                                            {device?.isOnline ? `${dict.online} • ${dict.lastSeen}` : `${dict.offline} • ${device?.lastSeenAt ? timeAgo(device.lastSeenAt) : '—'}`}
+                                            {device?.isOnline ? `${dict('online')} • ${dict('lastSeen')}` : `${dict('offline')} • ${device?.lastSeenAt ? timeAgo(device.lastSeenAt) : '—'}`}
                                         </p>
                                         {!device?.isOnline && child?.id && (
                                             <button
                                                 onClick={() => { setReconnectChildId(child.id); setAddChildModalOpen(true); }}
                                                 className="mt-1 text-xs text-blue-500 hover:text-blue-600 font-bold hover:underline">
-                                                Re-pair Phone Connection
+                                                {dict('reconnect')}
                                             </button>
                                         )}
                                     </div>
@@ -298,8 +245,8 @@ export default function DashboardPage() {
 
             {/* --- BOTTOM NAV (Mobile) --- */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-gray-100 dark:border-gray-800 z-50 px-2 py-2 pb-safe flex justify-between items-center">
-                <BottomNavItem icon={<Home />} label={dict.home} isActive={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                <BottomNavItem icon={<Map />} label={dict.map} isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
+                <BottomNavItem icon={<Home />} label={dict('home')} isActive={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                <BottomNavItem icon={<Map />} label={dict('map')} isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
                 <div className="relative -top-6 px-1 flex gap-2">
                     <button onClick={() => setAddChildModalOpen(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-xl shadow-emerald-500/30 transition-transform active:scale-95 bg-emerald-600 border-4 border-white dark:border-gray-900">
                         <Plus className="w-6 h-6 text-white" />
@@ -310,8 +257,8 @@ export default function DashboardPage() {
                         </button>
                     )}
                 </div>
-                <BottomNavItem icon={<Lock />} label={dict.controls} isActive={activeTab === 'controls'} onClick={() => setActiveTab('controls')} />
-                <BottomNavItem icon={<Activity />} label={dict.feed} isActive={activeTab === 'feed'} onClick={() => setActiveTab('feed')} />
+                <BottomNavItem icon={<Lock />} label={dict('controls')} isActive={activeTab === 'controls'} onClick={() => setActiveTab('controls')} />
+                <BottomNavItem icon={<Activity />} label={dict('feed')} isActive={activeTab === 'feed'} onClick={() => setActiveTab('feed')} />
             </nav>
 
             {/* --- ADD CHILD/RECONNECT MODAL --- */}
@@ -356,12 +303,12 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
             <div>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">{dict.quickActions}</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">{dict('quickActions')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <ActionButton icon={<Smartphone className="w-7 h-7" />} label={dict.reqScreen} color="bg-blue-500" shadow="shadow-blue-500/20" onClick={onOpenScreen} />
-                    <ActionButton icon={<Camera className="w-7 h-7" />} label={dict.reqCamera} color="bg-emerald-500" shadow="shadow-emerald-500/20" onClick={onOpenCamera} />
-                    <ActionButton icon={<Mic className="w-7 h-7" />} label={dict.reqMic} color="bg-purple-500" shadow="shadow-purple-500/20" onClick={comingSoon} />
-                    <ActionButton icon={<Bell className="w-7 h-7" />} label={dict.sendAlarm} color="bg-red-500" shadow="shadow-red-500/30" pulse onClick={sendAlarm} />
+                    <ActionButton icon={<Smartphone className="w-7 h-7" />} label={dict('reqScreen')} color="bg-blue-500" shadow="shadow-blue-500/20" onClick={onOpenScreen} />
+                    <ActionButton icon={<Camera className="w-7 h-7" />} label={dict('reqCamera')} color="bg-emerald-500" shadow="shadow-emerald-500/20" onClick={onOpenCamera} />
+                    <ActionButton icon={<Mic className="w-7 h-7" />} label={dict('reqMic')} color="bg-purple-500" shadow="shadow-purple-500/20" onClick={comingSoon} />
+                    <ActionButton icon={<Bell className="w-7 h-7" />} label={dict('sendAlarm')} color="bg-red-500" shadow="shadow-red-500/30" pulse onClick={sendAlarm} />
                 </div>
             </div>
 
@@ -369,8 +316,8 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
                 {/* Live Location */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-500" /> {dict.liveLocation}</h3>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${device?.isOnline ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>{device?.isOnline ? 'Live' : 'Last Known'}</span>
+                        <h3 className="font-bold flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-500" /> {dict('liveLocation')}</h3>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${device?.isOnline ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>{device?.isOnline ? dict('live') : dict('lastKnown')}</span>
                     </div>
                     <div className="relative w-full h-32 bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden mb-3">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cartographer.png')] opacity-30 dark:opacity-10"></div>
@@ -380,16 +327,16 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
                         </div>
                     </div>
                     <p className="font-bold text-gray-800 dark:text-gray-100">{device?.locationName || 'Location unavailable'}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{device?.speed ? `Moving • ${device.speed} km/h` : dict.accuracy}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{device?.speed ? `Moving • ${device.speed} km/h` : dict('accuracy')}</p>
                 </div>
 
                 {/* Today's Summary */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
-                    <h3 className="font-bold flex items-center gap-2 mb-4"><Activity className="w-5 h-5 text-blue-500" /> {dict.todaySummary}</h3>
+                    <h3 className="font-bold flex items-center gap-2 mb-4"><Activity className="w-5 h-5 text-blue-500" /> {dict('todaySummary')}</h3>
                     <div className="space-y-4">
                         <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl">
                             <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{dict.screenTime}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{dict('screenTime')}</p>
                                 <p className="font-bold text-lg text-gray-900 dark:text-gray-100">
                                     {child?.appControls ? `${Math.floor(child.appControls.reduce((sum, a) => sum + a.usageToday, 0) / 60)}h ${child.appControls.reduce((sum, a) => sum + a.usageToday, 0) % 60}m` : '—'}
                                 </p>
@@ -403,9 +350,9 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
                         </div>
                         <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl">
                             <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{dict.geofence}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{dict('geofence')}</p>
                                 <p className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                    <CheckCircle className="w-4 h-4" /> {child?.geofences?.length || 0} zones active
+                                    <CheckCircle className="w-4 h-4" /> {child?.geofences?.length || 0} {dict('zonesActive')}
                                 </p>
                             </div>
                         </div>
@@ -415,10 +362,10 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
 
             {/* Recent Alerts */}
             <div>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">{dict.recentAlerts}</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">{dict('recentAlerts')}</h3>
                 <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                     {(!child?.alerts || child.alerts.length === 0) ? (
-                        <p className="text-sm text-gray-400 p-6 text-center">No recent alerts</p>
+                        <p className="text-sm text-gray-400 p-6 text-center">{dict('noRecentAlerts')}</p>
                     ) : (
                         child.alerts.map(a => (
                             <AlertRow key={a.id} icon={ALERT_ICONS[a.type] || <Bell className="text-gray-500" />} title={a.title} time={timeAgo(a.createdAt)} isRed={a.severity === 'CRITICAL' || a.severity === 'HIGH'} />
@@ -459,8 +406,8 @@ function MapTab({ dict, child, device }) {
                     )}
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-                    <button className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">View History</button>
-                    <button className="flex-1 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition">Set Geofence</button>
+                    <button className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">{dict('viewHistory')}</button>
+                    <button className="flex-1 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition">{dict('setGeofence')}</button>
                 </div>
             </div>
         </div>
@@ -476,7 +423,7 @@ function ControlsTab({ dict, child }) {
         <div className="space-y-6 animate-in fade-in duration-300">
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
                 <h3 className="font-bold flex items-center gap-2 mb-4 text-lg">
-                    <Moon className="w-5 h-5 text-indigo-500" /> {dict.prayerTimes}
+                    <Moon className="w-5 h-5 text-indigo-500" /> {dict('prayerTimes')}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Automatically locks device during selected prayer times (BD Time).</p>
                 <div className="space-y-3">
@@ -492,7 +439,7 @@ function ControlsTab({ dict, child }) {
 
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
                 <h3 className="font-bold flex items-center gap-2 mb-4 text-lg">
-                    <Smartphone className="w-5 h-5 text-red-500" /> {dict.appLimits}
+                    <Smartphone className="w-5 h-5 text-red-500" /> {dict('appLimits')}
                 </h3>
                 <div className="space-y-4">
                     {(!child?.appControls || child.appControls.length === 0) ? (
@@ -517,7 +464,7 @@ function LiveToolsTab({ dict, onOpenCamera, onOpenMic, onOpenScreen }) {
         <div className="space-y-6 animate-in fade-in duration-300">
             <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg shadow-red-500/20">
                 <h2 className="text-2xl font-black mb-2 flex items-center gap-2"><ShieldAlert className="w-8 h-8" /> Live Operations</h2>
-                <p className="text-red-100 opacity-90 text-sm mb-6">{dict.liveToolsDesc}</p>
+                <p className="text-red-100 opacity-90 text-sm mb-6">{dict('liveToolsDesc')}</p>
                 <div className="grid grid-cols-1 gap-4">
                     <button onClick={onOpenScreen} className="flex items-center justify-between bg-white/20 hover:bg-white/30 backdrop-blur-sm p-4 rounded-xl transition-all group">
                         <div className="flex items-center gap-4"><div className="bg-white p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform"><Video className="w-6 h-6" /></div><div className="text-left"><h4 className="font-bold text-lg">Live Screen View</h4><p className="text-xs text-red-100">Watch child's screen in 1080p</p></div></div>
@@ -627,7 +574,7 @@ function AddChildWorkflow({ dict, step, setStep, onClose, onChildAdded, reconnec
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                    <h2 className="font-bold text-lg">{reconnectChildId ? "Reconnect Device" : dict.addChild}</h2>
+                    <h2 className="font-bold text-lg">{reconnectChildId ? "Reconnect Device" : dict('addChild')}</h2>
                     <button onClick={onClose} className="p-2 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition"><X className="w-4 h-4" /></button>
                 </div>
                 <div className="w-full bg-gray-100 dark:bg-gray-800 h-1.5">
@@ -637,18 +584,18 @@ function AddChildWorkflow({ dict, step, setStep, onClose, onChildAdded, reconnec
                 <div className="p-6">
                     {step === 1 && (
                         <div className="space-y-4">
-                            <h3 className="font-bold text-gray-700 dark:text-gray-300">{dict.addWorkflowStep1}</h3>
+                            <h3 className="font-bold text-gray-700 dark:text-gray-300">{dict('addWorkflowStep1')}</h3>
                             {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">{error}</p>}
                             <div>
-                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{dict.name}</label>
+                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{dict('name')}</label>
                                 <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ayaan" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 outline-none transition" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{dict.age}</label>
+                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{dict('age')}</label>
                                 <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g. 12" min="3" max="18" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 outline-none transition" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{dict.phone}</label>
+                                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{dict('phone')}</label>
                                 <div className="flex">
                                     <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 font-bold">+880</span>
                                     <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="17XX XXXXXX" className="flex-1 px-4 py-3 rounded-r-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-emerald-500 outline-none transition" />
@@ -695,9 +642,9 @@ function AddChildWorkflow({ dict, step, setStep, onClose, onChildAdded, reconnec
                 <div className="p-4 bg-gray-50 dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
                     {step === 1 && (
                         <>
-                            <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">{dict.cancel}</button>
+                            <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">{dict('cancel')}</button>
                             <button onClick={handleCreateChild} disabled={saving} className="px-6 py-2.5 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/30 disabled:opacity-50">
-                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : dict.next}
+                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : dict('next')}
                             </button>
                         </>
                     )}
@@ -1005,7 +952,7 @@ function AppControlRow({ id, childId, name, time, isBlocked, iconColor, dict }) 
                 <div><h4 className="font-bold text-sm">{name}</h4><p className="text-xs text-gray-500">{time}</p></div>
             </div>
             <button onClick={toggle} disabled={saving} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${saving ? 'opacity-50' : ''} ${blocked ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
-                {blocked ? dict.unblock : dict.block}
+                {blocked ? dict('unblock') : dict('block')}
             </button>
         </div>
     );

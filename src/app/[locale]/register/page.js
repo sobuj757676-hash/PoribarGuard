@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/routing";
 import { Shield, Eye, EyeOff, Loader2, AlertCircle, Check } from "lucide-react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 const COUNTRIES = [
     { value: "UAE", label: "🇦🇪 United Arab Emirates" },
@@ -24,6 +25,7 @@ const COUNTRIES = [
 
 export default function RegisterPage() {
     const router = useRouter();
+    const t = useTranslations("Auth");
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -107,7 +109,10 @@ export default function RegisterPage() {
                 <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-600/8 rounded-full blur-[120px]" />
             </div>
 
-            <div className="w-full max-w-md relative z-10">
+            <div className="w-full max-w-md relative z-10 mt-8">
+                <div className="flex justify-end mb-4 text-white">
+                    <LanguageSwitcher />
+                </div>
                 {/* Logo */}
                 <Link href="/" className="flex items-center justify-center gap-2 mb-8 group">
                     <div className="bg-emerald-600 p-2 rounded-xl group-hover:bg-emerald-500 transition-colors">
@@ -121,9 +126,9 @@ export default function RegisterPage() {
                 {/* Card */}
                 <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-8 backdrop-blur-sm shadow-2xl">
                     <div className="text-center mb-6">
-                        <h1 className="text-2xl font-bold text-white">Start Free 7-Day Trial</h1>
+                        <h1 className="text-2xl font-bold text-white">{t("registerTitle")}</h1>
                         <p className="text-gray-400 mt-1 text-sm">
-                            No credit card required • Protect your family today
+                            {t("registerSubtitle")}
                         </p>
                     </div>
 
@@ -138,7 +143,7 @@ export default function RegisterPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Name */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Full Name *</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t("nameLabel")} *</label>
                             <input
                                 type="text"
                                 required
@@ -151,7 +156,7 @@ export default function RegisterPage() {
 
                         {/* Email */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Email Address *</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t("emailLabel")} *</label>
                             <input
                                 type="email"
                                 required
@@ -164,7 +169,7 @@ export default function RegisterPage() {
 
                         {/* Password */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Password *</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1.5">{t("passwordLabel")} *</label>
                             <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"}
@@ -202,7 +207,7 @@ export default function RegisterPage() {
                         {/* Phone (optional) */}
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                Phone <span className="text-gray-500">(optional)</span>
+                                {t("phoneLabel")}
                             </label>
                             <input
                                 type="tel"
@@ -270,10 +275,10 @@ export default function RegisterPage() {
                             {loading ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    Creating Account...
+                                    ...
                                 </>
                             ) : (
-                                "Create Free Account"
+                                t("registerBtn")
                             )}
                         </button>
                     </form>
@@ -281,12 +286,12 @@ export default function RegisterPage() {
                     {/* Divider */}
                     <div className="mt-6 pt-6 border-t border-gray-800 text-center">
                         <p className="text-gray-400 text-sm">
-                            Already have an account?{" "}
+                            {t("hasAccount")}{" "}
                             <Link
                                 href="/login"
                                 className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
                             >
-                                Sign In
+                                {t("loginLink")}
                             </Link>
                         </p>
                     </div>

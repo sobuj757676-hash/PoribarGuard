@@ -4,8 +4,10 @@ import React, { useRef, useEffect } from "react";
 import { Camera, Wifi, RefreshCcw, XCircle, RotateCcw } from "lucide-react";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useSocket } from "@/context/SocketContext";
+import { useTranslations } from 'next-intl';
 
 export default function LiveCameraModal({ childId, childName, onClose }) {
+    const t = useTranslations('WebRTC');
     const socket = useSocket();
     const videoRef = useRef(null);
     const {
@@ -32,21 +34,18 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
         }
     }, [stream]);
 
-    /**
-     * Status text with Bangla + English for non-tech parents
-     */
     const getStatusText = () => {
         switch (status) {
             case 'connecting':
-                return "Connecting... / সংযোগ হচ্ছে...";
+                return t('connecting');
             case 'connected':
-                return "Live (Secure E2E) / লাইভ চলছে";
+                return t('connected');
             case 'reconnecting':
-                return "Network unstable, reconnecting... / নেটওয়ার্ক অস্থির, পুনরায় সংযোগ হচ্ছে...";
+                return t('reconnecting');
             case 'retrying':
-                return `Retrying... (${retryCount}/2) / পুনরায় চেষ্টা হচ্ছে... (${retryCount}/২)`;
+                return t('retrying', { count: retryCount });
             case 'disconnected':
-                return "Offline / অফলাইন";
+                return t('offline');
             default:
                 return status;
         }
@@ -92,12 +91,12 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
                             <>
                                 <XCircle className="w-12 h-12 text-red-500 mb-4" />
                                 <p className="font-semibold text-lg text-red-400">
-                                    Connection Failed / সংযোগ ব্যর্থ
+                                    {t('failed')}
                                 </p>
                                 <p className="text-sm text-slate-400 mt-2 max-w-sm">
                                     {isRetryExhausted
-                                        ? "All automatic retries exhausted. The child device may be offline, sleeping, or has no internet. / স্বয়ংক্রিয় পুনরায় চেষ্টা শেষ। সন্তানের ফোন অফলাইন বা ইন্টারনেট নেই।"
-                                        : "The child device is currently offline or restricted by the OS. / সন্তানের ফোন অফলাইন বা সীমাবদ্ধ।"
+                                        ? t('exhausted')
+                                        : t('offline')
                                     }
                                 </p>
                                 {isRetryExhausted && (
@@ -106,7 +105,7 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
                                         className="mt-6 flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-semibold transition shadow-lg shadow-emerald-900/30"
                                     >
                                         <RotateCcw className="w-5 h-5" />
-                                        Retry Connection / পুনরায় চেষ্টা করুন
+                                        {t('retryBtn')}
                                     </button>
                                 )}
                             </>
@@ -115,14 +114,8 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
                                 <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
                                 <p className="font-semibold text-lg">
                                     {status === 'retrying'
-                                        ? `Retrying connection (${retryCount}/2)... / পুনরায় সংযোগ হচ্ছে (${retryCount}/২)...`
-                                        : "Establishing secure connection / সুরক্ষিত সংযোগ স্থাপন হচ্ছে"
-                                    }
-                                </p>
-                                <p className="text-sm text-slate-400 mt-2 max-w-sm">
-                                    {status === 'retrying'
-                                        ? "Previous attempt failed. Trying again... / আগের চেষ্টা ব্যর্থ হয়েছে, আবার চেষ্টা হচ্ছে..."
-                                        : "Negotiating with the device. If internet is slow, this may take up to 15 seconds. / ডিভাইসের সাথে সংযোগ হচ্ছে। ধীর ইন্টারনেটে ১৫ সেকেন্ড সময় লাগতে পারে।"
+                                        ? t('retrying', { count: retryCount })
+                                        : t('connecting')
                                     }
                                 </p>
                             </>
@@ -158,7 +151,7 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
                     <div className="w-14 h-14 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-white transition">
                         <RefreshCcw className="w-6 h-6" />
                     </div>
-                    <span className="text-white text-xs font-bold">Flip Camera</span>
+                    <span className="text-white text-xs font-bold">{t('flipCamera')}</span>
                 </button>
 
                 <button
@@ -168,7 +161,7 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
                     <div className="w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white shadow-lg shadow-red-900/50 transition">
                         <XCircle className="w-6 h-6" />
                     </div>
-                    <span className="text-white text-xs font-bold">End Stream</span>
+                    <span className="text-white text-xs font-bold">{t('endStream')}</span>
                 </button>
             </div>
         </div>
