@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { toast } from 'sonner';
 
 const MAX_RETRIES = 2;
 const PING_BACKOFF_MS = [3000, 6000, 12000]; // Exponential backoff for ping retries
@@ -256,6 +257,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
         const handleError = (data) => {
             console.error("[WebRTC] Signaling error:", data.message);
+            toast.error(data.message || "Failed to negotiate stream with the device.");
             if (isMountedRef.current) {
                 // Don't immediately fail — let retry logic handle it
                 attemptRetry();
@@ -266,7 +268,11 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         const handleChildStatus = (data) => {
             if (data.childId === childId && data.status === 'offline') {
                 console.warn("[WebRTC] Child went offline (heartbeat timeout)");
-                if (isMountedRef.current && status !== 'connected') {
+                if (isMountedRef.current && status === 'connected') {
+                    toast.warning("Connection to child device lost. Attempting to reconnect...");
+                    setStatus('reconnecting');
+                    attemptRetry();
+                } else if (isMountedRef.current) {
                     setStatus('disconnected');
                 }
             }

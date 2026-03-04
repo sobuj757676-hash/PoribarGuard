@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { toast } from 'sonner';
 import {
     LayoutDashboard, Users, CreditCard, Smartphone, LifeBuoy,
     ShieldAlert, BarChart3, UploadCloud, Search, Bell, Settings,
@@ -157,9 +158,12 @@ function DashboardTab() {
 
     useEffect(() => {
         fetch('/api/admin/stats')
-            .then(r => r.json())
+            .then(r => {
+                if(!r.ok) throw new Error('Failed to fetch data');
+                return r.json();
+            })
             .then(d => { setData(d); setLoading(false); })
-            .catch(() => { setError('Failed to load stats'); setLoading(false); });
+            .catch(() => { setError('Failed to load stats'); setLoading(false); toast.error('Network error loading dashboard stats'); });
     }, []);
 
     const submitParent = async (e) => {
@@ -173,13 +177,13 @@ function DashboardTab() {
             });
             if (!res.ok) {
                 const err = await res.json();
-                alert(err.error || 'Failed to add parent');
+                toast.error(err.error || 'Failed to add parent');
             } else {
-                alert('Parent account created successfully!');
+                toast.success('Parent account created successfully!');
                 setShowModal(false);
                 setFormData({ name: '', email: '', password: '', phone: '', country: '', city: '', plan: 'TRIAL' });
             }
-        } catch (err) { alert('An error occurred'); }
+        } catch (err) { toast.error('An unexpected error occurred'); }
         setSaving(false);
     };
 
@@ -315,9 +319,15 @@ function ParentsTab({ searchQuery }) {
         const params = new URLSearchParams({ page: p, limit: 10 });
         if (search) params.set('search', search);
         fetch(`/api/admin/parents?${params}`)
-            .then(r => r.json())
+            .then(r => {
+                if(!r.ok) throw new Error('Failed to fetch parents');
+                return r.json();
+            })
             .then(d => { setData(d); setLoading(false); })
-            .catch(() => setLoading(false));
+            .catch(() => {
+                setLoading(false);
+                toast.error('Network error loading parents list');
+            });
     }, []);
 
     useEffect(() => { setPage(1); }, [searchQuery]);
@@ -415,9 +425,15 @@ function BillingTab() {
 
     useEffect(() => {
         fetch('/api/admin/transactions')
-            .then(r => r.json())
+            .then(r => {
+                if(!r.ok) throw new Error('Failed to load transactions');
+                return r.json();
+            })
             .then(d => { setData(d); setLoading(false); })
-            .catch(() => setLoading(false));
+            .catch(() => {
+                setLoading(false);
+                toast.error('Network error loading billing data');
+            });
     }, []);
 
     const gatewayColors = {
@@ -493,9 +509,15 @@ function FiltersTab() {
 
     const fetchFilters = useCallback(() => {
         fetch('/api/admin/filters')
-            .then(r => r.json())
+            .then(r => {
+                if(!r.ok) throw new Error('Failed to fetch filters');
+                return r.json();
+            })
             .then(d => { setData(d); setLoading(false); })
-            .catch(() => setLoading(false));
+            .catch(() => {
+                setLoading(false);
+                toast.error('Failed to load content filters');
+            });
     }, []);
 
     useEffect(() => { fetchFilters(); }, [fetchFilters]);
@@ -504,22 +526,34 @@ function FiltersTab() {
         const pattern = type === 'DOMAIN' ? newDomain.trim() : newKeyword.trim();
         if (!pattern) return;
         const category = type === 'DOMAIN' ? 'Custom' : 'Custom';
-        await fetch('/api/admin/filters', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pattern, type, category }),
-        });
-        type === 'DOMAIN' ? setNewDomain('') : setNewKeyword('');
-        fetchFilters();
+        try {
+            const res = await fetch('/api/admin/filters', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pattern, type, category }),
+            });
+            if(!res.ok) throw new Error('Failed to add filter');
+            toast.success('Filter added successfully');
+            type === 'DOMAIN' ? setNewDomain('') : setNewKeyword('');
+            fetchFilters();
+        } catch {
+            toast.error('Network error. Could not add filter.');
+        }
     };
 
     const deleteFilter = async (id) => {
-        await fetch('/api/admin/filters', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id }),
-        });
-        fetchFilters();
+        try {
+            const res = await fetch('/api/admin/filters', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id }),
+            });
+            if(!res.ok) throw new Error('Failed to delete filter');
+            toast.success('Filter removed');
+            fetchFilters();
+        } catch {
+            toast.error('Network error. Could not delete filter.');
+        }
     };
 
     if (loading) return (
@@ -597,10 +631,18 @@ function DevicesTab() {
 
     const fetchDevices = useCallback(() => {
         setLoading(true);
-        fetch('/api/admin/devices').then(r => r.json()).then(d => {
+        fetch('/api/admin/devices')
+        .then(r => {
+            if(!r.ok) throw new Error('Failed to fetch devices');
+            return r.json();
+        })
+        .then(d => {
             setDevices(d.devices || []);
             setLoading(false);
-        }).catch(() => setLoading(false));
+        }).catch(() => {
+            setLoading(false);
+            toast.error('Failed to load active devices');
+        });
     }, []);
 
     useEffect(() => { fetchDevices(); }, [fetchDevices]);
@@ -967,15 +1009,23 @@ function SettingsTab() {
 
     const save = async () => {
         setSaving(true); setMsg('');
-        const res = await fetch('/api/admin/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(settings),
-        });
-        const d = await res.json();
-        setSaving(false);
-        setMsg(res.ok ? '✅ Settings saved!' : `❌ ${d.error}`);
-        setTimeout(() => setMsg(''), 3000);
+        try {
+            const res = await fetch('/api/admin/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings),
+            });
+            const d = await res.json();
+            setSaving(false);
+            if(res.ok) {
+                toast.success('Settings saved successfully');
+            } else {
+                toast.error(d.error || 'Failed to save settings');
+            }
+        } catch {
+            setSaving(false);
+            toast.error('Network error saving settings');
+        }
     };
 
     if (loading) return <div className="p-8 text-center text-slate-400">Loading settings...</div>;
