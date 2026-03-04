@@ -13,6 +13,15 @@ export const metadata = {
   description: "Secure Admin & Parental Dashboard",
   manifest: "/manifest.json",
   themeColor: "#059669",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PoribarGuard",
+  },
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport = {

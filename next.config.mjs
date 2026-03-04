@@ -13,6 +13,12 @@ const withPWA = withPWAInit({
   workboxOptions: {
     disableDevLogs: true,
   },
+  fallbacks: {
+    // Defines the offline route. Note that with next-intl,
+    // it's tricky to cache a dynamic localized fallback cleanly out of the box,
+    // so we map to the base english offline route here for safety.
+    document: '/en/~offline',
+  },
 });
 
 /** @type {import('next').NextConfig} */
