@@ -16,6 +16,7 @@ import LiveScreenModal from '@/components/LiveScreenModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { useChildren, useMarkAlertsRead, useProfile, useUpdateProfile, useSubscription, useTogglePrayerLock, useToggleAppControl } from '@/hooks/useApi';
 
 // ==========================================
 // HELPERS
@@ -62,9 +63,10 @@ export default function DashboardPage() {
     const [reconnectChildId, setReconnectChildId] = useState(null);
 
     // Real data state
-    const [children, setChildren] = useState([]);
     const [selectedChildIdx, setSelectedChildIdx] = useState(0);
-    const [loading, setLoading] = useState(true);
+
+    const { children, isLoading: loading, mutate: fetchChildren } = useChildren();
+    const { trigger: markAlertsRead } = useMarkAlertsRead();
 
     useEffect(() => {
         if (theme === 'dark') {
@@ -73,22 +75,6 @@ export default function DashboardPage() {
             document.documentElement.classList.remove('dark');
         }
     }, [theme]);
-
-    const fetchChildren = useCallback(() => {
-        setLoading(true);
-        fetch('/api/children')
-            .then(r => {
-                if (!r.ok) throw new Error('Failed to fetch children');
-                return r.json();
-            })
-            .then(d => { setChildren(d.children || []); setLoading(false); })
-            .catch(() => {
-                toast.error(dict('networkError') || 'Network error fetching data.');
-                setLoading(false);
-            });
-    }, [dict]);
-
-    useEffect(() => { fetchChildren(); }, [fetchChildren]);
 
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
@@ -118,17 +104,12 @@ export default function DashboardPage() {
                         {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                     </button>
                     <div className="relative cursor-pointer" onClick={async () => {
-                        if (child?.id) {
+                        if (child?.id && child.alerts?.some(a => !a.isRead)) {
                             try {
-                                const res = await fetch('/api/alerts/mark-read', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ childId: child.id }),
-                                });
-                                if (!res.ok) throw new Error();
+                                await markAlertsRead({ body: { childId: child.id } });
                                 fetchChildren();
                             } catch {
-                                toast.error('Failed to mark alerts as read');
+                                toast.error(dict('networkError') || 'Failed to mark alerts as read');
                             }
                         }
                     }}>
@@ -812,33 +793,29 @@ function ReportsTab({ dict, child }) {
 // SETTINGS TAB (Live API)
 // ==========================================
 function SettingsTab({ dict, session }) {
-    const [profile, setProfile] = useState({ name: session?.user?.name || '', phone: '' });
-    const [subscription, setSubscription] = useState(null);
-    const [saving, setSaving] = useState(false);
-    const [saveMsg, setSaveMsg] = useState('');
+    const { user } = useProfile();
+    const { subscription } = useSubscription();
+    const { trigger: updateProfile } = useUpdateProfile();
 
+    const [profile, setProfile] = useState({ name: session?.user?.name || '', phone: '' });
+    const [saving, setSaving] = useState(false);
+
+    // Sync profile state when SWR data loads
     useEffect(() => {
-        fetch('/api/profile').then(r => r.json()).then(d => {
-            if (d.user) setProfile({ name: d.user.name || '', phone: d.user.phone || '' });
-        }).catch(() => { });
-        fetch('/api/subscriptions').then(r => r.json()).then(d => {
-            if (d.subscription) setSubscription(d.subscription);
-        }).catch(() => { });
-    }, []);
+        if (user) {
+            setProfile(prev => ({ ...prev, name: user.name || prev.name, phone: user.phone || '' }));
+        }
+    }, [user]);
 
     const saveProfile = async () => {
-        setSaving(true); setSaveMsg('');
+        setSaving(true);
         try {
-            const res = await fetch('/api/profile', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: profile.name, phone: profile.phone }),
-            });
-            const d = await res.json();
-            setSaveMsg(res.ok ? '✓ Saved!' : (d.error || 'Failed'));
-        } catch { setSaveMsg('Network error'); }
+            await updateProfile({ method: 'PUT', body: { name: profile.name, phone: profile.phone } });
+            toast.success(dict('saved') || 'Profile updated successfully');
+        } catch (e) {
+            toast.error(e.message || 'Failed to update profile');
+        }
         setSaving(false);
-        setTimeout(() => setSaveMsg(''), 3000);
     };
 
     const planLabel = subscription ? (subscription.plan === 'TRIAL' ? 'Free Trial' : `${subscription.plan} Plan`) : 'No Plan';
@@ -927,19 +904,18 @@ function AlertRow({ icon, title, desc, time, isRed }) {
 function ToggleRow({ label, defaultChecked, childId, prayerLockId }) {
     const [checked, setChecked] = useState(defaultChecked);
     const [saving, setSaving] = useState(false);
+    const { trigger } = useTogglePrayerLock(childId);
+
     const toggle = async () => {
         const newVal = !checked;
+        // Optimistic UI update
         setChecked(newVal);
         setSaving(true);
         try {
-            const res = await fetch(`/api/children/${childId}/prayer-locks`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prayerLockId, isActive: newVal }),
-            });
-            if (!res.ok) throw new Error();
+            await trigger({ method: 'PUT', body: { prayerLockId, isActive: newVal } });
             toast.success('Settings updated');
         } catch {
+            // Revert on failure
             setChecked(!newVal);
             toast.error('Failed to update settings');
         }
@@ -958,19 +934,18 @@ function ToggleRow({ label, defaultChecked, childId, prayerLockId }) {
 function AppControlRow({ id, childId, name, time, isBlocked, iconColor, dict }) {
     const [blocked, setBlocked] = useState(isBlocked);
     const [saving, setSaving] = useState(false);
+    const { trigger } = useToggleAppControl(childId);
+
     const toggle = async () => {
         const newVal = !blocked;
+        // Optimistic update
         setBlocked(newVal);
         setSaving(true);
         try {
-            const res = await fetch(`/api/children/${childId}/app-controls`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appControlId: id, isBlocked: newVal }),
-            });
-            if (!res.ok) throw new Error();
+            await trigger({ method: 'PUT', body: { appControlId: id, isBlocked: newVal } });
             toast.success(newVal ? 'App blocked' : 'App unblocked');
         } catch {
+            // Revert on failure
             setBlocked(!newVal);
             toast.error('Failed to update app control');
         }

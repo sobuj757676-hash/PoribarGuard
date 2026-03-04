@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
+import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation } from '@/hooks/useApi';
 import {
     LayoutDashboard, Users, CreditCard, Smartphone, LifeBuoy,
     ShieldAlert, BarChart3, UploadCloud, Search, Bell, Settings,
@@ -149,22 +150,11 @@ function formatBDT(amount) {
 // DASHBOARD TAB (Real API)
 // ==========================================
 function DashboardTab() {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const { stats, recentTickets, isLoading: loading, isError: error } = useAdminStats();
+
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '', country: '', city: '', plan: 'TRIAL' });
-
-    useEffect(() => {
-        fetch('/api/admin/stats')
-            .then(r => {
-                if(!r.ok) throw new Error('Failed to fetch data');
-                return r.json();
-            })
-            .then(d => { setData(d); setLoading(false); })
-            .catch(() => { setError('Failed to load stats'); setLoading(false); toast.error('Network error loading dashboard stats'); });
-    }, []);
 
     const submitParent = async (e) => {
         e.preventDefault();
@@ -201,9 +191,7 @@ function DashboardTab() {
         </div>
     );
 
-    if (error) return <div className="text-red-500 text-center py-20">{error}</div>;
-
-    const { stats, recentTickets } = data;
+    if (error) return <div className="text-red-500 text-center py-20">Failed to load statistics.</div>;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300 relative">
@@ -310,33 +298,17 @@ function DashboardTab() {
 // PARENTS TAB (Real API)
 // ==========================================
 function ParentsTab({ searchQuery }) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
 
-    const fetchParents = useCallback((p, search) => {
-        setLoading(true);
-        const params = new URLSearchParams({ page: p, limit: 10 });
-        if (search) params.set('search', search);
-        fetch(`/api/admin/parents?${params}`)
-            .then(r => {
-                if(!r.ok) throw new Error('Failed to fetch parents');
-                return r.json();
-            })
-            .then(d => { setData(d); setLoading(false); })
-            .catch(() => {
-                setLoading(false);
-                toast.error('Network error loading parents list');
-            });
-    }, []);
-
+    // Reset page when search changes
     useEffect(() => { setPage(1); }, [searchQuery]);
-    useEffect(() => { fetchParents(page, searchQuery); }, [page, searchQuery, fetchParents]);
+
+    const { parents, pagination, isLoading: loading } = useAdminParents(page, searchQuery);
 
     const exportCSV = () => {
-        if (!data?.parents) return;
+        if (!parents) return;
         const header = 'Name,Email,Phone,Country,City,Plan,Status,Children';
-        const rows = data.parents.map(p =>
+        const rows = parents.map(p =>
             `"${p.name}","${p.email}","${p.phone || ''}","${p.country || ''}","${p.city || ''}","${p.subscription?.plan || 'None'}","${p.subscription?.status || 'None'}","${p.children.map(c => c.name).join('; ')}"`
         ).join('\n');
         const blob = new Blob([header + '\n' + rows], { type: 'text/csv' });
@@ -351,7 +323,7 @@ function ParentsTab({ searchQuery }) {
                 <div>
                     <h2 className="text-xl font-bold">Parents & Families Directory</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {data ? `${data.pagination.total} registered families` : 'Loading...'}
+                        {!loading ? `${pagination.total} registered families` : 'Loading...'}
                     </p>
                 </div>
                 <button onClick={exportCSV} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
@@ -382,7 +354,7 @@ function ParentsTab({ searchQuery }) {
                                         <td className="px-6 py-4"><Skeleton className="h-4 w-8 ml-auto" /></td>
                                     </tr>
                                 ))
-                            ) : data?.parents?.map(p => (
+                            ) : parents?.map(p => (
                                 <ParentTableRow
                                     key={p.id}
                                     name={p.name} email={p.email} phone={p.phone || '—'}
@@ -400,13 +372,13 @@ function ParentsTab({ searchQuery }) {
                         </tbody>
                     </table>
                 </div>
-                {data && (
+                {!loading && (
                     <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-sm text-slate-500">
-                        <span>Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, data.pagination.total)} of {data.pagination.total}</span>
+                        <span>Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, pagination.total)} of {pagination.total}</span>
                         <div className="flex gap-1">
                             <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50">Prev</button>
                             <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold rounded">{page}</span>
-                            <button disabled={page >= data.pagination.totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50">Next</button>
+                            <button disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50">Next</button>
                         </div>
                     </div>
                 )}
@@ -420,21 +392,7 @@ function ParentsTab({ searchQuery }) {
 // BILLING TAB (Real API)
 // ==========================================
 function BillingTab() {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetch('/api/admin/transactions')
-            .then(r => {
-                if(!r.ok) throw new Error('Failed to load transactions');
-                return r.json();
-            })
-            .then(d => { setData(d); setLoading(false); })
-            .catch(() => {
-                setLoading(false);
-                toast.error('Network error loading billing data');
-            });
-    }, []);
+    const { transactions, gatewayStats, isLoading: loading } = useAdminTransactions();
 
     const gatewayColors = {
         bKash: 'from-pink-500 to-rose-600',
@@ -455,7 +413,7 @@ function BillingTab() {
                             <Skeleton className="h-3 w-24" />
                         </div>
                     ))
-                ) : (data?.gatewayStats || []).map(g => (
+                ) : gatewayStats.map(g => (
                     <div key={g.gateway} className={`bg-gradient-to-br ${gatewayColors[g.gateway] || 'from-slate-500 to-slate-600'} rounded-xl p-5 text-white shadow-lg`}>
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="font-bold">{g.gateway} Revenue</h3>
@@ -487,7 +445,7 @@ function BillingTab() {
                             [1, 2, 3].map(i => (
                                 <tr key={i}><td colSpan={6} className="px-6 py-4"><Skeleton className="h-4 w-full" /></td></tr>
                             ))
-                        ) : (data?.transactions || []).map(tx => (
+                        ) : transactions.map(tx => (
                             <TrxRow key={tx.id} id={tx.trxId} gateway={tx.gateway} email={tx.parentEmail} amount={formatBDT(tx.amount)} status={tx.status} time={timeAgo(tx.createdAt)} isFail={tx.status === 'FAILED'} />
                         ))}
                     </tbody>
@@ -502,25 +460,9 @@ function BillingTab() {
 // FILTERS TAB (Real API + CRUD)
 // ==========================================
 function FiltersTab() {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { domains, keywords, isLoading: loading, mutate: fetchFilters } = useAdminFilters();
     const [newDomain, setNewDomain] = useState('');
     const [newKeyword, setNewKeyword] = useState('');
-
-    const fetchFilters = useCallback(() => {
-        fetch('/api/admin/filters')
-            .then(r => {
-                if(!r.ok) throw new Error('Failed to fetch filters');
-                return r.json();
-            })
-            .then(d => { setData(d); setLoading(false); })
-            .catch(() => {
-                setLoading(false);
-                toast.error('Failed to load content filters');
-            });
-    }, []);
-
-    useEffect(() => { fetchFilters(); }, [fetchFilters]);
 
     const addFilter = async (type) => {
         const pattern = type === 'DOMAIN' ? newDomain.trim() : newKeyword.trim();
@@ -582,10 +524,10 @@ function FiltersTab() {
                 {/* Domains */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-5">
                     <h3 className="font-bold flex items-center gap-2 mb-4">
-                        <AlertTriangle className="w-5 h-5 text-red-500" /> Banned Domains ({data?.domains?.length || 0})
+                        <AlertTriangle className="w-5 h-5 text-red-500" /> Banned Domains ({domains?.length || 0})
                     </h3>
                     <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-                        {(data?.domains || []).map(f => (
+                        {domains.map(f => (
                             <FilterPill key={f.id} label={f.pattern} type={f.category || 'Custom'} onDelete={() => deleteFilter(f.id)} />
                         ))}
                     </div>
@@ -598,11 +540,11 @@ function FiltersTab() {
                 {/* Keywords */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-5">
                     <h3 className="font-bold flex items-center gap-2 mb-4">
-                        <Bell className="w-5 h-5 text-amber-500" /> Keyword Alerts ({data?.keywords?.length || 0})
+                        <Bell className="w-5 h-5 text-amber-500" /> Keyword Alerts ({keywords?.length || 0})
                     </h3>
                     <p className="text-xs text-slate-500 mb-4">Triggers urgent alert to parent if detected in SMS, WhatsApp, or Messenger.</p>
                     <div className="flex flex-wrap gap-2 mb-4">
-                        {(data?.keywords || []).map(f => (
+                        {keywords.map(f => (
                             <span key={f.id} className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-amber-200 dark:border-amber-800/50 inline-flex items-center gap-1.5">
                                 {f.pattern}
                                 <button onClick={() => deleteFilter(f.id)} className="text-amber-500 hover:text-red-500 transition">
@@ -626,26 +568,7 @@ function FiltersTab() {
 // DEVICES TAB (Live API)
 // ==========================================
 function DevicesTab() {
-    const [devices, setDevices] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    const fetchDevices = useCallback(() => {
-        setLoading(true);
-        fetch('/api/admin/devices')
-        .then(r => {
-            if(!r.ok) throw new Error('Failed to fetch devices');
-            return r.json();
-        })
-        .then(d => {
-            setDevices(d.devices || []);
-            setLoading(false);
-        }).catch(() => {
-            setLoading(false);
-            toast.error('Failed to load active devices');
-        });
-    }, []);
-
-    useEffect(() => { fetchDevices(); }, [fetchDevices]);
+    const { devices, isLoading: loading, mutate: fetchDevices } = useAdminDevices();
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -720,20 +643,9 @@ function DevicesTab() {
 // SUPPORT TAB (Live API)
 // ==========================================
 function SupportTab() {
-    const [tickets, setTickets] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('OPEN');
     const [selected, setSelected] = useState(null);
-
-    const fetchTickets = useCallback((status) => {
-        setLoading(true);
-        fetch(`/api/admin/tickets?status=${status}`).then(r => r.json()).then(d => {
-            setTickets(d.tickets || []);
-            setLoading(false);
-        }).catch(() => setLoading(false));
-    }, []);
-
-    useEffect(() => { fetchTickets(filter); }, [filter, fetchTickets]);
+    const { tickets, isLoading: loading, mutate: fetchTickets } = useAdminTickets(filter);
 
     const updateStatus = async (ticketId, newStatus) => {
         await fetch('/api/admin/tickets', {
@@ -826,15 +738,7 @@ function SupportTab() {
 // ANALYTICS TAB (Live API)
 // ==========================================
 function AnalyticsTab() {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetch('/api/admin/analytics').then(r => r.json()).then(d => {
-            setData(d);
-            setLoading(false);
-        }).catch(() => setLoading(false));
-    }, []);
+    const { analytics: data, isLoading: loading } = useAdminAnalytics();
 
     if (loading) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;
 
@@ -993,39 +897,29 @@ function ApkTab() {
 // SETTINGS TAB (Live API)
 // ==========================================
 function SettingsTab() {
-    const [settings, setSettings] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { settings: initialSettings, isLoading: loading } = useAdminSettings();
+    const { trigger: saveSettings } = useAdminSettingsMutation();
+
+    const [settings, setSettings] = useState({});
     const [saving, setSaving] = useState(false);
-    const [msg, setMsg] = useState('');
 
     useEffect(() => {
-        fetch('/api/admin/settings').then(r => r.json()).then(d => {
-            setSettings(d.settings || {});
-            setLoading(false);
-        }).catch(() => setLoading(false));
-    }, []);
+        if (initialSettings && Object.keys(initialSettings).length > 0) {
+            setSettings(initialSettings);
+        }
+    }, [initialSettings]);
 
     const update = (key, val) => setSettings(prev => ({ ...prev, [key]: val }));
 
     const save = async () => {
-        setSaving(true); setMsg('');
+        setSaving(true);
         try {
-            const res = await fetch('/api/admin/settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings),
-            });
-            const d = await res.json();
-            setSaving(false);
-            if(res.ok) {
-                toast.success('Settings saved successfully');
-            } else {
-                toast.error(d.error || 'Failed to save settings');
-            }
-        } catch {
-            setSaving(false);
-            toast.error('Network error saving settings');
+            await saveSettings({ method: 'PUT', body: settings });
+            toast.success('Settings saved successfully');
+        } catch (e) {
+            toast.error(e.message || 'Network error saving settings');
         }
+        setSaving(false);
     };
 
     if (loading) return <div className="p-8 text-center text-slate-400">Loading settings...</div>;
