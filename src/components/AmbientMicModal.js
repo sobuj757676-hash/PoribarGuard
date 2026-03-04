@@ -4,8 +4,10 @@ import React, { useRef, useEffect, useState } from "react";
 import { Mic, Wifi, XCircle, RotateCcw, Volume2, Clock } from "lucide-react";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useSocket } from "@/context/SocketContext";
+import { useTranslations } from "next-intl";
 
 export default function AmbientMicModal({ childId, childName, onClose }) {
+    const t = useTranslations('WebRTC');
     const socket = useSocket();
     const audioRef = useRef(null);
     const [duration, setDuration] = useState(10); // Default 10 minutes
@@ -30,13 +32,13 @@ export default function AmbientMicModal({ childId, childName, onClose }) {
                         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
                             <Mic className="w-8 h-8 text-white" />
                         </div>
-                        <h2 className="text-2xl font-black text-white">Ambient Mic</h2>
-                        <p className="text-red-100 mt-1">Listen to {childName}'s surroundings</p>
+                        <h2 className="text-2xl font-black text-white">{t("ambientMicTitle")}</h2>
+                        <p className="text-red-100 mt-1">{t("listenTo", { name: childName })}</p>
                     </div>
 
                     <div className="p-6">
                         <p className="text-slate-600 dark:text-slate-400 text-sm text-center mb-6">
-                            Select how long you want to listen. The device will automatically stop streaming to save battery after the selected duration.
+                            {t("micDurationDesc")}
                         </p>
 
                         <div className="grid grid-cols-3 gap-3 mb-8">
@@ -50,7 +52,7 @@ export default function AmbientMicModal({ childId, childName, onClose }) {
                                             : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 hover:border-red-200'}`}
                                 >
                                     <span className="text-xl">{mins}</span>
-                                    <span className="text-xs font-medium uppercase tracking-wider">Minutes</span>
+                                    <span className="text-xs font-medium uppercase tracking-wider">{t("minutes")}</span>
                                 </button>
                             ))}
                         </div>
@@ -62,7 +64,7 @@ export default function AmbientMicModal({ childId, childName, onClose }) {
                             }}
                             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-red-500/30 transition transform hover:-translate-y-0.5"
                         >
-                            Start Listening
+                            {t("startListening")}
                         </button>
                     </div>
                 </div>
@@ -72,6 +74,7 @@ export default function AmbientMicModal({ childId, childName, onClose }) {
 
     return (
         <ActiveMicStream
+            t={t}
             childId={childId}
             childName={childName}
             duration={duration}
@@ -82,7 +85,7 @@ export default function AmbientMicModal({ childId, childName, onClose }) {
     );
 }
 
-function ActiveMicStream({ childId, childName, duration, timeLeft, setTimeLeft, onClose }) {
+function ActiveMicStream({ t, childId, childName, duration, timeLeft, setTimeLeft, onClose }) {
     const socket = useSocket();
     const audioRef = useRef(null);
     const {
@@ -128,11 +131,12 @@ function ActiveMicStream({ childId, childName, duration, timeLeft, setTimeLeft, 
 
     const getStatusText = () => {
         switch (status) {
-            case 'connecting': return "Establishing Secure Connection...";
-            case 'connected': return "Live Audio Stream Active";
-            case 'reconnecting': return "Network unstable, reconnecting...";
-            case 'retrying': return `Retrying (${retryCount}/2)...`;
-            case 'disconnected': return "Disconnected";
+            case 'connecting': return t("connecting");
+            case 'connected': return t("connectedAudio");
+            case 'reconnecting': return t("reconnecting");
+            case 'retrying': return t("retrying", { count: retryCount });
+            case 'disconnected': return t("offline");
+            case 'rejected': return t("rejected");
             default: return status;
         }
     };
@@ -187,12 +191,16 @@ function ActiveMicStream({ childId, childName, duration, timeLeft, setTimeLeft, 
                     </div>
                 )}
 
-                {status === 'disconnected' && isRetryExhausted && (
+                {(status === 'disconnected' || status === 'rejected') && (
                     <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-center mt-4 mb-2">
-                        <p className="text-red-400 text-sm mb-3">Connection failed. Device might be offline or sleeping.</p>
-                        <button onClick={manualRetry} className="flex items-center justify-center gap-2 w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl transition">
-                            <RotateCcw className="w-4 h-4" /> Try Again
-                        </button>
+                        <p className="text-red-400 text-sm mb-3">
+                            {status === 'rejected' ? t('permissionDenied') : t('exhausted')}
+                        </p>
+                        {(isRetryExhausted || status === 'rejected') && (
+                            <button onClick={manualRetry} className="flex items-center justify-center gap-2 w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl transition">
+                                <RotateCcw className="w-4 h-4" /> {t("retryBtn")}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -205,7 +213,7 @@ function ActiveMicStream({ childId, childName, duration, timeLeft, setTimeLeft, 
                 <div className="w-16 h-16 bg-red-600 group-hover:bg-red-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-600/30 transition transform group-hover:scale-110">
                     <XCircle className="w-8 h-8" />
                 </div>
-                <span className="text-white text-sm font-bold mt-3 opacity-70 group-hover:opacity-100 transition">END MIC LISTEN</span>
+                <span className="text-white text-sm font-bold mt-3 opacity-70 group-hover:opacity-100 transition">{t("endMic")}</span>
             </button>
         </div>
     );

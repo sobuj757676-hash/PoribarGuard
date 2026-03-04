@@ -3,8 +3,11 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Monitor, Wifi, WifiOff, XCircle, RefreshCcw, Moon, ShieldAlert, Loader2 } from "lucide-react";
 import { useSocket } from "@/context/SocketContext";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 export default function LiveScreenModal({ childId, childName, onClose }) {
+    const t = useTranslations('WebRTC');
     const socket = useSocket();
     const imgRef = useRef(null);
     const [status, setStatus] = useState('connecting');   // connecting | streaming | screen_off | secure_content | error | reconnecting
@@ -74,14 +77,27 @@ export default function LiveScreenModal({ childId, childName, onClose }) {
                 case 'error':
                     setStatus('error');
                     setErrorMessage(message || 'Unknown error');
+                    toast.error(message || t('failed'));
                     break;
                 default:
                     break;
             }
         };
 
+        // Listen for child offline status
+        const handleChildStatus = (data) => {
+            if (data.childId === childId && data.status === 'offline') {
+                if (isMounted.current) {
+                    setStatus('error');
+                    setErrorMessage(t('offline'));
+                    toast.error(t('exhausted'));
+                }
+            }
+        };
+
         socket.on("screen_frame", handleFrame);
         socket.on("screen_status", handleStatus);
+        socket.on("child_status_update", handleChildStatus);
 
         // FPS counter: calculate every second
         fpsInterval.current = setInterval(() => {
@@ -100,6 +116,7 @@ export default function LiveScreenModal({ childId, childName, onClose }) {
             isMounted.current = false;
             socket.off("screen_frame", handleFrame);
             socket.off("screen_status", handleStatus);
+            socket.off("child_status_update", handleChildStatus);
             socket.emit("stop_screen_view", { childId });
             clearTimeout(noFrameTimer.current);
             clearInterval(timerInterval.current);
@@ -124,47 +141,47 @@ export default function LiveScreenModal({ childId, childName, onClose }) {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // --- Status text (Bangla + English) ---
+    // --- Status text using next-intl ---
     const getStatusInfo = () => {
         switch (status) {
             case 'connecting':
                 return {
-                    text: "Requesting screen... / স্ক্রিন অনুরোধ করা হচ্ছে...",
+                    text: t('requestingScreen'),
                     color: "text-amber-400",
                     Icon: Loader2,
                     animate: true,
                 };
             case 'streaming':
                 return {
-                    text: "Live Screen Active / লাইভ স্ক্রিন চলছে",
+                    text: t('liveScreenActive'),
                     color: "text-emerald-400",
                     Icon: Monitor,
                     animate: false,
                 };
             case 'screen_off':
                 return {
-                    text: "Child's screen is off / সন্তানের স্ক্রিন বন্ধ আছে",
+                    text: t('screenOff'),
                     color: "text-blue-400",
                     Icon: Moon,
                     animate: false,
                 };
             case 'secure_content':
                 return {
-                    text: "Protected app (banking etc.) / সুরক্ষিত অ্যাপ",
+                    text: t('secureContent'),
                     color: "text-orange-400",
                     Icon: ShieldAlert,
                     animate: false,
                 };
             case 'error':
                 return {
-                    text: `Error: ${errorMessage} / ত্রুটি`,
+                    text: errorMessage || t('failed'),
                     color: "text-red-400",
                     Icon: WifiOff,
                     animate: false,
                 };
             case 'reconnecting':
                 return {
-                    text: "Reconnecting... / পুনরায় সংযোগ হচ্ছে...",
+                    text: t('reconnecting'),
                     color: "text-amber-400",
                     Icon: RefreshCcw,
                     animate: true,
@@ -261,7 +278,7 @@ export default function LiveScreenModal({ childId, childName, onClose }) {
                             color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '14px',
                             display: 'flex', alignItems: 'center', gap: '8px',
                         }}>
-                            <RefreshCcw size={16} /> Retry / পুনরায় চেষ্টা
+                            <RefreshCcw size={16} /> {t('retryBtn')}
                         </button>
                     </div>
                 ) : status === 'screen_off' ? (
@@ -273,7 +290,7 @@ export default function LiveScreenModal({ childId, childName, onClose }) {
                             {statusInfo.text}
                         </p>
                         <p style={{ color: '#64748b', fontSize: '13px' }}>
-                            Waiting for screen to turn on... / স্ক্রিন চালু হওয়ার অপেক্ষায়...
+                            {t('waitingScreenOn')}
                         </p>
                     </div>
                 ) : (

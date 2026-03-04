@@ -46,6 +46,8 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
                 return t('retrying', { count: retryCount });
             case 'disconnected':
                 return t('offline');
+            case 'rejected':
+                return t('rejected');
             default:
                 return status;
         }
@@ -54,7 +56,9 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
     const getStatusColor = () => {
         switch (status) {
             case 'connected': return 'text-emerald-400';
-            case 'disconnected': return 'text-red-400';
+            case 'disconnected':
+            case 'rejected':
+                return 'text-red-400';
             default: return 'text-amber-400';
         }
     };
@@ -87,19 +91,21 @@ export default function LiveCameraModal({ childId, childName, onClose }) {
             <div className="flex-1 bg-black rounded-2xl overflow-hidden relative border border-slate-800 shadow-2xl flex items-center justify-center">
                 {status !== "connected" && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10 text-white p-6 text-center">
-                        {status === "disconnected" ? (
+                        {(status === "disconnected" || status === "rejected") ? (
                             <>
                                 <XCircle className="w-12 h-12 text-red-500 mb-4" />
                                 <p className="font-semibold text-lg text-red-400">
-                                    {t('failed')}
+                                    {status === 'rejected' ? t('rejected') : t('failed')}
                                 </p>
                                 <p className="text-sm text-slate-400 mt-2 max-w-sm">
-                                    {isRetryExhausted
-                                        ? t('exhausted')
-                                        : t('offline')
+                                    {status === 'rejected'
+                                        ? t('permissionDenied')
+                                        : isRetryExhausted
+                                            ? t('exhausted')
+                                            : t('offline')
                                     }
                                 </p>
-                                {isRetryExhausted && (
+                                {(isRetryExhausted || status === 'rejected') && (
                                     <button
                                         onClick={manualRetry}
                                         className="mt-6 flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-semibold transition shadow-lg shadow-emerald-900/30"
