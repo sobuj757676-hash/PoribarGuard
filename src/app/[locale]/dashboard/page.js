@@ -1,22 +1,28 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import {
     Shield, Map, Home, User, Settings, Video, Mic, Smartphone,
     Bell, Battery, Wifi, AlertTriangle, Plus, X, PhoneCall,
     Clock, MapPin, Activity, CheckCircle, ShieldAlert, FileText,
     Lock, Unlock, LogOut, Moon, Sun, Globe, Camera, Loader2,
-    Download, Trash2, CreditCard, Save, Edit3, Calendar, Mail, MessageSquare
+    Download, Trash2, CreditCard, Save, Edit3, Calendar, Mail, MessageSquare,
+    Navigation
 } from 'lucide-react';
 import InstallPrompt from '@/components/InstallPrompt';
 import LiveCameraModal from '@/components/LiveCameraModal';
 import AmbientMicModal from '@/components/AmbientMicModal';
 import LiveScreenModal from '@/components/LiveScreenModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { useSocket } from '@/context/SocketContext';
 import { useChildren, useMarkAlertsRead, useProfile, useUpdateProfile, useSubscription, useTogglePrayerLock, useToggleAppControl } from '@/hooks/useApi';
+
+// Dynamically import LeafletMap (Leaflet requires `window` — can't SSR)
+const LeafletMap = dynamic(() => import('@/components/LeafletMap'), { ssr: false });
 
 // ==========================================
 // HELPERS
@@ -82,6 +88,59 @@ export default function DashboardPage() {
     const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const child = children[selectedChildIdx] || null;
     const device = child?.device || null;
+
+    // Socket.IO real-time listeners (Task 3: SOS + Task 9: Status Updates)
+    const socket = useSocket();
+    const lastStatusRefresh = useRef(0);
+    useEffect(() => {
+        if (!socket) return;
+
+        // SOS Alert listener — show emergency notification
+        const handleSOS = (data) => {
+            const sosChild = children.find(c => c.id === data.childId);
+            const name = sosChild?.name || 'Child';
+            toast.error(`🚨 SOS EMERGENCY from ${name}!`, {
+                description: `Location: ${data.latitude?.toFixed(4)}, ${data.longitude?.toFixed(4)} | Battery: ${data.batteryLevel}%`,
+                duration: 30000, // Keep visible for 30 seconds
+                important: true,
+            });
+            // Play alert sound
+            try {
+                const audio = new Audio('/alert.mp3');
+                audio.volume = 1.0;
+                audio.play().catch(() => { });
+            } catch (e) { }
+            // Refresh data to show the new alert in feed
+            fetchChildren();
+        };
+
+        // Child status update (battery/network from heartbeat)
+        // Throttled to max 1 refresh every 60 seconds to prevent API spam
+        const handleStatusUpdate = (data) => {
+            const now = Date.now();
+            if (now - lastStatusRefresh.current > 60000) {
+                lastStatusRefresh.current = now;
+                fetchChildren();
+            }
+        };
+
+        socket.on('sos_alert', handleSOS);
+        socket.on('child_status_update', handleStatusUpdate);
+
+        return () => {
+            socket.off('sos_alert', handleSOS);
+            socket.off('child_status_update', handleStatusUpdate);
+        };
+    }, [socket]);
+
+    // When children list changes structurally, subscribe socket to their rooms
+    // Using children.length to avoid re-running on every data refresh
+    const childCount = children?.length || 0;
+    useEffect(() => {
+        if (!socket || !childCount) return;
+        const childIds = children.map(c => c.id);
+        socket.emit('subscribe_children', { childIds });
+    }, [socket, childCount]);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
@@ -381,24 +440,74 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
 
 
 // ==========================================
-// MAP TAB (Real Data)
+// MAP TAB (Real-Time Leaflet Map + Socket.IO)
 // ==========================================
 function MapTab({ dict, child, device }) {
-    const lat = device?.latitude || 23.1634;
-    const lng = device?.longitude || 89.2182;
-    const bbox = `${lng - 0.06}%2C${lat - 0.06}%2C${lng + 0.06}%2C${lat + 0.06}`;
+    const socket = useSocket();
+    const [liveLocation, setLiveLocation] = useState(null);
+
+    // Listen for real-time location updates via Socket.IO
+    useEffect(() => {
+        if (!socket || !child?.id) return;
+
+        const handleLocationUpdate = (data) => {
+            if (data.childId === child.id) {
+                setLiveLocation(data);
+            }
+        };
+
+        socket.on('location_update', handleLocationUpdate);
+        return () => socket.off('location_update', handleLocationUpdate);
+    }, [socket, child?.id]);
+
+    // Use live data if available, otherwise fall back to database device data
+    const lat = liveLocation?.latitude || device?.latitude || 23.1634;
+    const lng = liveLocation?.longitude || device?.longitude || 89.2182;
+    const acc = liveLocation?.accuracy || device?.locationAccuracy || 50;
+    const spd = liveLocation?.speed || device?.speed || 0;
+    const locName = liveLocation?.locationName || device?.locationName || '';
+    const battery = liveLocation?.batteryLevel ?? device?.batteryLevel;
+    const network = liveLocation?.networkType || device?.networkType;
+    const hasRealLocation = !!(liveLocation?.latitude || device?.latitude);
+    const lastUpdated = liveLocation?.timestamp ? new Date(liveLocation.timestamp) : (device?.locationUpdatedAt ? new Date(device.locationUpdatedAt) : null);
 
     return (
         <div className="h-[calc(100vh-14rem)] md:h-[calc(100vh-10rem)] w-full rounded-2xl overflow-hidden relative border-2 border-gray-200 dark:border-gray-800 shadow-md animate-in fade-in duration-300">
-            <iframe width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight="0" marginWidth="0"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`}
-                className="absolute inset-0 z-0 filter dark:invert dark:hue-rotate-180 dark:contrast-75" style={{ border: 0 }} title="Live Map" />
 
-            <div className="absolute top-4 left-4 right-4 md:right-auto md:w-80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-4 rounded-xl shadow-lg z-10 border border-white/20">
+            {/* Leaflet Map */}
+            {hasRealLocation ? (
+                <LeafletMap
+                    latitude={lat}
+                    longitude={lng}
+                    accuracy={acc}
+                    speed={spd}
+                    locationName={locName}
+                    isOnline={device?.isOnline}
+                    childName={child?.name || 'Child'}
+                />
+            ) : (
+                <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 flex flex-col items-center justify-center">
+                    <MapPin className="w-16 h-16 text-gray-400 dark:text-gray-600 mb-4 animate-bounce" />
+                    <p className="text-gray-500 dark:text-gray-400 font-bold text-lg">Waiting for location...</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">The child&apos;s device will send its location shortly.</p>
+                </div>
+            )}
+
+            {/* Info Overlay */}
+            <div className="absolute top-4 left-4 right-4 md:right-auto md:w-80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-4 rounded-xl shadow-lg z-[1000] border border-white/20">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{child?.name}'s Location</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{device?.speed ? `Moving • ${device.speed} km/h` : device?.locationName || 'Unknown'}</p>
+                        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{child?.name}&apos;s Location</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {spd > 1 ? (
+                                <span className="flex items-center gap-1">
+                                    <Navigation className="w-3.5 h-3.5 text-blue-500" />
+                                    Moving • {spd.toFixed(1)} km/h
+                                </span>
+                            ) : (
+                                locName || (hasRealLocation ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : 'Waiting for GPS fix...')
+                            )}
+                        </p>
                     </div>
                     {device?.isOnline && (
                         <span className="flex h-3 w-3 relative">
@@ -407,6 +516,28 @@ function MapTab({ dict, child, device }) {
                         </span>
                     )}
                 </div>
+
+                {/* Device status bar */}
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 grid grid-cols-4 gap-2 text-center">
+                    <div>
+                        <Battery className={`w-4 h-4 mx-auto mb-0.5 ${(battery || 0) > 20 ? 'text-emerald-500' : 'text-red-500'}`} />
+                        <span className="text-xs font-bold">{battery ?? '—'}%</span>
+                    </div>
+                    <div>
+                        <Wifi className="w-4 h-4 mx-auto mb-0.5 text-blue-500" />
+                        <span className="text-xs font-bold">{network || '—'}</span>
+                    </div>
+                    <div>
+                        <MapPin className="w-4 h-4 mx-auto mb-0.5 text-amber-500" />
+                        <span className="text-xs font-bold">±{Math.round(acc)}m</span>
+                    </div>
+                    <div>
+                        <Clock className="w-4 h-4 mx-auto mb-0.5 text-gray-400" />
+                        <span className="text-xs font-bold">{lastUpdated ? timeAgo(lastUpdated) : '—'}</span>
+                    </div>
+                </div>
+
+                {/* Action buttons */}
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
                     <button className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">{dict('viewHistory')}</button>
                     <button className="flex-1 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition">{dict('setGeofence')}</button>

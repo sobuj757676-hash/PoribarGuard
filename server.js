@@ -4,7 +4,7 @@ const next = require("next");
 const { Server } = require("socket.io");
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
+const hostname = "0.0.0.0";  // Bind to all interfaces (required for phone testing over WiFi)
 const port = process.env.PORT || 3000;
 
 // Initialize the Next.js app
@@ -65,9 +65,28 @@ app.prepare().then(() => {
          * PARENT EVENT: join_dashboard
          * Sent when a parent logs into the web dashboard
          */
-        socket.on("join_dashboard", ({ parentId }) => {
+        socket.on("join_dashboard", ({ parentId, childIds }) => {
             console.log(`[Socket] Parent ${parentId} joined dashboard`);
             socket.join(`parent_${parentId}`);
+
+            // Subscribe parent to each of their children's rooms
+            // so they receive location_update, child_status_update, and sos_alert
+            if (Array.isArray(childIds)) {
+                childIds.forEach(childId => {
+                    socket.join(`child_${childId}`);
+                    console.log(`[Socket] Parent ${parentId} subscribed to child_${childId}`);
+                });
+            }
+        });
+
+        // Allow late subscription (when children load after socket connects)
+        socket.on("subscribe_children", ({ childIds }) => {
+            if (Array.isArray(childIds)) {
+                childIds.forEach(childId => {
+                    socket.join(`child_${childId}`);
+                });
+                console.log(`[Socket] Late-subscribed to ${childIds.length} children`);
+            }
         });
 
         /**
@@ -93,23 +112,98 @@ app.prepare().then(() => {
         /**
          * CHILD EVENT: child_heartbeat
          * Sent every 30 seconds by the child app to prove socket liveness.
-         * Updates the lastSeen timestamp used by the zombie cleanup.
+         * Now includes: batteryLevel, networkType, isScreenOn (Task 9)
          */
-        socket.on("child_heartbeat", ({ childId, timestamp }) => {
+        socket.on("child_heartbeat", ({ childId, timestamp, batteryLevel, networkType, isScreenOn }) => {
             const device = onlineDevices.get(childId);
             if (device) {
                 device.lastSeen = Date.now();
-                // Update socketId in case the child reconnected on a new socket
                 device.socketId = socket.id;
+                // Store enhanced status data
+                device.batteryLevel = batteryLevel;
+                device.networkType = networkType;
+                device.isScreenOn = isScreenOn;
             } else {
-                // Child wasn't in the map (maybe it was zombie-cleaned) — re-add
+                // Child wasn't in the map (maybe zombie-cleaned) — re-add
                 onlineDevices.set(childId, {
                     socketId: socket.id,
                     status: "idle",
-                    lastSeen: Date.now()
+                    lastSeen: Date.now(),
+                    batteryLevel,
+                    networkType,
+                    isScreenOn
                 });
                 socket.join(`child_${childId}`);
                 console.log(`[Heartbeat] Re-registered child ${childId} after zombie cleanup`);
+            }
+
+            // Broadcast status update to parents (for real-time battery/network display)
+            io.to(`child_${childId}`).emit("child_status_update", {
+                childId,
+                status: "online",
+                batteryLevel,
+                networkType,
+                isScreenOn,
+                timestamp
+            });
+
+            // Persist battery & network to DB every 5th heartbeat (~2.5 min)
+            // to avoid excessive DB writes while keeping data reasonably fresh
+            if (!device?._heartbeatCount) {
+                if (device) device._heartbeatCount = 0;
+            }
+            if (device) {
+                device._heartbeatCount = (device._heartbeatCount || 0) + 1;
+                if (device._heartbeatCount % 5 === 0) {
+                    try {
+                        fetch(`http://localhost:${port}/api/children/${childId}/location`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                latitude: device.location?.latitude || 0,
+                                longitude: device.location?.longitude || 0,
+                                batteryLevel,
+                                networkType
+                            })
+                        }).catch(() => { });
+                    } catch (e) { }
+                }
+            }
+        });
+
+        /**
+         * CHILD EVENT: sos_alert (Task 3)
+         * Emergency SOS from child device — relay IMMEDIATELY to all parents
+         */
+        socket.on("sos_alert", (data) => {
+            const { childId, latitude, longitude, timestamp, batteryLevel } = data;
+            console.log(`\n🚨🚨🚨 SOS ALERT from child ${childId} at ${latitude},${longitude} 🚨🚨🚨\n`);
+
+            // Relay to ALL parents subscribed to this child
+            io.to(`child_${childId}`).emit("sos_alert", {
+                childId,
+                latitude,
+                longitude,
+                batteryLevel,
+                timestamp
+            });
+
+            // Persist SOS alert to database
+            try {
+                fetch(`http://localhost:${port}/api/alerts`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        childId,
+                        type: "SOS",
+                        title: "🚨 SOS Emergency Alert",
+                        description: `Child triggered emergency SOS at ${latitude?.toFixed(4)},${longitude?.toFixed(4)}. Battery: ${batteryLevel}%`,
+                        severity: "CRITICAL",
+                        metadata: JSON.stringify({ latitude, longitude, batteryLevel, timestamp })
+                    })
+                }).catch(err => console.error("[SOS] DB persist failed:", err.message));
+            } catch (err) {
+                console.error("[SOS] DB persist error:", err.message);
             }
         });
 
@@ -265,6 +359,77 @@ app.prepare().then(() => {
                 if (viewedChildId === childId) {
                     io.to(parentSocketId).emit("screen_status", { status, message });
                 }
+            }
+        });
+
+        /**
+         * APP USAGE TRACKING (Task 2)
+         */
+
+        // 11. Child sends app usage data → store + relay to parents
+        socket.on("app_usage_update", (data) => {
+            const { childId, apps, totalMinutes, timestamp } = data;
+            console.log(`[AppUsage] Child ${childId}: ${apps?.length || 0} apps, total ${totalMinutes} min`);
+
+            // Relay to parents for real-time dashboard update
+            io.to(`child_${childId}`).emit("app_usage_update", {
+                childId,
+                apps,
+                totalMinutes,
+                timestamp
+            });
+
+            // Persist to database (fire-and-forget)
+            try {
+                fetch(`http://localhost:${port}/api/children/${childId}/app-usage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ apps: JSON.parse(JSON.stringify(apps)), totalMinutes })
+                }).catch(err => console.error("[AppUsage] DB persist failed:", err.message));
+            } catch (err) {
+                console.error("[AppUsage] DB persist error:", err.message);
+            }
+        });
+
+        /**
+         * LOCATION TRACKING EVENTS
+         */
+
+        // 11. Child sends location update → store + relay to subscribed parents
+        socket.on("location_update", (data) => {
+            const { childId, latitude, longitude, accuracy, speed, locationName, batteryLevel, networkType, timestamp } = data;
+            console.log(`[Location] Update from child ${childId}: (${latitude?.toFixed(4)}, ${longitude?.toFixed(4)}) acc=${accuracy}m battery=${batteryLevel}%`);
+
+            // Update in-memory device state
+            const device = onlineDevices.get(childId);
+            if (device) {
+                device.location = { latitude, longitude, accuracy, speed, locationName, batteryLevel, networkType, timestamp };
+                device.lastSeen = Date.now();
+            }
+
+            // Broadcast to all parents subscribed to this child
+            io.to(`child_${childId}`).emit("location_update", {
+                childId,
+                latitude,
+                longitude,
+                accuracy,
+                speed,
+                locationName,
+                batteryLevel,
+                networkType,
+                timestamp
+            });
+
+            // Persist to database via internal API (fire-and-forget)
+            try {
+                const url = `http://localhost:${port}/api/children/${childId}/location`;
+                fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ latitude, longitude, accuracy, speed, locationName, batteryLevel, networkType })
+                }).catch(err => console.error("[Location] DB persist failed:", err.message));
+            } catch (err) {
+                console.error("[Location] DB persist error:", err.message);
             }
         });
 
