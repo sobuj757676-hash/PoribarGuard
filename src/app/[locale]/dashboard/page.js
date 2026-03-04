@@ -15,6 +15,7 @@ import AmbientMicModal from '@/components/AmbientMicModal';
 import LiveScreenModal from '@/components/LiveScreenModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 
 // ==========================================
 // HELPERS
@@ -76,10 +77,16 @@ export default function DashboardPage() {
     const fetchChildren = useCallback(() => {
         setLoading(true);
         fetch('/api/children')
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error('Failed to fetch children');
+                return r.json();
+            })
             .then(d => { setChildren(d.children || []); setLoading(false); })
-            .catch(() => setLoading(false));
-    }, []);
+            .catch(() => {
+                toast.error(dict('networkError') || 'Network error fetching data.');
+                setLoading(false);
+            });
+    }, [dict]);
 
     useEffect(() => { fetchChildren(); }, [fetchChildren]);
 
@@ -112,12 +119,17 @@ export default function DashboardPage() {
                     </button>
                     <div className="relative cursor-pointer" onClick={async () => {
                         if (child?.id) {
-                            await fetch('/api/alerts/mark-read', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ childId: child.id }),
-                            });
-                            fetchChildren();
+                            try {
+                                const res = await fetch('/api/alerts/mark-read', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ childId: child.id }),
+                                });
+                                if (!res.ok) throw new Error();
+                                fetchChildren();
+                            } catch {
+                                toast.error('Failed to mark alerts as read');
+                            }
                         }
                     }}>
                         <Bell className="w-6 h-6 text-gray-600 dark:text-gray-300" />
@@ -291,15 +303,24 @@ export default function DashboardPage() {
 function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScreen }) {
     const sendAlarm = async () => {
         if (!child?.id) return;
-        await fetch('/api/alerts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ childId: child.id, type: 'SOS', title: 'SOS Alarm Triggered by Parent', description: 'Parent manually triggered emergency alarm.' }),
-        });
-        fetchChildren?.();
-        alert('🚨 SOS Alarm sent to child\'s device!');
+
+        try {
+            const res = await fetch('/api/alerts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ childId: child.id, type: 'SOS', title: 'SOS Alarm Triggered by Parent', description: 'Parent manually triggered emergency alarm.' }),
+            });
+
+            if (!res.ok) throw new Error('Failed to send alarm');
+
+            fetchChildren?.();
+            toast.success('🚨 SOS Alarm sent to child\'s device!');
+        } catch {
+            toast.error('Network error. Failed to send alarm.');
+        }
     };
-    const comingSoon = () => alert('⏳ This feature requires the child\'s Android app to be connected.');
+
+    const comingSoon = () => toast.info('⏳ This feature requires the child\'s Android app to be connected.');
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
             <div>
@@ -560,7 +581,7 @@ function AddChildWorkflow({ dict, step, setStep, onClose, onChildAdded, reconnec
 
     const copyCode = () => {
         navigator.clipboard.writeText(pairingCode);
-        alert('Code copied to clipboard!');
+        toast.success('Code copied to clipboard!');
     };
 
     const magicLinkUrl = `https://fsafe.com/invite/${pairingCode}`;
@@ -911,12 +932,17 @@ function ToggleRow({ label, defaultChecked, childId, prayerLockId }) {
         setChecked(newVal);
         setSaving(true);
         try {
-            await fetch(`/api/children/${childId}/prayer-locks`, {
+            const res = await fetch(`/api/children/${childId}/prayer-locks`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prayerLockId, isActive: newVal }),
             });
-        } catch { setChecked(!newVal); }
+            if (!res.ok) throw new Error();
+            toast.success('Settings updated');
+        } catch {
+            setChecked(!newVal);
+            toast.error('Failed to update settings');
+        }
         setSaving(false);
     };
     return (
@@ -937,12 +963,17 @@ function AppControlRow({ id, childId, name, time, isBlocked, iconColor, dict }) 
         setBlocked(newVal);
         setSaving(true);
         try {
-            await fetch(`/api/children/${childId}/app-controls`, {
+            const res = await fetch(`/api/children/${childId}/app-controls`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ appControlId: id, isBlocked: newVal }),
             });
-        } catch { setBlocked(!newVal); }
+            if (!res.ok) throw new Error();
+            toast.success(newVal ? 'App blocked' : 'App unblocked');
+        } catch {
+            setBlocked(!newVal);
+            toast.error('Failed to update app control');
+        }
         setSaving(false);
     };
     return (

@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,7 +49,10 @@ export default async function RootLayout({ children, params }) {
     <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <NextIntlClientProvider messages={messages}>
-          <Providers>{children}</Providers>
+          <Providers>
+            {children}
+            <Toaster position="bottom-right" richColors />
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -115,5 +115,26 @@
     "retryBtn": "Retry Connection",
     "flipCamera": "Flip Camera",
     "endStream": "End Stream"
+  },
+  "Common": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "success": "Success!",
+    "error": "Error",
+    "networkError": "Network error. Please check your connection.",
+    "unauthorized": "You are not authorized to perform this action.",
+    "notFound": "Page not found",
+    "goHome": "Go Back Home",
+    "tryAgain": "Try Again",
+    "copied": "Copied to clipboard!",
+    "noData": "No data available at this time."
+  },
+  "Errors": {
+    "title": "Something went wrong",
+    "description": "We encountered an unexpected error. Our technical team has been notified.",
+    "notFoundTitle": "Page Not Found",
+    "notFoundDesc": "The page you are looking for does not exist or has been moved.",
+    "fetchFailed": "Failed to fetch data.",
+    "actionFailed": "Action could not be completed."
   }
 }
