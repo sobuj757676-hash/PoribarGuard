@@ -114,7 +114,21 @@
     "exhausted": "All automatic retries exhausted. The child device may be offline, sleeping, or has no internet.",
     "retryBtn": "Retry Connection",
     "flipCamera": "Flip Camera",
-    "endStream": "End Stream"
+    "endStream": "End Stream",
+    "ambientMicTitle": "Ambient Mic",
+    "listenTo": "Listen to {name}'s surroundings",
+    "micDurationDesc": "Select how long you want to listen. The device will automatically stop streaming to save battery after the selected duration.",
+    "minutes": "Minutes",
+    "startListening": "Start Listening",
+    "connectedAudio": "Live Audio Stream Active",
+    "permissionDenied": "Permission denied on the child's device.",
+    "endMic": "END MIC LISTEN",
+    "requestingScreen": "Requesting screen...",
+    "liveScreenActive": "Live Screen Active",
+    "screenOff": "Child's screen is off",
+    "secureContent": "Protected app (banking etc.)",
+    "waitingScreenOn": "Waiting for screen to turn on...",
+    "rejected": "Connection Rejected"
   },
   "Common": {
     "loading": "Loading...",

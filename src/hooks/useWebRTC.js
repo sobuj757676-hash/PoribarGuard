@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
-const MAX_RETRIES = 2;
-const PING_BACKOFF_MS = [3000, 6000, 12000]; // Exponential backoff for ping retries
+const MAX_RETRIES = 3;
+const RETRY_BACKOFF_MS = [2000, 4000, 8000]; // Exponential backoff for ICE/Peer failures
+const PING_BACKOFF_MS = [2000, 5000, 10000]; // Exponential backoff for initial offline pings
 
 export function useWebRTC(socket, childId, isAudioOnly = false) {
     const [stream, setStream] = useState(null);
@@ -77,6 +78,8 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
                 case 'connected':
                 case 'completed':
                     setStatus('connected');
+                    setRetryCount(0);
+                    retryCountRef.current = 0;
                     if (reconnectTimeoutRef.current) {
                         clearTimeout(reconnectTimeoutRef.current);
                         reconnectTimeoutRef.current = null;
@@ -84,22 +87,26 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
                     break;
 
                 case 'disconnected':
-                    // Transient — allow 20s grace period for network recovery
-                    setStatus('reconnecting');
-                    reconnectTimeoutRef.current = setTimeout(() => {
-                        if (!isMountedRef.current) return;
-                        console.warn("[WebRTC] ICE disconnected for 20s — attempting retry");
-                        attemptRetry();
-                    }, 20000);
+                    // Transient — allow 10s grace period for network recovery (like moving WiFi to Cellular)
+                    if (status !== 'reconnecting') setStatus('reconnecting');
+
+                    if (!reconnectTimeoutRef.current) {
+                        reconnectTimeoutRef.current = setTimeout(() => {
+                            if (!isMountedRef.current) return;
+                            console.warn("[WebRTC] ICE disconnected for 10s — attempting full renegotiation");
+                            attemptRetry();
+                        }, 10000);
+                    }
                     break;
 
                 case 'failed':
-                    console.error("[WebRTC] ICE failed");
+                    console.error("[WebRTC] ICE failed decisively");
+                    // ICE failed means we must restart the peer connection from scratch
                     attemptRetry();
                     break;
 
                 case 'closed':
-                    // Don't change status on explicit close
+                    // Explicit tear down
                     break;
 
                 default:
@@ -136,17 +143,19 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         retryCountRef.current = currentRetry + 1;
         setRetryCount(retryCountRef.current);
         setStatus('retrying');
-        console.log(`[WebRTC] Retry attempt ${retryCountRef.current}/${MAX_RETRIES}`);
+
+        const delay = RETRY_BACKOFF_MS[currentRetry] || 8000;
+        console.log(`[WebRTC] Peer Connection failed. Retry attempt ${retryCountRef.current}/${MAX_RETRIES} in ${delay}ms`);
 
         // Tear down old PC
         cleanupPC();
 
-        // Wait 2 seconds then create fresh connection
+        // Wait using exponential backoff then create fresh connection
         retryTimeoutRef.current = setTimeout(() => {
             if (!isMountedRef.current) return;
             initiateCall();
-        }, 2000);
-    }, [socket, cleanupPC]);
+        }, delay);
+    }, [socket, cleanupPC, status]);
 
     /**
      * Initiate the call: ping child, then create offer.
@@ -257,6 +266,23 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
         const handleError = (data) => {
             console.error("[WebRTC] Signaling error:", data.message);
+
+            if (data.code === 'PERMISSION_DENIED') {
+                setStatus('rejected');
+                setIsRetryExhausted(true);
+                toast.error("Permission denied on the child's device.");
+                cleanupPC();
+                return;
+            }
+
+            if (data.code === 'CAMERA_IN_USE') {
+                setStatus('rejected');
+                setIsRetryExhausted(true);
+                toast.error("Camera/Mic is currently in use by another app on the child's device.");
+                cleanupPC();
+                return;
+            }
+
             toast.error(data.message || "Failed to negotiate stream with the device.");
             if (isMountedRef.current) {
                 // Don't immediately fail — let retry logic handle it
