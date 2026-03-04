@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Menu, X, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import LanguageSwitcher from "../LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 export default function Navbar() {
+    const t = useTranslations("Landing");
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -19,10 +22,8 @@ export default function Navbar() {
     }, []);
 
     const navLinks = [
-        { name: "Features", href: "#features" },
-        { name: "How it Works", href: "#how-it-works" },
-        { name: "Testimonials", href: "#testimonials" },
-        { name: "Pricing", href: "#pricing" },
+        { name: t("features"), href: "#features" },
+        { name: t("pricing"), href: "#pricing" },
     ];
 
     return (
@@ -61,23 +62,25 @@ export default function Navbar() {
 
                         {/* Desktop Actions */}
                         <div className="flex items-center gap-4 border-l border-gray-700 pl-6">
+                            <LanguageSwitcher />
                             <Link
                                 href="/login"
                                 className="text-sm font-bold text-gray-300 hover:text-white transition-colors"
                             >
-                                Log In
+                                {t("login")}
                             </Link>
                             <Link
                                 href="/register"
                                 className="text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(5,150,105,0.3)] hover:shadow-[0_0_25px_rgba(5,150,105,0.5)] transition-all transform hover:-translate-y-0.5"
                             >
-                                Start Free Trial
+                                {t("register")}
                             </Link>
                         </div>
                     </div>
 
                     {/* Mobile Menu Button */}
                     <div className="md:hidden flex items-center gap-4">
+                        <LanguageSwitcher />
                         <Link
                             href="/register"
                             className="text-xs font-bold bg-emerald-600 text-white px-4 py-2 rounded-lg"

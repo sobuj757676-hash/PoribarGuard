@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 export const { handlers, auth, signIn, signOut } = NextAuth({
     session: { strategy: "jwt", maxAge: 7 * 24 * 60 * 60 }, // 7 days
     pages: {
-        signIn: "/login",
+        signIn: "/en/login", // Default language path
     },
     providers: [
         Credentials({
@@ -57,21 +57,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             const isAdmin = auth?.user?.role === "ADMIN";
             const path = nextUrl.pathname;
 
-            // Protected routes
-            if (path.startsWith("/admin")) {
-                if (!isLoggedIn) return Response.redirect(new URL("/login", nextUrl));
-                if (!isAdmin) return Response.redirect(new URL("/dashboard", nextUrl));
+            // Handle path parsing to ignore locale segments like /en or /bn
+            const isProtectedAdmin = /^\/(en|bn)\/admin/.test(path);
+            const isProtectedDashboard = /^\/(en|bn)\/dashboard/.test(path);
+            const isAuthPage = /^\/(en|bn)\/(login|register)/.test(path);
+
+            // Determine the locale prefix the user is currently on (defaults to /en)
+            const localeMatch = path.match(/^\/(en|bn)/);
+            const locale = localeMatch ? localeMatch[0] : '/en';
+
+            if (isProtectedAdmin) {
+                if (!isLoggedIn) return Response.redirect(new URL(`${locale}/login`, nextUrl));
+                if (!isAdmin) return Response.redirect(new URL(`${locale}/dashboard`, nextUrl));
                 return true;
             }
-            if (path.startsWith("/dashboard")) {
-                if (!isLoggedIn) return Response.redirect(new URL("/login", nextUrl));
+
+            if (isProtectedDashboard) {
+                if (!isLoggedIn) return Response.redirect(new URL(`${locale}/login`, nextUrl));
                 return true;
             }
 
             // Redirect logged-in users away from auth pages
-            if (path === "/login" || path === "/register") {
+            if (isAuthPage) {
                 if (isLoggedIn) {
-                    const dest = isAdmin ? "/admin" : "/dashboard";
+                    const dest = isAdmin ? `${locale}/admin` : `${locale}/dashboard`;
                     return Response.redirect(new URL(dest, nextUrl));
                 }
             }
