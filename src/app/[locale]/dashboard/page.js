@@ -258,76 +258,57 @@ export default function DashboardPage() {
                     ) : (
                         <>
                             {/* Child ribbon with selector */}
-                            <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-2xl p-3 shadow-sm mb-6 border border-gray-100 dark:border-gray-800">
-                                <div className="flex items-center gap-3">
-                                    <div className="relative">
-                                        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white font-bold text-lg border-2 border-emerald-200">
+                            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between bg-gray-900 rounded-[2rem] p-2.5 shadow-md mb-6 border border-gray-800/60 overflow-hidden">
+                                <div className="flex items-center gap-4 pl-1 min-w-0">
+                                    <div className="relative shrink-0">
+                                        <div className="w-14 h-14 rounded-full bg-[#10b981] flex items-center justify-center text-white font-black text-2xl shadow-inner">
                                             {child?.name?.charAt(0) || '?'}
                                         </div>
-                                        <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 ${device?.isOnline ? 'bg-green-500' : 'bg-gray-400'} border-2 border-white dark:border-gray-900 rounded-full`}></div>
+                                        <div className={`absolute bottom-0 right-0 w-4 h-4 ${device?.isOnline ? 'bg-[#10b981]' : 'bg-gray-500'} border-[3px] border-gray-900 rounded-full`}></div>
                                     </div>
-                                    <div>
+                                    <div className="flex flex-col truncate pr-2">
                                         {children.length > 1 ? (
-                                            <select value={selectedChildIdx} onChange={(e) => setSelectedChildIdx(Number(e.target.value))} className="font-bold text-lg bg-transparent outline-none cursor-pointer pr-2">
+                                            <select value={selectedChildIdx} onChange={(e) => setSelectedChildIdx(Number(e.target.value))} className="font-bold text-xl text-white bg-transparent outline-none cursor-pointer tracking-tight">
                                                 {children.map((c, i) => (
-                                                    <option key={c.id} value={i}>{c.name} ({c.age})</option>
+                                                    <option key={c.id} value={i} className="text-gray-900">{c.name} ({c.age})</option>
                                                 ))}
                                             </select>
                                         ) : (
-                                            <h3 className="font-bold text-lg">{child?.name} ({child?.age})</h3>
+                                            <h3 className="font-bold text-xl text-white tracking-tight truncate flex items-baseline gap-1.5">
+                                                {child?.name} <span className="text-gray-400 text-base font-medium">({child?.age})</span>
+                                            </h3>
                                         )}
-                                        <p className={`text-xs font-medium flex items-center gap-1 ${device?.isOnline ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
-                                            <CheckCircle className="w-3 h-3" />
-                                            {device?.isOnline ? `${dict('online')} • ${dict('lastSeen')}` : `${dict('offline')} • ${device?.lastSeenAt ? timeAgo(device.lastSeenAt) : '—'}`}
+                                        <p className={`text-sm font-bold flex items-center gap-1.5 mt-0.5 tracking-wide ${device?.isOnline ? 'text-[#10b981]' : 'text-gray-400'}`}>
+                                            <CheckCircle className="w-4 h-4 stroke-[2.5]" />
+                                            {device?.isOnline ? 'LIVE' : 'OFFLINE'}
                                         </p>
                                         {!device?.isOnline && child?.id && (
                                             <button
                                                 onClick={() => { setReconnectChildId(child.id); setAddChildModalOpen(true); }}
-                                                className="mt-1 text-xs text-blue-500 hover:text-blue-600 font-bold hover:underline">
+                                                className="mt-1 text-xs text-blue-400 hover:text-blue-300 font-bold hover:underline text-left">
                                                 {dict('reconnect')}
                                             </button>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Global Device Status */}
-                                <div className="hidden sm:grid grid-cols-4 gap-4 px-2 text-center ml-auto border-l border-gray-100 dark:border-gray-800 pl-4">
-                                    <div className="flex flex-col items-center">
-                                        <Battery className={`w-5 h-5 mb-0.5 ${(battery || 0) > 20 ? 'text-emerald-500' : 'text-red-500'}`} />
-                                        <span className="text-xs font-bold">{battery ?? '—'}%</span>
+                                {/* Global Device Status Indicator Pill */}
+                                <div className="flex items-center gap-3.5 bg-gray-950/80 rounded-[1.5rem] px-5 py-2.5 border border-gray-800 shrink-0 mt-3 sm:mt-0 mr-1 w-full sm:w-auto justify-center sm:justify-start">
+                                    <div className="flex items-center gap-2">
+                                        <Battery className={`w-5 h-5 ${(battery || 0) > 20 ? 'text-[#f43f5e]' : 'text-[#f43f5e]'}`} />
+                                        <span className={`text-base font-bold ${(battery || 0) > 20 ? 'text-[#f43f5e]' : 'text-[#f43f5e]'}`}>{battery ?? '—'}%</span>
                                     </div>
-                                    <div className="flex flex-col items-center">
-                                        <Wifi className="w-5 h-5 mb-0.5 text-blue-500" />
-                                        <span className="text-xs font-bold">{network || '—'}</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <MapPin className="w-5 h-5 mb-0.5 text-amber-500" />
-                                        <span className="text-xs font-bold">±{Math.round(acc)}m</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <Clock className="w-5 h-5 mb-0.5 text-gray-400" />
-                                        <span className="text-xs font-bold">{lastUpdated ? timeAgo(lastUpdated) : '—'}</span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Mobile Global Device Status */}
-                            <div className="sm:hidden grid grid-cols-4 gap-2 text-center bg-white dark:bg-gray-900 rounded-2xl p-3 shadow-sm mb-6 border border-gray-100 dark:border-gray-800">
-                                <div className="flex flex-col items-center">
-                                    <Battery className={`w-5 h-5 mb-0.5 ${(battery || 0) > 20 ? 'text-emerald-500' : 'text-red-500'}`} />
-                                    <span className="text-xs font-bold">{battery ?? '—'}%</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <Wifi className="w-5 h-5 mb-0.5 text-blue-500" />
-                                    <span className="text-xs font-bold">{network || '—'}</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <MapPin className="w-5 h-5 mb-0.5 text-amber-500" />
-                                    <span className="text-xs font-bold">±{Math.round(acc)}m</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <Clock className="w-5 h-5 mb-0.5 text-gray-400" />
-                                    <span className="text-xs font-bold">{lastUpdated ? timeAgo(lastUpdated) : '—'}</span>
+                                    <span className="text-gray-700 font-light">|</span>
+
+                                    <Wifi className="w-5 h-5 text-blue-500" />
+
+                                    <span className="text-gray-700 font-light">|</span>
+
+                                    <div className="flex items-center gap-1.5">
+                                        <MapPin className="w-5 h-5 text-amber-400 fill-amber-400/20" />
+                                        <span className="text-base font-bold text-white">±{Math.round(acc)}m</span>
+                                    </div>
                                 </div>
                             </div>
 
