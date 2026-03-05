@@ -8,7 +8,7 @@ import {
     Clock, MapPin, Activity, CheckCircle, ShieldAlert, FileText,
     Lock, Unlock, LogOut, Moon, Sun, Globe, Camera, Loader2,
     Download, Trash2, CreditCard, Save, Edit3, Calendar, Mail, MessageSquare,
-    Navigation, RefreshCw
+    Navigation, RefreshCw, MapPinOff
 } from 'lucide-react';
 import InstallPrompt from '@/components/InstallPrompt';
 import LiveCameraModal from '@/components/LiveCameraModal';
@@ -70,6 +70,7 @@ export default function DashboardPage() {
 
     // Real data state
     const [selectedChildIdx, setSelectedChildIdx] = useState(0);
+    const [liveLocation, setLiveLocation] = useState(null);
 
     const { children, isLoading: loading, mutate: fetchChildren } = useChildren();
     const { trigger: markAlertsRead } = useMarkAlertsRead();
@@ -88,6 +89,16 @@ export default function DashboardPage() {
     const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const child = children[selectedChildIdx] || null;
     const device = child?.device || null;
+
+    useEffect(() => {
+        setLiveLocation(null);
+    }, [selectedChildIdx]);
+
+    // Derived Status for Global Header
+    const acc = liveLocation?.accuracy || device?.locationAccuracy || 50;
+    const battery = liveLocation?.batteryLevel ?? device?.batteryLevel;
+    const network = liveLocation?.networkType || device?.networkType;
+    const lastUpdated = liveLocation?.timestamp ? new Date(liveLocation.timestamp) : (device?.locationUpdatedAt ? new Date(device.locationUpdatedAt) : null);
 
     // Socket.IO real-time listeners (Task 3: SOS + Task 9: Status Updates)
     const socket = useSocket();
@@ -124,14 +135,22 @@ export default function DashboardPage() {
             }
         };
 
+        const handleLocationUpdate = (data) => {
+            if (child?.id && data.childId === child.id) {
+                setLiveLocation(data);
+            }
+        };
+
         socket.on('sos_alert', handleSOS);
         socket.on('child_status_update', handleStatusUpdate);
+        socket.on('location_update', handleLocationUpdate);
 
         return () => {
             socket.off('sos_alert', handleSOS);
             socket.off('child_status_update', handleStatusUpdate);
+            socket.off('location_update', handleLocationUpdate);
         };
-    }, [socket]);
+    }, [socket, child?.id]);
 
     // When children list changes structurally, subscribe socket to their rooms
     // Using children.length to avoid re-running on every data refresh
@@ -270,11 +289,51 @@ export default function DashboardPage() {
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Global Device Status */}
+                                <div className="hidden sm:grid grid-cols-4 gap-4 px-2 text-center ml-auto border-l border-gray-100 dark:border-gray-800 pl-4">
+                                    <div className="flex flex-col items-center">
+                                        <Battery className={`w-5 h-5 mb-0.5 ${(battery || 0) > 20 ? 'text-emerald-500' : 'text-red-500'}`} />
+                                        <span className="text-xs font-bold">{battery ?? '—'}%</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <Wifi className="w-5 h-5 mb-0.5 text-blue-500" />
+                                        <span className="text-xs font-bold">{network || '—'}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <MapPin className="w-5 h-5 mb-0.5 text-amber-500" />
+                                        <span className="text-xs font-bold">±{Math.round(acc)}m</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <Clock className="w-5 h-5 mb-0.5 text-gray-400" />
+                                        <span className="text-xs font-bold">{lastUpdated ? timeAgo(lastUpdated) : '—'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Mobile Global Device Status */}
+                            <div className="sm:hidden grid grid-cols-4 gap-2 text-center bg-white dark:bg-gray-900 rounded-2xl p-3 shadow-sm mb-6 border border-gray-100 dark:border-gray-800">
+                                <div className="flex flex-col items-center">
+                                    <Battery className={`w-5 h-5 mb-0.5 ${(battery || 0) > 20 ? 'text-emerald-500' : 'text-red-500'}`} />
+                                    <span className="text-xs font-bold">{battery ?? '—'}%</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <Wifi className="w-5 h-5 mb-0.5 text-blue-500" />
+                                    <span className="text-xs font-bold">{network || '—'}</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <MapPin className="w-5 h-5 mb-0.5 text-amber-500" />
+                                    <span className="text-xs font-bold">±{Math.round(acc)}m</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <Clock className="w-5 h-5 mb-0.5 text-gray-400" />
+                                    <span className="text-xs font-bold">{lastUpdated ? timeAgo(lastUpdated) : '—'}</span>
+                                </div>
                             </div>
 
                             {/* Tabs */}
                             {activeTab === 'home' && <HomeTab dict={dict} child={child} device={device} fetchChildren={fetchChildren} onOpenCamera={() => setCameraModalOpen(true)} onOpenScreen={() => setScreenModalOpen(true)} />}
-                            {activeTab === 'map' && <MapTab dict={dict} child={child} device={device} />}
+                            {activeTab === 'map' && <MapTab dict={dict} child={child} device={device} liveLocation={liveLocation} />}
                             {activeTab === 'controls' && <ControlsTab dict={dict} child={child} />}
                             {activeTab === 'tools' && <LiveToolsTab dict={dict} onOpenCamera={() => setCameraModalOpen(true)} onOpenMic={() => setAmbientMicModalOpen(true)} onOpenScreen={() => setScreenModalOpen(true)} />}
                             {activeTab === 'feed' && <FeedTab dict={dict} child={child} />}
@@ -429,9 +488,7 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
 // ==========================================
 // MAP TAB (Real-Time Leaflet Map + Socket.IO)
 // ==========================================
-function MapTab({ dict, child, device }) {
-    const socket = useSocket();
-    const [liveLocation, setLiveLocation] = useState(null);
+function MapTab({ dict, child, device, liveLocation }) {
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const handleForceRefresh = () => {
@@ -439,20 +496,6 @@ function MapTab({ dict, child, device }) {
         // Simulate a refresh delay, this could also emit a socket event if the backend supports forcing an update
         setTimeout(() => setIsRefreshing(false), 2000);
     };
-
-    // Listen for real-time location updates via Socket.IO
-    useEffect(() => {
-        if (!socket || !child?.id) return;
-
-        const handleLocationUpdate = (data) => {
-            if (data.childId === child.id) {
-                setLiveLocation(data);
-            }
-        };
-
-        socket.on('location_update', handleLocationUpdate);
-        return () => socket.off('location_update', handleLocationUpdate);
-    }, [socket, child?.id]);
 
     // Use live data if available, otherwise fall back to database device data
     const lat = liveLocation?.latitude || device?.latitude || 23.1634;
@@ -466,7 +509,7 @@ function MapTab({ dict, child, device }) {
     const lastUpdated = liveLocation?.timestamp ? new Date(liveLocation.timestamp) : (device?.locationUpdatedAt ? new Date(device.locationUpdatedAt) : null);
 
     return (
-        <div className="h-[calc(100vh-14rem)] md:h-[calc(100vh-10rem)] w-full rounded-2xl overflow-hidden relative border-2 border-gray-200 dark:border-gray-800 shadow-md animate-in fade-in duration-300">
+        <div className="h-[calc(100vh-10rem)] w-full relative -mx-4 md:-mx-8 md:rounded-2xl md:overflow-hidden md:border-2 md:border-gray-200 dark:md:border-gray-800 shadow-md animate-in fade-in duration-300">
 
             {/* Leaflet Map */}
             {hasRealLocation ? (
@@ -502,74 +545,21 @@ function MapTab({ dict, child, device }) {
                 </div>
             )}
 
-            {/* Info Overlay */}
-            <div className="absolute top-4 left-4 right-4 md:right-auto md:w-80 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-4 rounded-xl shadow-lg z-[1000] border border-white/20">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{child?.name}&apos;s Location</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                            {spd > 1 ? (
-                                <span className="flex items-center gap-1">
-                                    <Navigation className="w-3.5 h-3.5 text-blue-500" />
-                                    Moving • {spd.toFixed(1)} km/h
-                                </span>
-                            ) : (
-                                !device?.isOnline && hasRealLocation ? (
-                                    <span className="text-gray-500 dark:text-gray-400 font-medium">
-                                        {dict('lastSeenAtLoc', {
-                                            location: locName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-                                            time: lastUpdated ? timeAgo(lastUpdated) : ''
-                                        })}
-                                    </span>
-                                ) : (
-                                    locName || (hasRealLocation ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : dict('waitingGpsFix'))
-                                )
-                            )}
-                        </p>
-                    </div>
-                    {device?.isOnline && (
-                        <span className="flex h-3 w-3 relative">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                        </span>
-                    )}
-                </div>
-
-                {/* Device status bar */}
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 grid grid-cols-4 gap-2 text-center">
-                    <div>
-                        <Battery className={`w-4 h-4 mx-auto mb-0.5 ${(battery || 0) > 20 ? 'text-emerald-500' : 'text-red-500'}`} />
-                        <span className="text-xs font-bold">{battery ?? '—'}%</span>
-                    </div>
-                    <div>
-                        <Wifi className="w-4 h-4 mx-auto mb-0.5 text-blue-500" />
-                        <span className="text-xs font-bold">{network || '—'}</span>
-                    </div>
-                    <div>
-                        <MapPin className="w-4 h-4 mx-auto mb-0.5 text-amber-500" />
-                        <span className="text-xs font-bold">±{Math.round(acc)}m</span>
-                    </div>
-                    <div>
-                        <Clock className="w-4 h-4 mx-auto mb-0.5 text-gray-400" />
-                        <span className="text-xs font-bold">{lastUpdated ? timeAgo(lastUpdated) : '—'}</span>
-                    </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-2">
-                    <button
-                        onClick={handleForceRefresh}
-                        className="w-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition border border-emerald-200 dark:border-emerald-800"
-                        disabled={isRefreshing}
-                    >
-                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        {dict('forceRefresh')}
-                    </button>
-                    <div className="flex gap-2">
-                        <button className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">{dict('viewHistory')}</button>
-                        <button className="flex-1 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition">{dict('setGeofence')}</button>
-                    </div>
-                </div>
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-xl rounded-full p-2 z-[1000] border border-white/20">
+                <button
+                    onClick={handleForceRefresh}
+                    className="p-3 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full hover:bg-emerald-200 dark:hover:bg-emerald-800 transition shadow-sm"
+                    title={dict('forceRefresh')}
+                    disabled={isRefreshing}
+                >
+                    <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`}/>
+                </button>
+                <button className="p-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm" title={dict('viewHistory')}>
+                    <Clock className="w-5 h-5"/>
+                </button>
+                <button className="p-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm" title={dict('setGeofence')}>
+                    <MapPinOff className="w-5 h-5"/>
+                </button>
             </div>
         </div>
     );
