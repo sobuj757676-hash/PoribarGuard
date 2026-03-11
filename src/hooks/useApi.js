@@ -165,3 +165,17 @@ export function useAdminSettings() {
 export function useAdminSettingsMutation() {
     return useSWRMutation('/api/admin/settings', sendRequest);
 }
+
+export function useAdminLandingConfig() {
+    const { data, error, isLoading, mutate } = useSWR('/api/admin/landing-config');
+    return {
+        landingConfig: data?.landingConfig || {},
+        isLoading,
+        isError: error,
+        mutate
+    };
+}
+
+export function useAdminLandingConfigMutation() {
+    return useSWRMutation('/api/admin/landing-config', sendRequest);
+}

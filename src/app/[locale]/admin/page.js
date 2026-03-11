@@ -5,32 +5,22 @@ import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
-import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation } from '@/hooks/useApi';
+import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation } from '@/hooks/useApi';
 import {
     LayoutDashboard, Users, CreditCard, Smartphone, LifeBuoy,
     ShieldAlert, BarChart3, UploadCloud, Search, Bell, Settings,
     MoreVertical, ArrowUpRight, ArrowDownRight, MapPin, CheckCircle,
     XCircle, Clock, Download, Plus, Terminal, AlertTriangle,
-    Moon, Sun, Filter, UserPlus, LogOut, Loader2,
-    Map, RefreshCcw, FileText, Send, HardDrive, DollarSign, Mail, Database, SmartphoneCharging, Play, Pause, Server
+    Filter, UserPlus, LogOut, Loader2,
+    Map, RefreshCcw, FileText, Send, HardDrive, DollarSign, Mail, Database, SmartphoneCharging, Play, Pause, Server, Globe, Trash2, GripVertical, Eye, Type, Star, MessageSquare, Zap
 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function AdminPage() {
     const t = useTranslations('Admin');
     const { data: session } = useSession();
-    const [theme, setTheme] = useState('dark');
     const [activeTab, setActiveTab] = useState('dashboard');
     const [searchQuery, setSearchQuery] = useState('');
-
-    useEffect(() => {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [theme]);
-
-    const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
     const userName = session?.user?.name || 'Admin';
     const userEmail = session?.user?.email || '';
     const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -70,6 +60,7 @@ export default function AdminPage() {
                     <NavItem icon={<ShieldAlert />} label={t('filters')} isActive={activeTab === 'filters'} onClick={() => setActiveTab('filters')} />
                     <NavItem icon={<BarChart3 />} label={t('analytics')} isActive={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
                     <NavItem icon={<UploadCloud />} label={t('apk')} isActive={activeTab === 'apk'} onClick={() => setActiveTab('apk')} />
+                    <NavItem icon={<Globe />} label="Landing Page" isActive={activeTab === 'landing'} onClick={() => setActiveTab('landing')} />
                 </nav>
 
                 <div className="p-4 border-t border-slate-800 space-y-1">
@@ -96,9 +87,7 @@ export default function AdminPage() {
                             <Terminal className="w-4 h-4" /> System Status: Normal
                         </button>
                         <div className="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
-                        <button onClick={toggleTheme} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-                        </button>
+                        <ThemeToggle />
                         <button className="relative text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                             <Bell className="w-5 h-5" />
                             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
@@ -115,6 +104,7 @@ export default function AdminPage() {
                     {activeTab === 'support' && <SupportTab />}
                     {activeTab === 'analytics' && <AnalyticsTab />}
                     {activeTab === 'apk' && <ApkTab />}
+                    {activeTab === 'landing' && <LandingConfigTab />}
                     {activeTab === 'settings' && <SettingsTab />}
                 </main>
             </div>
@@ -474,7 +464,7 @@ function FiltersTab() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pattern, type, category }),
             });
-            if(!res.ok) throw new Error('Failed to add filter');
+            if (!res.ok) throw new Error('Failed to add filter');
             toast.success('Filter added successfully');
             type === 'DOMAIN' ? setNewDomain('') : setNewKeyword('');
             fetchFilters();
@@ -490,7 +480,7 @@ function FiltersTab() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id }),
             });
-            if(!res.ok) throw new Error('Failed to delete filter');
+            if (!res.ok) throw new Error('Failed to delete filter');
             toast.success('Filter removed');
             fetchFilters();
         } catch {
@@ -902,6 +892,7 @@ function SettingsTab() {
 
     const [settings, setSettings] = useState({});
     const [saving, setSaving] = useState(false);
+    const [msg, setMsg] = useState('');
 
     useEffect(() => {
         if (initialSettings && Object.keys(initialSettings).length > 0) {
@@ -1013,6 +1004,470 @@ function SettingsTab() {
                     </button>
                 </div>
             </div>
+        </div>
+    );
+}
+
+// ==========================================
+// LANDING PAGE CONFIGURATION TAB
+// ==========================================
+function LandingConfigTab() {
+    const { landingConfig, isLoading: loading, mutate: refetch } = useAdminLandingConfig();
+    const { trigger: saveLanding } = useAdminLandingConfigMutation();
+    const [activeSection, setActiveSection] = useState('hero');
+    const [saving, setSaving] = useState(false);
+
+    // Local state for each section
+    const [heroConfig, setHeroConfig] = useState(null);
+    const [featuresConfig, setFeaturesConfig] = useState(null);
+    const [pricingConfig, setPricingConfig] = useState(null);
+    const [faqConfig, setFaqConfig] = useState(null);
+    const [testimonialsConfig, setTestimonialsConfig] = useState(null);
+    const [howItWorksConfig, setHowItWorksConfig] = useState(null);
+    const [ctaConfig, setCtaConfig] = useState(null);
+    const [footerConfig, setFooterConfig] = useState(null);
+
+    // Initialize local state from fetched data
+    useEffect(() => {
+        if (landingConfig && Object.keys(landingConfig).length >= 0) {
+            setHeroConfig(landingConfig.landing_hero || {
+                badgeText: 'BD EDITION — #1 PARENTAL CONTROL APP',
+                locations: [
+                    { host: 'Dubai', home: 'Jessore' },
+                    { host: 'Riyadh', home: 'Sylhet' },
+                    { host: 'London', home: 'Dhaka' },
+                    { host: 'Malaysia', home: 'Comilla' },
+                    { host: 'Oman', home: 'Chittagong' },
+                    { host: 'Singapore', home: 'Barisal' }
+                ],
+                ctaText: 'Start Free 7-Day Trial',
+                ctaLink: '/dashboard',
+                videoBtnText: 'Watch 45-sec Video',
+                trustBadges: ['Trusted by 2,347+ BD families', '100% Legal', 'bKash/Nagad Accepted']
+            });
+            setFeaturesConfig(landingConfig.landing_features || {
+                sectionTag: '6 Core Pillars',
+                sectionTitle: 'যা আপনি পাবেন — শুধুমাত্র PoribarGuard BD-এ',
+                features: [
+                    { title: 'Remote Install from Abroad', desc: 'TeamViewer বা Magic APK দিয়ে দূর থেকে ইনস্টল করুন', icon: 'DownloadCloud', color: 'blue' },
+                    { title: 'Live Location + Village Geofence', desc: 'স্কুল, টিউশন, বাড়ি, মসজিদ — সব জায়গায় সীমানা', icon: 'Map', color: 'emerald' },
+                    { title: 'Live Camera, Mic & Screen', desc: 'চাইলেই দেখুন, শুনুন, স্ক্রিন দেখুন (on-demand)', icon: 'Video', color: 'red' },
+                    { title: 'Prayer Time + Study Auto Lock', desc: 'Fajr, Maghrib, Isha ও পড়াশোনার সময় অটো লক', icon: 'Clock', color: 'indigo' },
+                    { title: 'SOS Panic Button', desc: 'এক ট্যাপে লোকেশন + ভয়েস নোট + ফটো পাঠায়', icon: 'ShieldAlert', color: 'orange' },
+                    { title: 'Full Stealth Mode', desc: 'শিশু কখনো জানবে না যে মনিটর হচ্ছে', icon: 'EyeOff', color: 'gray' }
+                ]
+            });
+            setPricingConfig(landingConfig.landing_pricing || {
+                sectionTitle: 'সাশ্রয়ী মূল্যে পরিবারের নিরাপত্তা',
+                sectionSubtitle: 'Pay securely via bKash, Nagad, or any International Card.',
+                saveBadge: 'Save 20% on Annual Plans (2 months FREE)',
+                tiers: [
+                    { name: 'Standard', price: '৳299', desc: 'Basic safety for one child', features: ['Live Location Tracking', 'Geofence Alerts (School/Home)', 'Daily Screen Time Reports', 'SOS Button Access'], isPopular: false, btnText: 'Start Free Trial' },
+                    { name: 'Premium', price: '৳599', desc: 'Most Popular! Best for ultimate peace of mind.', features: ['Everything in Standard', 'Live Camera & Mic On-Demand', 'Live Screen Viewing', 'Prayer Time Auto-Lock', 'App Blocking (TikTok, FreeFire)'], isPopular: true, btnText: 'Start 7-Day Free Trial' },
+                    { name: 'Ultimate', price: '৳899', desc: 'For multiple children & strict control', features: ['Everything in Premium', 'Device Owner Mode (Uninstall block)', 'Remote Wipe Data', 'Priority 24/7 Phone Support', 'Up to 3 Children'], isPopular: false, btnText: 'Start Free Trial' }
+                ]
+            });
+            setFaqConfig(landingConfig.landing_faq || {
+                sectionTitle: 'Frequently Asked Questions',
+                faqs: [
+                    { q: 'Is it completely legal to install this app?', a: 'Yes. In Bangladesh, as a parent or legal guardian, it is completely legal to monitor the devices of your minor children (under 18) for their safety and digital wellbeing.' },
+                    { q: 'আমি কি প্রবাস থেকে এটি সেটআপ করতে পারব?', a: 'জি, ১০০%। আপনি শুধু আমাদের Magic SMS লিঙ্কটি সন্তানের ফোনে পাঠাবেন।' },
+                    { q: 'Can the child uninstall the PoribarGuard app?', a: 'If you subscribe to the Ultimate plan, you can enable Device Owner Mode.' },
+                    { q: 'গ্রামের বাজে ইন্টারনেট স্পিডে কি এটা কাজ করবে?', a: 'হ্যাঁ। লোকেশন এবং ছোট টেক্সট অ্যালার্টগুলো 2G/3G নেটওয়ার্কেও কাজ করবে।' },
+                    { q: 'How does the Prayer Time Auto Lock work?', a: 'The system syncs with local Bangladesh prayer times.' }
+                ]
+            });
+            setTestimonialsConfig(landingConfig.landing_testimonials || {
+                sectionTitle: 'যারা ইতিমধ্যে ব্যবহার করছেন',
+                statBadge: '2,347+ Probashi Families Protected',
+                testimonials: [
+                    { name: 'Rahim Chowdhury', location: '🇦🇪 Dubai, UAE', text: 'ভাই, এটা আসলেই ম্যাজিক।', rating: 5, imgUrl: 'https://i.pravatar.cc/150?img=11' },
+                    { name: 'Fatema Begum', location: '🇸🇦 Riyadh, KSA', text: 'প্রথম দিকে ভাবছিলাম কীভাবে সেটআপ করব...', rating: 5, imgUrl: 'https://i.pravatar.cc/150?img=5' },
+                    { name: 'Kamrul Hasan', location: '🇬🇧 London, UK', text: 'The auto-lock feature is exactly what we needed.', rating: 5, imgUrl: 'https://i.pravatar.cc/150?img=12' }
+                ],
+                featuredLogos: ['Prothom Alo', 'Daily Star', 'Probashi FB Groups', 'Somoy TV']
+            });
+            setHowItWorksConfig(landingConfig.landing_howitworks || {
+                sectionTitle: '৩ মিনিটে শুরু করুন',
+                sectionSubtitle: 'No technical skills needed. Setup from anywhere in the world.',
+                steps: [
+                    { title: 'Sign Up & Pay', desc: 'Create account securely using bKash, Nagad, or International Cards.' },
+                    { title: 'Send Magic Link', desc: 'Send the custom SMS link to child. It auto-installs in stealth mode.' },
+                    { title: 'Monitor Silently', desc: 'Open dashboard from Dubai, London, or Riyadh. Start tracking.' }
+                ]
+            });
+            setCtaConfig(landingConfig.landing_cta || {
+                heading: 'আজই শুরু করুন —',
+                subheading: 'আপনার সন্তানের নিরাপত্তা আপনার হাতে',
+                btnText: 'Get Started Free',
+                btnLink: '/register',
+                footerNote: 'No credit card required for 7-day trial.'
+            });
+            setFooterConfig(landingConfig.landing_footer || {
+                description: 'Bringing peace of mind to Bangladeshi expatriates worldwide.',
+                supportEmail: 'support@poribarguardbd.com',
+                productLinks: ['Features', 'Pricing', 'How it Works', 'Download Test APK'],
+                companyLinks: ['About Us', 'Privacy Policy (for Minors)', 'Terms of Service']
+            });
+        }
+    }, [landingConfig]);
+
+    const saveSection = async (sectionKey, data) => {
+        setSaving(true);
+        try {
+            await saveLanding({ method: 'PUT', body: { section: sectionKey, data } });
+            toast.success(`${sectionKey.replace('landing_', '').replace(/_/g, ' ')} updated!`);
+            refetch();
+        } catch (e) {
+            toast.error(e.message || 'Failed to save');
+        }
+        setSaving(false);
+    };
+
+    if (loading || !heroConfig) return <div className="p-8 text-center text-slate-400">Loading landing page config...</div>;
+
+    const inputCls = "w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition text-slate-800 dark:text-slate-200";
+    const textareaCls = inputCls + " min-h-[80px] resize-y";
+    const btnSaveCls = "bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm shadow-emerald-500/30 transition transform hover:-translate-y-0.5 disabled:opacity-50 flex items-center gap-2 text-sm";
+    const btnAddCls = "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg font-bold text-sm transition flex items-center gap-2";
+    const btnRemoveCls = "text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg transition";
+    const labelCls = "block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5";
+    const cardCls = "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-5";
+
+    const sections = [
+        { key: 'hero', label: 'Hero', icon: <Zap className="w-4 h-4" /> },
+        { key: 'features', label: 'Features', icon: <Star className="w-4 h-4" /> },
+        { key: 'pricing', label: 'Pricing', icon: <DollarSign className="w-4 h-4" /> },
+        { key: 'faq', label: 'FAQ', icon: <MessageSquare className="w-4 h-4" /> },
+        { key: 'testimonials', label: 'Testimonials', icon: <Users className="w-4 h-4" /> },
+        { key: 'howitworks', label: 'How It Works', icon: <Play className="w-4 h-4" /> },
+        { key: 'cta', label: 'CTA Banner', icon: <Type className="w-4 h-4" /> },
+        { key: 'footer', label: 'Footer', icon: <FileText className="w-4 h-4" /> },
+    ];
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-bold flex items-center gap-2"><Globe className="w-6 h-6 text-emerald-500" /> Landing Page Configuration</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Edit all sections of the public landing page from here.</p>
+                </div>
+            </div>
+
+            {/* Sub-tab navigation */}
+            <div className="flex flex-wrap gap-2 bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                {sections.map(s => (
+                    <button
+                        key={s.key}
+                        onClick={() => setActiveSection(s.key)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${activeSection === s.key ? 'bg-white dark:bg-slate-900 text-emerald-600 shadow-sm border border-slate-200 dark:border-slate-700' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    >
+                        {s.icon} {s.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* === HERO SECTION === */}
+            {activeSection === 'hero' && (
+                <div className={cardCls}>
+                    <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2"><Zap className="w-5 h-5 text-yellow-500" /> Hero Section</h3>
+                    <div>
+                        <label className={labelCls}>Badge Text</label>
+                        <input type="text" value={heroConfig.badgeText} onChange={e => setHeroConfig({ ...heroConfig, badgeText: e.target.value })} className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>CTA Button Text</label>
+                        <input type="text" value={heroConfig.ctaText} onChange={e => setHeroConfig({ ...heroConfig, ctaText: e.target.value })} className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>CTA Button Link</label>
+                        <input type="text" value={heroConfig.ctaLink} onChange={e => setHeroConfig({ ...heroConfig, ctaLink: e.target.value })} className={inputCls} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Video Button Text</label>
+                        <input type="text" value={heroConfig.videoBtnText} onChange={e => setHeroConfig({ ...heroConfig, videoBtnText: e.target.value })} className={inputCls} />
+                    </div>
+
+                    {/* Location Pairs */}
+                    <div>
+                        <label className={labelCls}>Rotating Location Pairs</label>
+                        <div className="space-y-2">
+                            {heroConfig.locations.map((loc, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                    <input type="text" value={loc.host} onChange={e => { const locs = [...heroConfig.locations]; locs[idx] = { ...locs[idx], host: e.target.value }; setHeroConfig({ ...heroConfig, locations: locs }); }} className={inputCls} placeholder="Host city (e.g. Dubai)" />
+                                    <span className="text-slate-400 font-bold">→</span>
+                                    <input type="text" value={loc.home} onChange={e => { const locs = [...heroConfig.locations]; locs[idx] = { ...locs[idx], home: e.target.value }; setHeroConfig({ ...heroConfig, locations: locs }); }} className={inputCls} placeholder="Home district" />
+                                    <button onClick={() => { const locs = heroConfig.locations.filter((_, i) => i !== idx); setHeroConfig({ ...heroConfig, locations: locs }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
+                                </div>
+                            ))}
+                            <button onClick={() => setHeroConfig({ ...heroConfig, locations: [...heroConfig.locations, { host: '', home: '' }] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Location Pair</button>
+                        </div>
+                    </div>
+
+                    {/* Trust Badges */}
+                    <div>
+                        <label className={labelCls}>Trust Badges</label>
+                        <div className="space-y-2">
+                            {heroConfig.trustBadges.map((badge, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                    <input type="text" value={badge} onChange={e => { const badges = [...heroConfig.trustBadges]; badges[idx] = e.target.value; setHeroConfig({ ...heroConfig, trustBadges: badges }); }} className={inputCls} />
+                                    <button onClick={() => { const badges = heroConfig.trustBadges.filter((_, i) => i !== idx); setHeroConfig({ ...heroConfig, trustBadges: badges }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
+                                </div>
+                            ))}
+                            <button onClick={() => setHeroConfig({ ...heroConfig, trustBadges: [...heroConfig.trustBadges, ''] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Badge</button>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button onClick={() => saveSection('landing_hero', heroConfig)} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Hero
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === FEATURES SECTION === */}
+            {activeSection === 'features' && (
+                <div className={cardCls}>
+                    <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2"><Star className="w-5 h-5 text-amber-500" /> Features Section</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelCls}>Section Tag</label>
+                            <input type="text" value={featuresConfig.sectionTag} onChange={e => setFeaturesConfig({ ...featuresConfig, sectionTag: e.target.value })} className={inputCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Section Title</label>
+                            <input type="text" value={featuresConfig.sectionTitle} onChange={e => setFeaturesConfig({ ...featuresConfig, sectionTitle: e.target.value })} className={inputCls} />
+                        </div>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Features List</label>
+                        <div className="space-y-4">
+                            {featuresConfig.features.map((feat, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-slate-400">Feature #{idx + 1}</span>
+                                        <button onClick={() => { const feats = featuresConfig.features.filter((_, i) => i !== idx); setFeaturesConfig({ ...featuresConfig, features: feats }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                    <input type="text" value={feat.title} onChange={e => { const feats = [...featuresConfig.features]; feats[idx] = { ...feats[idx], title: e.target.value }; setFeaturesConfig({ ...featuresConfig, features: feats }); }} className={inputCls} placeholder="Title" />
+                                    <textarea value={feat.desc} onChange={e => { const feats = [...featuresConfig.features]; feats[idx] = { ...feats[idx], desc: e.target.value }; setFeaturesConfig({ ...featuresConfig, features: feats }); }} className={textareaCls} placeholder="Description" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className={labelCls}>Icon Name</label>
+                                            <input type="text" value={feat.icon} onChange={e => { const feats = [...featuresConfig.features]; feats[idx] = { ...feats[idx], icon: e.target.value }; setFeaturesConfig({ ...featuresConfig, features: feats }); }} className={inputCls} placeholder="e.g. Map, Video, Clock" />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls}>Color</label>
+                                            <select value={feat.color} onChange={e => { const feats = [...featuresConfig.features]; feats[idx] = { ...feats[idx], color: e.target.value }; setFeaturesConfig({ ...featuresConfig, features: feats }); }} className={inputCls}>
+                                                {['blue', 'emerald', 'red', 'indigo', 'orange', 'gray', 'purple', 'pink', 'yellow'].map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={() => setFeaturesConfig({ ...featuresConfig, features: [...featuresConfig.features, { title: '', desc: '', icon: 'Star', color: 'blue' }] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Feature</button>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button onClick={() => saveSection('landing_features', featuresConfig)} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Features
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === PRICING SECTION === */}
+            {activeSection === 'pricing' && (
+                <div className={cardCls}>
+                    <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-500" /> Pricing Section</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label className={labelCls}>Section Title</label><input type="text" value={pricingConfig.sectionTitle} onChange={e => setPricingConfig({ ...pricingConfig, sectionTitle: e.target.value })} className={inputCls} /></div>
+                        <div><label className={labelCls}>Save Badge Text</label><input type="text" value={pricingConfig.saveBadge} onChange={e => setPricingConfig({ ...pricingConfig, saveBadge: e.target.value })} className={inputCls} /></div>
+                    </div>
+                    <div><label className={labelCls}>Subtitle</label><input type="text" value={pricingConfig.sectionSubtitle} onChange={e => setPricingConfig({ ...pricingConfig, sectionSubtitle: e.target.value })} className={inputCls} /></div>
+
+                    <div>
+                        <label className={labelCls}>Pricing Tiers</label>
+                        <div className="space-y-4">
+                            {pricingConfig.tiers.map((tier, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-slate-400">Tier #{idx + 1} {tier.isPopular && <span className="text-emerald-500">★ Popular</span>}</span>
+                                        <button onClick={() => { const t = pricingConfig.tiers.filter((_, i) => i !== idx); setPricingConfig({ ...pricingConfig, tiers: t }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        <input type="text" value={tier.name} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], name: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Plan Name" />
+                                        <input type="text" value={tier.price} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], price: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Price (e.g. ৳299)" />
+                                        <input type="text" value={tier.btnText} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], btnText: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Button Text" />
+                                    </div>
+                                    <input type="text" value={tier.desc} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], desc: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Description" />
+                                    <div className="flex items-center gap-2">
+                                        <input type="checkbox" checked={tier.isPopular} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], isPopular: e.target.checked }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className="rounded" />
+                                        <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">Mark as Popular</span>
+                                    </div>
+                                    <div>
+                                        <label className={labelCls}>Features (one per line)</label>
+                                        <textarea value={tier.features.join('\n')} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], features: e.target.value.split('\n') }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={textareaCls} placeholder="One feature per line" />
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={() => setPricingConfig({ ...pricingConfig, tiers: [...pricingConfig.tiers, { name: '', price: '', desc: '', features: [], isPopular: false, btnText: 'Start Free Trial' }] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Tier</button>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button onClick={() => saveSection('landing_pricing', pricingConfig)} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Pricing
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === FAQ SECTION === */}
+            {activeSection === 'faq' && (
+                <div className={cardCls}>
+                    <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-blue-500" /> FAQ Section</h3>
+                    <div><label className={labelCls}>Section Title</label><input type="text" value={faqConfig.sectionTitle} onChange={e => setFaqConfig({ ...faqConfig, sectionTitle: e.target.value })} className={inputCls} /></div>
+                    <div>
+                        <label className={labelCls}>Questions & Answers</label>
+                        <div className="space-y-4">
+                            {faqConfig.faqs.map((faq, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-slate-400">Q&A #{idx + 1}</span>
+                                        <button onClick={() => { const faqs = faqConfig.faqs.filter((_, i) => i !== idx); setFaqConfig({ ...faqConfig, faqs }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                    <input type="text" value={faq.q} onChange={e => { const faqs = [...faqConfig.faqs]; faqs[idx] = { ...faqs[idx], q: e.target.value }; setFaqConfig({ ...faqConfig, faqs }); }} className={inputCls} placeholder="Question" />
+                                    <textarea value={faq.a} onChange={e => { const faqs = [...faqConfig.faqs]; faqs[idx] = { ...faqs[idx], a: e.target.value }; setFaqConfig({ ...faqConfig, faqs }); }} className={textareaCls} placeholder="Answer" />
+                                </div>
+                            ))}
+                            <button onClick={() => setFaqConfig({ ...faqConfig, faqs: [...faqConfig.faqs, { q: '', a: '' }] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Q&A</button>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button onClick={() => saveSection('landing_faq', faqConfig)} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save FAQ
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === TESTIMONIALS SECTION === */}
+            {activeSection === 'testimonials' && (
+                <div className={cardCls}>
+                    <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2"><Users className="w-5 h-5 text-indigo-500" /> Testimonials Section</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label className={labelCls}>Section Title</label><input type="text" value={testimonialsConfig.sectionTitle} onChange={e => setTestimonialsConfig({ ...testimonialsConfig, sectionTitle: e.target.value })} className={inputCls} /></div>
+                        <div><label className={labelCls}>Stats Badge</label><input type="text" value={testimonialsConfig.statBadge} onChange={e => setTestimonialsConfig({ ...testimonialsConfig, statBadge: e.target.value })} className={inputCls} /></div>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Testimonials</label>
+                        <div className="space-y-4">
+                            {testimonialsConfig.testimonials.map((t, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-slate-400">Review #{idx + 1}</span>
+                                        <button onClick={() => { const ts = testimonialsConfig.testimonials.filter((_, i) => i !== idx); setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="text" value={t.name} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], name: e.target.value }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={inputCls} placeholder="Name" />
+                                        <input type="text" value={t.location} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], location: e.target.value }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={inputCls} placeholder="Location (e.g. 🇦🇪 Dubai)" />
+                                    </div>
+                                    <textarea value={t.text} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], text: e.target.value }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={textareaCls} placeholder="Review text" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className={labelCls}>Rating (1-5)</label><input type="number" min="1" max="5" value={t.rating} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], rating: parseInt(e.target.value) || 5 }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={inputCls} /></div>
+                                        <div><label className={labelCls}>Avatar URL</label><input type="text" value={t.imgUrl} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], imgUrl: e.target.value }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={inputCls} placeholder="https://..." /></div>
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={() => setTestimonialsConfig({ ...testimonialsConfig, testimonials: [...testimonialsConfig.testimonials, { name: '', location: '', text: '', rating: 5, imgUrl: '' }] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Testimonial</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Featured Logos (one per line)</label>
+                        <textarea value={testimonialsConfig.featuredLogos.join('\n')} onChange={e => setTestimonialsConfig({ ...testimonialsConfig, featuredLogos: e.target.value.split('\n') })} className={textareaCls} placeholder="One logo/brand per line" />
+                    </div>
+                    <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button onClick={() => saveSection('landing_testimonials', testimonialsConfig)} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Testimonials
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === HOW IT WORKS SECTION === */}
+            {activeSection === 'howitworks' && (
+                <div className={cardCls}>
+                    <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2"><Play className="w-5 h-5 text-emerald-500" /> How It Works Section</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label className={labelCls}>Section Title</label><input type="text" value={howItWorksConfig.sectionTitle} onChange={e => setHowItWorksConfig({ ...howItWorksConfig, sectionTitle: e.target.value })} className={inputCls} /></div>
+                        <div><label className={labelCls}>Subtitle</label><input type="text" value={howItWorksConfig.sectionSubtitle} onChange={e => setHowItWorksConfig({ ...howItWorksConfig, sectionSubtitle: e.target.value })} className={inputCls} /></div>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Steps</label>
+                        <div className="space-y-4">
+                            {howItWorksConfig.steps.map((step, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-emerald-500">Step {idx + 1}</span>
+                                        <button onClick={() => { const s = howItWorksConfig.steps.filter((_, i) => i !== idx); setHowItWorksConfig({ ...howItWorksConfig, steps: s }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                    <input type="text" value={step.title} onChange={e => { const s = [...howItWorksConfig.steps]; s[idx] = { ...s[idx], title: e.target.value }; setHowItWorksConfig({ ...howItWorksConfig, steps: s }); }} className={inputCls} placeholder="Step Title" />
+                                    <textarea value={step.desc} onChange={e => { const s = [...howItWorksConfig.steps]; s[idx] = { ...s[idx], desc: e.target.value }; setHowItWorksConfig({ ...howItWorksConfig, steps: s }); }} className={textareaCls} placeholder="Step Description" />
+                                </div>
+                            ))}
+                            <button onClick={() => setHowItWorksConfig({ ...howItWorksConfig, steps: [...howItWorksConfig.steps, { title: '', desc: '' }] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Step</button>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button onClick={() => saveSection('landing_howitworks', howItWorksConfig)} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save How It Works
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === CTA BANNER SECTION === */}
+            {activeSection === 'cta' && (
+                <div className={cardCls}>
+                    <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2"><Type className="w-5 h-5 text-emerald-500" /> CTA Banner Section</h3>
+                    <div><label className={labelCls}>Heading</label><input type="text" value={ctaConfig.heading} onChange={e => setCtaConfig({ ...ctaConfig, heading: e.target.value })} className={inputCls} /></div>
+                    <div><label className={labelCls}>Subheading</label><input type="text" value={ctaConfig.subheading} onChange={e => setCtaConfig({ ...ctaConfig, subheading: e.target.value })} className={inputCls} /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label className={labelCls}>Button Text</label><input type="text" value={ctaConfig.btnText} onChange={e => setCtaConfig({ ...ctaConfig, btnText: e.target.value })} className={inputCls} /></div>
+                        <div><label className={labelCls}>Button Link</label><input type="text" value={ctaConfig.btnLink} onChange={e => setCtaConfig({ ...ctaConfig, btnLink: e.target.value })} className={inputCls} /></div>
+                    </div>
+                    <div><label className={labelCls}>Footer Note</label><input type="text" value={ctaConfig.footerNote} onChange={e => setCtaConfig({ ...ctaConfig, footerNote: e.target.value })} className={inputCls} /></div>
+                    <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button onClick={() => saveSection('landing_cta', ctaConfig)} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save CTA Banner
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === FOOTER SECTION === */}
+            {activeSection === 'footer' && (
+                <div className={cardCls}>
+                    <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2"><FileText className="w-5 h-5 text-slate-500" /> Footer Section</h3>
+                    <div><label className={labelCls}>Description</label><textarea value={footerConfig.description} onChange={e => setFooterConfig({ ...footerConfig, description: e.target.value })} className={textareaCls} /></div>
+                    <div><label className={labelCls}>Support Email</label><input type="email" value={footerConfig.supportEmail} onChange={e => setFooterConfig({ ...footerConfig, supportEmail: e.target.value })} className={inputCls} /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className={labelCls}>Product Links (one per line)</label>
+                            <textarea value={footerConfig.productLinks.join('\n')} onChange={e => setFooterConfig({ ...footerConfig, productLinks: e.target.value.split('\n') })} className={textareaCls} />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Company Links (one per line)</label>
+                            <textarea value={footerConfig.companyLinks.join('\n')} onChange={e => setFooterConfig({ ...footerConfig, companyLinks: e.target.value.split('\n') })} className={textareaCls} />
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button onClick={() => saveSection('landing_footer', footerConfig)} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Footer
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

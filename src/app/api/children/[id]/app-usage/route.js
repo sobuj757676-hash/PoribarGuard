@@ -109,6 +109,7 @@ export async function GET(request, { params }) {
                 isBlocked: true,
                 dailyLimit: true,
                 iconColor: true,
+                iconUrl: true,
                 updatedAt: true
             }
         });

@@ -60,7 +60,9 @@
     "waitingGpsFix": "Waiting for GPS fix...",
     "forceRefresh": "Force Refresh",
     "lastSeenAtLoc": "Last seen at {location} {time} ago",
-    "searching": "Searching for signal..."
+    "searching": "Searching for signal...",
+    "messages": "Live Messages",
+    "messagesDesc": "Intercepted notifications from messaging apps."
   },
   "Admin": {
     "dashboard": "Dashboard",

@@ -6,15 +6,17 @@ import {
     Shield, Map, Home, User, Settings, Video, Mic, Smartphone,
     Bell, Battery, Wifi, AlertTriangle, Plus, X, PhoneCall,
     Clock, MapPin, Activity, CheckCircle, ShieldAlert, FileText,
-    Lock, Unlock, LogOut, Moon, Sun, Globe, Camera, Loader2,
+    Lock, Unlock, LogOut, Globe, Camera, Loader2,
     Download, Trash2, CreditCard, Save, Edit3, Calendar, Mail, MessageSquare,
-    Navigation, RefreshCw, MapPinOff
+    Navigation, RefreshCw, MapPinOff, Moon
 } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import InstallPrompt from '@/components/InstallPrompt';
 import LiveCameraModal from '@/components/LiveCameraModal';
 import AmbientMicModal from '@/components/AmbientMicModal';
 import LiveScreenModal from '@/components/LiveScreenModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import ThemeToggle from '@/components/ThemeToggle';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -59,7 +61,6 @@ const ALERT_ICONS = {
 export default function DashboardPage() {
     const dict = useTranslations('Dashboard');
     const { data: session } = useSession();
-    const [theme, setTheme] = useState('light');
     const [activeTab, setActiveTab] = useState('home');
     const [isAddChildModalOpen, setAddChildModalOpen] = useState(false);
     const [addChildStep, setAddChildStep] = useState(1);
@@ -75,15 +76,6 @@ export default function DashboardPage() {
     const { children, isLoading: loading, mutate: fetchChildren } = useChildren();
     const { trigger: markAlertsRead } = useMarkAlertsRead();
 
-    useEffect(() => {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [theme]);
-
-    const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
     const userName = session?.user?.name || 'Parent';
     const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -178,9 +170,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-4">
                     <LanguageSwitcher />
-                    <button onClick={toggleTheme} className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-                    </button>
+                    <ThemeToggle />
                     <div className="relative cursor-pointer" onClick={async () => {
                         if (child?.id && child.alerts?.some(a => !a.isRead)) {
                             try {
@@ -219,6 +209,7 @@ export default function DashboardPage() {
                     <SidebarItem icon={<Map />} label={dict('map')} isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
                     <SidebarItem icon={<Lock />} label={dict('controls')} isActive={activeTab === 'controls'} onClick={() => setActiveTab('controls')} />
                     <SidebarItem icon={<Video />} label={dict('tools')} isActive={activeTab === 'tools'} onClick={() => setActiveTab('tools')} />
+                    <SidebarItem icon={<MessageSquare />} label={dict('messages') || 'Messages'} isActive={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
                     <SidebarItem icon={<Activity />} label={dict('feed')} isActive={activeTab === 'feed'} onClick={() => setActiveTab('feed')} />
                     <SidebarItem icon={<FileText />} label={dict('reports')} isActive={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
                     <SidebarItem icon={<Settings />} label={dict('settings')} isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
@@ -258,24 +249,24 @@ export default function DashboardPage() {
                     ) : (
                         <>
                             {/* Child ribbon with selector */}
-                            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between bg-gray-900 rounded-[2rem] p-2.5 shadow-md mb-6 border border-gray-800/60 overflow-hidden">
+                            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between bg-white dark:bg-gray-900 rounded-[2rem] p-2.5 shadow-md mb-6 border border-gray-200 dark:border-gray-800/60 overflow-hidden">
                                 <div className="flex items-center gap-4 pl-1 min-w-0">
                                     <div className="relative shrink-0">
                                         <div className="w-14 h-14 rounded-full bg-[#10b981] flex items-center justify-center text-white font-black text-2xl shadow-inner">
                                             {child?.name?.charAt(0) || '?'}
                                         </div>
-                                        <div className={`absolute bottom-0 right-0 w-4 h-4 ${device?.isOnline ? 'bg-[#10b981]' : 'bg-gray-500'} border-[3px] border-gray-900 rounded-full`}></div>
+                                        <div className={`absolute bottom-0 right-0 w-4 h-4 ${device?.isOnline ? 'bg-[#10b981]' : 'bg-gray-500'} border-[3px] border-white dark:border-gray-900 rounded-full`}></div>
                                     </div>
                                     <div className="flex flex-col truncate pr-2">
                                         {children.length > 1 ? (
-                                            <select value={selectedChildIdx} onChange={(e) => setSelectedChildIdx(Number(e.target.value))} className="font-bold text-xl text-white bg-transparent outline-none cursor-pointer tracking-tight">
+                                            <select value={selectedChildIdx} onChange={(e) => setSelectedChildIdx(Number(e.target.value))} className="font-bold text-xl text-gray-900 dark:text-white bg-transparent outline-none cursor-pointer tracking-tight">
                                                 {children.map((c, i) => (
-                                                    <option key={c.id} value={i} className="text-gray-900">{c.name} ({c.age})</option>
+                                                    <option key={c.id} value={i} className="text-gray-900 dark:text-white bg-white dark:bg-gray-900">{c.name} ({c.age})</option>
                                                 ))}
                                             </select>
                                         ) : (
-                                            <h3 className="font-bold text-xl text-white tracking-tight truncate flex items-baseline gap-1.5">
-                                                {child?.name} <span className="text-gray-400 text-base font-medium">({child?.age})</span>
+                                            <h3 className="font-bold text-xl text-gray-900 dark:text-white tracking-tight truncate flex items-baseline gap-1.5">
+                                                {child?.name} <span className="text-gray-500 dark:text-gray-400 text-base font-medium">({child?.age})</span>
                                             </h3>
                                         )}
                                         <p className={`text-sm font-bold flex items-center gap-1.5 mt-0.5 tracking-wide ${device?.isOnline ? 'text-[#10b981]' : 'text-gray-400'}`}>
@@ -293,21 +284,21 @@ export default function DashboardPage() {
                                 </div>
 
                                 {/* Global Device Status Indicator Pill */}
-                                <div className="flex items-center gap-3.5 bg-gray-950/80 rounded-[1.5rem] px-5 py-2.5 border border-gray-800 shrink-0 mt-3 sm:mt-0 mr-1 w-full sm:w-auto justify-center sm:justify-start">
+                                <div className="flex items-center gap-3.5 bg-gray-100 dark:bg-gray-950/80 rounded-[1.5rem] px-5 py-2.5 border border-gray-200 dark:border-gray-800 shrink-0 mt-3 sm:mt-0 mr-1 w-full sm:w-auto justify-center sm:justify-start">
                                     <div className="flex items-center gap-2">
-                                        <Battery className={`w-5 h-5 ${(battery || 0) > 20 ? 'text-[#f43f5e]' : 'text-[#f43f5e]'}`} />
-                                        <span className={`text-base font-bold ${(battery || 0) > 20 ? 'text-[#f43f5e]' : 'text-[#f43f5e]'}`}>{battery ?? '—'}%</span>
+                                        <Battery className={`w-5 h-5 ${(battery || 0) > 20 ? 'text-emerald-500' : (battery || 0) > 10 ? 'text-amber-500' : 'text-[#f43f5e]'}`} />
+                                        <span className={`text-base font-bold ${(battery || 0) > 20 ? 'text-emerald-600 dark:text-emerald-400' : (battery || 0) > 10 ? 'text-amber-600 dark:text-amber-400' : 'text-[#f43f5e]'}`}>{battery ?? '—'}%</span>
                                     </div>
 
-                                    <span className="text-gray-700 font-light">|</span>
+                                    <span className="text-gray-300 dark:text-gray-700 font-light">|</span>
 
                                     <Wifi className="w-5 h-5 text-blue-500" />
 
-                                    <span className="text-gray-700 font-light">|</span>
+                                    <span className="text-gray-300 dark:text-gray-700 font-light">|</span>
 
                                     <div className="flex items-center gap-1.5">
                                         <MapPin className="w-5 h-5 text-amber-400 fill-amber-400/20" />
-                                        <span className="text-base font-bold text-white">±{Math.round(acc)}m</span>
+                                        <span className="text-base font-bold text-gray-900 dark:text-white">±{Math.round(acc)}m</span>
                                     </div>
                                 </div>
                             </div>
@@ -316,6 +307,7 @@ export default function DashboardPage() {
                             {activeTab === 'home' && <HomeTab dict={dict} child={child} device={device} fetchChildren={fetchChildren} onOpenCamera={() => setCameraModalOpen(true)} onOpenScreen={() => setScreenModalOpen(true)} />}
                             {activeTab === 'map' && <MapTab dict={dict} child={child} device={device} liveLocation={liveLocation} />}
                             {activeTab === 'controls' && <ControlsTab dict={dict} child={child} />}
+                            {activeTab === 'messages' && <MessagesTab dict={dict} child={child} socket={socket} />}
                             {activeTab === 'tools' && <LiveToolsTab dict={dict} onOpenCamera={() => setCameraModalOpen(true)} onOpenMic={() => setAmbientMicModalOpen(true)} onOpenScreen={() => setScreenModalOpen(true)} />}
                             {activeTab === 'feed' && <FeedTab dict={dict} child={child} />}
                             {activeTab === 'reports' && <ReportsTab dict={dict} child={child} />}
@@ -328,7 +320,7 @@ export default function DashboardPage() {
             {/* --- BOTTOM NAV (Mobile) --- */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-gray-100 dark:border-gray-800 z-50 px-2 py-2 pb-safe flex justify-between items-center">
                 <BottomNavItem icon={<Home />} label={dict('home')} isActive={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                <BottomNavItem icon={<Map />} label={dict('map')} isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
+                <BottomNavItem icon={<MessageSquare />} label={dict('messages') || 'Messages'} isActive={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
                 <div className="relative -top-5 px-1 flex justify-center">
                     {child?.id && (
                         <button onClick={() => setActiveTab('tools')} className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl shadow-red-500/30 transition-transform active:scale-95 ${activeTab === 'tools' ? 'bg-red-600' : 'bg-red-500'} border-4 border-white dark:border-gray-900`}>
@@ -422,19 +414,51 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
                 <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
                     <h3 className="font-bold flex items-center gap-2 mb-4"><Activity className="w-5 h-5 text-blue-500" /> {dict('todaySummary')}</h3>
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl">
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{dict('screenTime')}</p>
-                                <p className="font-bold text-lg text-gray-900 dark:text-gray-100">
-                                    {child?.appControls ? `${Math.floor(child.appControls.reduce((sum, a) => sum + a.usageToday, 0) / 60)}h ${child.appControls.reduce((sum, a) => sum + a.usageToday, 0) % 60}m` : '—'}
-                                </p>
+                        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{dict('screenTime')}</p>
+                                    <p className="font-bold text-2xl text-gray-900 dark:text-gray-100">
+                                        {child?.appControls ? `${Math.floor(child.appControls.reduce((sum, a) => sum + a.usageToday, 0) / 60)}h ${child.appControls.reduce((sum, a) => sum + a.usageToday, 0) % 60}m` : '0h 0m'}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Top App</p>
-                                <p className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                                    {child?.appControls ? (() => { const top = [...child.appControls].sort((a, b) => b.usageToday - a.usageToday)[0]; return top ? `${top.appName} (${Math.floor(top.usageToday / 60)}h ${top.usageToday % 60}m)` : '—'; })() : '—'}
-                                </p>
-                            </div>
+
+                            {/* Recharts Donut Chart */}
+                            {child?.appControls && child.appControls.length > 0 ? (
+                                <div className="h-40 w-full relative">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={child.appControls
+                                                    .sort((a, b) => b.usageToday - a.usageToday)
+                                                    .slice(0, 4)
+                                                    .map((a, i, arr) => {
+                                                        if (i === 3) return { name: 'Other', value: arr.slice(3).reduce((sum, a) => sum + a.usageToday, 0), fill: '#9ca3af' };
+                                                        return { name: a.appName, value: a.usageToday, fill: a.iconColor || ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'][i % 4] };
+                                                    }).filter(d => d.value > 0)}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={45}
+                                                outerRadius={65}
+                                                paddingAngle={4}
+                                                dataKey="value"
+                                                stroke="none"
+                                            >
+                                                {child.appControls.slice(0, 4).map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} />
+                                                ))}
+                                            </Pie>
+                                            <RechartsTooltip
+                                                formatter={(value) => `${Math.floor(value / 60)}h ${value % 60}m`}
+                                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            ) : (
+                                <div className="h-40 flex items-center justify-center text-gray-400 text-sm">No usage data today</div>
+                            )}
                         </div>
                         <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl">
                             <div>
@@ -533,13 +557,13 @@ function MapTab({ dict, child, device, liveLocation }) {
                     title={dict('forceRefresh')}
                     disabled={isRefreshing}
                 >
-                    <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`}/>
+                    <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
                 </button>
                 <button className="p-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm" title={dict('viewHistory')}>
-                    <Clock className="w-5 h-5"/>
+                    <Clock className="w-5 h-5" />
                 </button>
                 <button className="p-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm" title={dict('setGeofence')}>
-                    <MapPinOff className="w-5 h-5"/>
+                    <MapPinOff className="w-5 h-5" />
                 </button>
             </div>
         </div>
@@ -578,7 +602,7 @@ function ControlsTab({ dict, child }) {
                         <p className="text-sm text-gray-400 text-center py-4">No app controls configured</p>
                     ) : (
                         child.appControls.map(ac => (
-                            <AppControlRow key={ac.id} id={ac.id} childId={child.id} name={ac.appName} time={`${Math.floor(ac.usageToday / 60)}h ${ac.usageToday % 60}m today`} isBlocked={ac.isBlocked} iconColor={ac.iconColor || 'bg-gray-500'} dict={dict} />
+                            <AppControlRow key={ac.id} id={ac.id} childId={child.id} name={ac.appName} time={`${Math.floor((ac.usageToday || 0) / 60)}h ${(ac.usageToday || 0) % 60}m today`} isBlocked={ac.isBlocked} iconColor={ac.iconColor || 'bg-gray-500'} iconUrl={ac.iconUrl} usageToday={ac.usageToday} dailyLimit={ac.dailyLimit} dict={dict} />
                         ))
                     )}
                 </div>
@@ -929,6 +953,7 @@ function SettingsTab({ dict, session }) {
 
     const [profile, setProfile] = useState({ name: session?.user?.name || '', phone: '' });
     const [saving, setSaving] = useState(false);
+    const [saveMsg, setSaveMsg] = useState('');
 
     // Sync profile state when SWR data loads
     useEffect(() => {
@@ -951,6 +976,27 @@ function SettingsTab({ dict, session }) {
     const planLabel = subscription ? (subscription.plan === 'TRIAL' ? 'Free Trial' : `${subscription.plan} Plan`) : 'No Plan';
     const statusLabel = subscription?.status === 'ACTIVE' ? 'ACTIVE' : (subscription?.status || 'NONE');
     const endDate = subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+
+    const handleCheckout = async (gateway) => {
+        setSaving(true);
+        try {
+            const res = await fetch('/api/subscriptions/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gateway, plan: 'PREMIUM' })
+            });
+            const data = await res.json();
+            if (res.ok && data.checkoutUrl) {
+                toast.success(data.message || 'Redirecting to payment gateway...');
+                setTimeout(() => window.location.href = data.checkoutUrl, 1000);
+            } else {
+                toast.error(data.error || 'Checkout failed');
+            }
+        } catch (e) {
+            toast.error('Network error during checkout');
+        }
+        setSaving(false);
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl">
@@ -993,7 +1039,14 @@ function SettingsTab({ dict, session }) {
                         <p className="text-sm text-indigo-700 dark:text-indigo-500 mt-1">Status: <span className={`font-bold px-2 py-0.5 rounded ml-1 text-[10px] tracking-wider ${statusLabel === 'ACTIVE' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30' : 'text-red-600 bg-red-100'}`}>{statusLabel}</span></p>
                         <p className="text-xs text-indigo-600 dark:text-indigo-500 mt-1.5 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Expires: {endDate}</p>
                     </div>
-                    <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 transition whitespace-nowrap">Manage Billing</button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <button onClick={() => handleCheckout('bkash')} disabled={saving} className="bg-[#E2136E] hover:bg-[#d10f63] text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-[#E2136E]/20 transition whitespace-nowrap disabled:opacity-50">
+                            Pay with bKash
+                        </button>
+                        <button onClick={() => handleCheckout('amarpay')} disabled={saving} className="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-slate-900/20 transition whitespace-nowrap disabled:opacity-50">
+                            Pay with AmarPay
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1001,6 +1054,81 @@ function SettingsTab({ dict, session }) {
                 <h3 className="font-bold text-red-600 dark:text-red-500 mb-2">Danger Zone</h3>
                 <p className="text-sm text-gray-500 mb-4">Deleting your account removes all data, including child devices, location history, and logs. This cannot be undone.</p>
                 <button className="bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800/50 px-5 py-2.5 rounded-lg font-bold text-sm transition">Delete Account</button>
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// MESSAGES TAB (Live Messaging Sync)
+// ==========================================
+function MessagesTab({ dict, child, socket }) {
+    const [messages, setMessages] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!child?.id) return;
+
+        // Fetch initial messages
+        const fetchMessages = async () => {
+            try {
+                const res = await fetch(`/api/children/${child.id}/notifications`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setMessages(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch messages", err);
+            }
+            setLoading(false);
+        };
+        fetchMessages();
+
+        // Listen for real-time messages
+        if (socket) {
+            const handleNewMessage = (data) => {
+                if (data.childId === child.id) {
+                    setMessages(prev => [data, ...prev]);
+                }
+            };
+            socket.on("notification_intercepted", handleNewMessage);
+            return () => socket.off("notification_intercepted", handleNewMessage);
+        }
+    }, [child?.id, socket]);
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 h-[600px] flex flex-col">
+                <h3 className="font-bold flex items-center gap-2 mb-4 text-lg border-b border-gray-100 dark:border-gray-800 pb-4">
+                    <MessageSquare className="w-5 h-5 text-blue-500" /> Live Messaging Sync
+                </h3>
+                <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                    {loading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <span className="text-gray-400 animate-pulse">Loading messages...</span>
+                        </div>
+                    ) : messages.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                            <p>No messages intercepted yet. Ensure PoribarGuard is active on child's device.</p>
+                        </div>
+                    ) : (
+                        messages.map((msg, i) => (
+                            <div key={i} className="flex gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm ${msg.appName === 'WhatsApp' ? 'bg-green-500' : msg.appName === 'Messenger' ? 'bg-blue-600' : 'bg-indigo-500'}`}>
+                                    {msg.appName === 'WhatsApp' ? <PhoneCall className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
+                                </div>
+                                <div className="bg-gray-50 dark:bg-gray-800/80 p-3 rounded-2xl rounded-tl-none border border-gray-100 dark:border-gray-700/50 max-w-[85%]">
+                                    <div className="flex items-center justify-between gap-4 mb-1">
+                                        <span className="font-bold text-sm text-gray-900 dark:text-gray-100">{msg.senderName}</span>
+                                        <span className="text-[10px] text-gray-500 font-medium">{timeAgo(msg.timestamp)}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{msg.text}</p>
+                                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider">{msg.appName}</p>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -1061,35 +1189,90 @@ function ToggleRow({ label, defaultChecked, childId, prayerLockId }) {
     );
 }
 
-function AppControlRow({ id, childId, name, time, isBlocked, iconColor, dict }) {
+function AppControlRow({ id, childId, name, time, isBlocked, iconColor, iconUrl, usageToday, dailyLimit, dict }) {
     const [blocked, setBlocked] = useState(isBlocked);
+    const [limit, setLimit] = useState(dailyLimit || 0); // 0 means no limit
     const [saving, setSaving] = useState(false);
     const { trigger } = useToggleAppControl(childId);
 
-    const toggle = async () => {
-        const newVal = !blocked;
-        // Optimistic update
-        setBlocked(newVal);
+    const updateControl = async (updates) => {
         setSaving(true);
         try {
-            await trigger({ method: 'PUT', body: { appControlId: id, isBlocked: newVal } });
-            toast.success(newVal ? 'App blocked' : 'App unblocked');
+            await trigger({ method: 'PUT', body: { appControlId: id, ...updates } });
+            toast.success('Settings updated');
         } catch {
-            // Revert on failure
-            setBlocked(!newVal);
             toast.error('Failed to update app control');
         }
         setSaving(false);
     };
+
+    const toggle = async () => {
+        const newVal = !blocked;
+        setBlocked(newVal);
+        updateControl({ isBlocked: newVal }).catch(() => setBlocked(!newVal));
+    };
+
+    const handleLimitChange = (e) => {
+        const newLimit = parseInt(e.target.value, 10);
+        setLimit(newLimit);
+        updateControl({ dailyLimit: newLimit === 0 ? null : newLimit });
+    };
+
+    // Calculate progress
+    const usageSafe = usageToday || 0;
+    const maxVal = limit > 0 ? limit : (usageSafe > 60 ? usageSafe + 60 : 120);
+    const percent = Math.min(100, (usageSafe / maxVal) * 100);
+    const isOverLimit = limit > 0 && usageSafe >= limit;
+
+    const safeName = name || 'Unknown App';
+    const initChar = typeof safeName === 'string' && safeName.length > 0 ? safeName.charAt(0).toUpperCase() : '?';
+
     return (
-        <div className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-800 rounded-xl">
-            <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl ${iconColor} flex items-center justify-center text-white font-bold text-lg`}>{name.charAt(0)}</div>
-                <div><h4 className="font-bold text-sm">{name}</h4><p className="text-xs text-gray-500">{time}</p></div>
+        <div className={`p-4 border ${blocked || isOverLimit ? 'border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900'} rounded-xl transition-colors`}>
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                    {iconUrl ? (
+                        <img src={iconUrl} alt={safeName} className={`w-12 h-12 rounded-xl object-cover drop-shadow-sm ${blocked || isOverLimit ? 'grayscale opacity-70' : ''}`} />
+                    ) : (
+                        <div className={`w-12 h-12 rounded-xl ${iconColor || 'bg-gray-500'} flex items-center justify-center text-white font-bold text-xl shadow-inner ${blocked || isOverLimit ? 'grayscale opacity-70' : ''}`}>{initChar}</div>
+                    )}
+                    <div>
+                        <h4 className={`font-bold text-base ${blocked || isOverLimit ? 'text-red-700 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                            {safeName} {isOverLimit && !blocked && ' (Time Up)'} {blocked && ' (Blocked)'}
+                        </h4>
+                        <p className="text-xs text-gray-500 font-medium">{time}</p>
+                    </div>
+                </div>
+                <div className="flex flex-col gap-2 items-end">
+                    <button onClick={toggle} disabled={saving} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${saving ? 'opacity-50' : ''} ${blocked ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+                        {blocked ? dict('unblock') : dict('block')}
+                    </button>
+                </div>
             </div>
-            <button onClick={toggle} disabled={saving} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${saving ? 'opacity-50' : ''} ${blocked ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
-                {blocked ? dict('unblock') : dict('block')}
-            </button>
+
+            {/* Limit and Progress Bar Row */}
+            <div className="flex items-center gap-4 mt-2">
+                <div className="relative flex-1 h-2.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${isOverLimit || blocked ? 'bg-red-500' : percent > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${percent}%` }}
+                    />
+                </div>
+                <select
+                    value={limit}
+                    onChange={handleLimitChange}
+                    disabled={saving}
+                    className="text-xs font-bold bg-transparent border-none text-gray-500 dark:text-gray-400 focus:ring-0 cursor-pointer outline-none"
+                    style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                >
+                    <option value={0}>No Limit</option>
+                    <option value={15}>15 mins</option>
+                    <option value={30}>30 mins</option>
+                    <option value={60}>1 hour</option>
+                    <option value={120}>2 hours</option>
+                    <option value={180}>3 hours</option>
+                </select>
+            </div>
         </div>
     );
 }

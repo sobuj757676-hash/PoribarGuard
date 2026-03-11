@@ -188,22 +188,21 @@ app.prepare().then(() => {
                 timestamp
             });
 
-            // Persist SOS alert to database
+            // Persist SOS alert to database and trigger Email/SMS via Internal API
             try {
-                fetch(`http://localhost:${port}/api/alerts`, {
+                fetch(`http://localhost:${port}/api/internal/sos`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         childId,
-                        type: "SOS",
-                        title: "🚨 SOS Emergency Alert",
-                        description: `Child triggered emergency SOS at ${latitude?.toFixed(4)},${longitude?.toFixed(4)}. Battery: ${batteryLevel}%`,
-                        severity: "CRITICAL",
-                        metadata: JSON.stringify({ latitude, longitude, batteryLevel, timestamp })
+                        latitude,
+                        longitude,
+                        batteryLevel,
+                        timestamp
                     })
-                }).catch(err => console.error("[SOS] DB persist failed:", err.message));
+                }).catch(err => console.error("[SOS] Internal DB/Notification trigger failed:", err.message));
             } catch (err) {
-                console.error("[SOS] DB persist error:", err.message);
+                console.error("[SOS] API persist error:", err.message);
             }
         });
 
@@ -367,7 +366,7 @@ app.prepare().then(() => {
          */
 
         // 11. Child sends app usage data → store + relay to parents
-        socket.on("app_usage_update", (data) => {
+        socket.on("app_usage_update", async (data, callback) => {
             const { childId, apps, totalMinutes, timestamp } = data;
             console.log(`[AppUsage] Child ${childId}: ${apps?.length || 0} apps, total ${totalMinutes} min`);
 
@@ -379,15 +378,59 @@ app.prepare().then(() => {
                 timestamp
             });
 
-            // Persist to database (fire-and-forget)
+            // Persist to database
             try {
-                fetch(`http://localhost:${port}/api/children/${childId}/app-usage`, {
+                const res = await fetch(`http://localhost:${port}/api/children/${childId}/app-usage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ apps: JSON.parse(JSON.stringify(apps)), totalMinutes })
-                }).catch(err => console.error("[AppUsage] DB persist failed:", err.message));
+                });
+
+                if (typeof callback === "function") {
+                    callback({ status: res.ok ? "ok" : "error" });
+                }
             } catch (err) {
                 console.error("[AppUsage] DB persist error:", err.message);
+                if (typeof callback === "function") {
+                    callback({ status: "error", error: err.message });
+                }
+            }
+        });
+
+        /**
+         * MESSAGE INTERCEPTION (Task 3)
+         */
+
+        socket.on("notification_intercepted", async (data, callback) => {
+            const { childId, appName, packageName, senderName, text, timestamp } = data;
+            console.log(`[Messages] Intercepted from ${appName} on child ${childId}: ${senderName} says "${text}"`);
+
+            // Relay to parents for real-time dashboard update (like a live chat)
+            io.to(`child_${childId}`).emit("notification_intercepted", {
+                childId,
+                appName,
+                packageName,
+                senderName,
+                text,
+                timestamp
+            });
+
+            // Persist to database
+            try {
+                const res = await fetch(`http://localhost:${port}/api/children/${childId}/notifications`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ appName, packageName, senderName, text, timestamp })
+                });
+
+                if (typeof callback === "function") {
+                    callback({ status: res.ok ? "ok" : "error" });
+                }
+            } catch (err) {
+                console.error("[Messages] DB persist error:", err.message);
+                if (typeof callback === "function") {
+                    callback({ status: "error", error: err.message });
+                }
             }
         });
 
@@ -396,9 +439,9 @@ app.prepare().then(() => {
          */
 
         // 11. Child sends location update → store + relay to subscribed parents
-        socket.on("location_update", (data) => {
+        socket.on("location_update", async (data, callback) => {
             const { childId, latitude, longitude, accuracy, speed, locationName, batteryLevel, networkType, timestamp } = data;
-            console.log(`[Location] Update from child ${childId}: (${latitude?.toFixed(4)}, ${longitude?.toFixed(4)}) acc=${accuracy}m battery=${batteryLevel}%`);
+            console.log(`[Location] Update from ${childId}: (${latitude?.toFixed(4)}, ${longitude?.toFixed(4)})`);
 
             // Update in-memory device state
             const device = onlineDevices.get(childId);
@@ -420,16 +463,23 @@ app.prepare().then(() => {
                 timestamp
             });
 
-            // Persist to database via internal API (fire-and-forget)
+            // Persist to database via internal API
             try {
                 const url = `http://localhost:${port}/api/children/${childId}/location`;
-                fetch(url, {
+                const res = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ latitude, longitude, accuracy, speed, locationName, batteryLevel, networkType })
-                }).catch(err => console.error("[Location] DB persist failed:", err.message));
+                });
+
+                if (typeof callback === "function") {
+                    callback({ status: res.ok ? "ok" : "error" });
+                }
             } catch (err) {
                 console.error("[Location] DB persist error:", err.message);
+                if (typeof callback === "function") {
+                    callback({ status: "error", error: err.message });
+                }
             }
         });
 

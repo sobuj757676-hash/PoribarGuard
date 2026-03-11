@@ -60,7 +60,9 @@
     "waitingGpsFix": "GPS ফিক্সের অপেক্ষায়...",
     "forceRefresh": "ফোর্স রিফ্রেশ",
     "lastSeenAtLoc": "সর্বশেষ দেখা গেছে {location} এ {time} আগে",
-    "searching": "সিগন্যাল খোঁজা হচ্ছে..."
+    "searching": "সিগন্যাল খোঁজা হচ্ছে...",
+    "messages": "লাইভ মেসেজ",
+    "messagesDesc": "মেসেজিং অ্যাপ থেকে ইন্টারসেপ্ট করা নোটিফিকেশন।"
   },
   "Admin": {
     "dashboard": "ড্যাশবোর্ড",

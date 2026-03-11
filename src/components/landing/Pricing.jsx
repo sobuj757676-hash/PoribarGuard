@@ -4,33 +4,17 @@ import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import Link from 'next/link';
 
-export default function Pricing() {
-    const tiers = [
-        {
-            name: "Standard",
-            price: "৳299",
-            desc: "Basic safety for one child",
-            features: ["Live Location Tracking", "Geofence Alerts (School/Home)", "Daily Screen Time Reports", "SOS Button Access"],
-            highlight: false,
-            btnText: "Start Free Trial"
-        },
-        {
-            name: "Premium",
-            price: "৳599",
-            desc: "Most Popular! Best for ultimate peace of mind.",
-            features: ["Everything in Standard", "Live Camera & Mic On-Demand", "Live Screen Viewing", "Prayer Time Auto-Lock", "App Blocking (TikTok, FreeFire)"],
-            highlight: true,
-            btnText: "Start 7-Day Free Trial"
-        },
-        {
-            name: "Ultimate",
-            price: "৳899",
-            desc: "For multiple children & strict control",
-            features: ["Everything in Premium", "Device Owner Mode (Uninstall block)", "Remote Wipe Data", "Priority 24/7 Phone Support", "Up to 3 Children"],
-            highlight: false,
-            btnText: "Start Free Trial"
-        }
-    ];
+const defaultTiers = [
+    { name: 'Standard', price: '৳299', desc: 'Basic safety for one child', features: ['Live Location Tracking', 'Geofence Alerts (School/Home)', 'Daily Screen Time Reports', 'SOS Button Access'], isPopular: false, btnText: 'Start Free Trial' },
+    { name: 'Premium', price: '৳599', desc: 'Most Popular! Best for ultimate peace of mind.', features: ['Everything in Standard', 'Live Camera & Mic On-Demand', 'Live Screen Viewing', 'Prayer Time Auto-Lock', 'App Blocking (TikTok, FreeFire)'], isPopular: true, btnText: 'Start 7-Day Free Trial' },
+    { name: 'Ultimate', price: '৳899', desc: 'For multiple children & strict control', features: ['Everything in Premium', 'Device Owner Mode (Uninstall block)', 'Remote Wipe Data', 'Priority 24/7 Phone Support', 'Up to 3 Children'], isPopular: false, btnText: 'Start Free Trial' }
+];
+
+export default function Pricing({ config }) {
+    const sectionTitle = config?.sectionTitle || 'সাশ্রয়ী মূল্যে পরিবারের নিরাপত্তা';
+    const sectionSubtitle = config?.sectionSubtitle || 'Pay securely via bKash, Nagad, or any International Card.';
+    const saveBadge = config?.saveBadge || 'Save 20% on Annual Plans (2 months FREE)';
+    const tiers = config?.tiers?.length > 0 ? config.tiers : defaultTiers;
 
     return (
         <section className="py-24 bg-gray-50">
@@ -43,11 +27,11 @@ export default function Pricing() {
                         viewport={{ once: true }}
                     >
                         <h2 className="text-4xl md:text-5xl font-black text-gray-900" style={{ fontFamily: 'Noto Sans Bengali, sans-serif' }}>
-                            সাশ্রয়ী মূল্যে পরিবারের নিরাপত্তা
+                            {sectionTitle}
                         </h2>
                         <p className="mt-4 text-xl text-gray-600 font-medium">
-                            Pay securely via bKash, Nagad, or any International Card.
-                            <span className="block mt-2 font-bold text-emerald-600 bg-emerald-100 inline-block px-4 py-1 rounded-full text-sm">Save 20% on Annual Plans (2 months FREE)</span>
+                            {sectionSubtitle}
+                            <span className="block mt-2 font-bold text-emerald-600 bg-emerald-100 inline-block px-4 py-1 rounded-full text-sm">{saveBadge}</span>
                         </p>
                     </motion.div>
                 </div>
@@ -60,16 +44,16 @@ export default function Pricing() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.2 }}
-                            className={`relative bg-white rounded-3xl p-8 flex flex-col ${tier.highlight ? 'border-2 border-emerald-500 shadow-2xl scale-100 md:scale-105 z-10' : 'border border-gray-200 shadow-lg'}`}
+                            className={`relative bg-white rounded-3xl p-8 flex flex-col ${tier.isPopular ? 'border-2 border-emerald-500 shadow-2xl scale-100 md:scale-105 z-10' : 'border border-gray-200 shadow-lg'}`}
                         >
-                            {tier.highlight && (
+                            {tier.isPopular && (
                                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-emerald-500 text-white font-black text-sm uppercase tracking-wide px-6 py-1.5 rounded-full shadow-lg">
                                     Most Popular
                                 </div>
                             )}
 
                             <div className="mb-8 text-center pb-8 border-b border-gray-100">
-                                <h3 className={`text-2xl font-bold mb-2 ${tier.highlight ? 'text-emerald-600' : 'text-gray-900'}`}>{tier.name}</h3>
+                                <h3 className={`text-2xl font-bold mb-2 ${tier.isPopular ? 'text-emerald-600' : 'text-gray-900'}`}>{tier.name}</h3>
                                 <p className="text-gray-500 text-sm mb-6 h-10">{tier.desc}</p>
                                 <div className="flex justify-center items-end gap-1">
                                     <span className="text-4xl font-black text-gray-900">{tier.price}</span>
@@ -80,13 +64,13 @@ export default function Pricing() {
                             <ul className="flex-1 space-y-4 mb-8">
                                 {tier.features.map((feat, fIdx) => (
                                     <li key={fIdx} className="flex items-start gap-3">
-                                        <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${tier.highlight ? 'text-emerald-500' : 'text-gray-400'}`} />
+                                        <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${tier.isPopular ? 'text-emerald-500' : 'text-gray-400'}`} />
                                         <span className="text-gray-700 font-medium">{feat}</span>
                                     </li>
                                 ))}
                             </ul>
 
-                            <Link href="/register" className={`w-full text-center py-4 rounded-xl font-bold text-lg transition-transform hover:-translate-y-1 ${tier.highlight ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
+                            <Link href="/register" className={`w-full text-center py-4 rounded-xl font-bold text-lg transition-transform hover:-translate-y-1 ${tier.isPopular ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
                                 {tier.btnText}
                             </Link>
                         </motion.div>

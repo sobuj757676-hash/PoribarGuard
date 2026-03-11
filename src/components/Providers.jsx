@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react";
 import { SocketProvider } from "@/context/SocketContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { SWRConfig } from "swr";
 import { toast } from "sonner";
 
@@ -19,24 +20,25 @@ const fetcher = async (url) => {
 export default function Providers({ children }) {
     return (
         <SessionProvider>
-            <SWRConfig
-                value={{
-                    fetcher,
-                    revalidateOnFocus: true,
-                    revalidateOnReconnect: true,
-                    dedupingInterval: 2000,
-                    onError: (error, key) => {
-                        if (error.status !== 403 && error.status !== 404) {
-                            // Don't toast on 401/403 (handled by auth) or 404s
-                            console.error(`SWR Error fetching ${key}:`, error);
+            <ThemeProvider>
+                <SWRConfig
+                    value={{
+                        fetcher,
+                        revalidateOnFocus: true,
+                        revalidateOnReconnect: true,
+                        dedupingInterval: 2000,
+                        onError: (error, key) => {
+                            if (error.status !== 403 && error.status !== 404) {
+                                console.error(`SWR Error fetching ${key}:`, error);
+                            }
                         }
-                    }
-                }}
-            >
-                <SocketProvider>
-                    {children}
-                </SocketProvider>
-            </SWRConfig>
+                    }}
+                >
+                    <SocketProvider>
+                        {children}
+                    </SocketProvider>
+                </SWRConfig>
+            </ThemeProvider>
         </SessionProvider>
     );
 }
