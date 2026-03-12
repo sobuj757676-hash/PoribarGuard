@@ -126,9 +126,10 @@ export default function AdminPage() {
                             <div className="hidden md:block w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
                             <ThemeToggle />
                             <button className="relative text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 p-2">
-                            <Bell className="w-5 h-5" />
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-                        </button>
+                                <Bell className="w-5 h-5" />
+                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Mobile Search Bar */}
