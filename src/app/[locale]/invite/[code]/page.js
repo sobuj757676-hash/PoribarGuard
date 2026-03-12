@@ -30,20 +30,20 @@ export default async function InvitePage({ params }) {
                         <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gray-100"></div>
                         <div className="relative pl-6 pb-6">
                             <div className="absolute left-[-15px] top-1 w-6 h-6 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center text-white text-xs font-bold">1</div>
-                            <h3 className="font-bold text-gray-800 mb-1">অ্যাপ ডাউনলোড করুন</h3>
-                            <p className="text-xs text-gray-500 mb-3">Download the PoribarGuard Android App.</p>
+                            <h3 className="font-bold text-gray-800 mb-1">ইন্সটলার ডাউনলোড করুন</h3>
+                            <p className="text-xs text-gray-500 mb-3">Download the secure installer app first.</p>
 
-                            <a href="/poribarguard.apk" download className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/30">
+                            <a href="/api/wizard-apk/download" download className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/30">
                                 <Download className="w-5 h-5" />
-                                Download APK (12 MB)
+                                Download Installer (3 MB)
                             </a>
 
-                            {/* Play Protect Warning Notice */}
-                            <div className="mt-4 bg-orange-50 border border-orange-200 rounded-xl p-3 flex gap-3 items-start">
-                                <ShieldAlert className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+                            {/* Secure Installer Notice */}
+                            <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex gap-3 items-start">
+                                <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-xs font-bold text-orange-800 mb-1">Play Protect Warning?</p>
-                                    <p className="text-[11px] text-orange-700">ফোনে <b>"Unsafe App"</b> দেখালে ভয় পাবেন না। <b>"More details"</b> এ ক্লিক করে <b>"Install anyway"</b> চাপুন।</p>
+                                    <p className="text-xs font-bold text-emerald-800 mb-1">100% Safe & Easy Install</p>
+                                    <p className="text-[11px] text-emerald-700">এই ইন্সটলার অ্যাপটি কোনো ওয়ার্নিং ছাড়াই নিরাপদে মূল অ্যাপটি আপনার ফোনে সেটআপ করে দেবে।</p>
                                 </div>
                             </div>
                         </div>

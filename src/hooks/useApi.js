@@ -179,3 +179,19 @@ export function useAdminLandingConfig() {
 export function useAdminLandingConfigMutation() {
     return useSWRMutation('/api/admin/landing-config', sendRequest);
 }
+
+export function useAdminApks() {
+    const { data, error, isLoading, mutate } = useSWR('/api/admin/apk');
+    return {
+        apks: data?.data || [], // Note: Assuming the API returns { success: true, count: X, data: [...] }
+        isLoading,
+        isError: error,
+        mutate
+    };
+}
+
+export function useAdminApkMutation() {
+    // This hook handles PUT (setActive) and DELETE operations
+    return useSWRMutation('/api/admin/apk', sendRequest);
+}
+// Upload uses standard XMLHttpRequest in the UI component for progress tracking, not SWR

@@ -4,13 +4,61 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
 const MAX_RETRIES = 3;
-const RETRY_BACKOFF_MS = [2000, 4000, 8000]; // Exponential backoff for ICE/Peer failures
-const PING_BACKOFF_MS = [2000, 5000, 10000]; // Exponential backoff for initial offline pings
+const RETRY_BACKOFF_MS = [2000, 4000, 8000];
+const PING_BACKOFF_MS = [2000, 5000, 10000];
+
+/**
+ * Fetch dynamic ICE server configuration from the admin-managed TURN API.
+ * Falls back to Google STUN if the fetch fails.
+ */
+async function fetchIceServers() {
+    try {
+        const res = await fetch('/api/turn-credentials');
+        if (res.ok) {
+            const data = await res.json();
+            if (data.iceServers && data.iceServers.length > 0) {
+                return data.iceServers;
+            }
+        }
+    } catch (err) {
+        console.warn("[useWebRTC] Failed to fetch ICE config, using fallback:", err.message);
+    }
+    // Fallback
+    return [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+    ];
+}
+
+/**
+ * Detect connection type from WebRTC stats (P2P / STUN / TURN Relay)
+ */
+async function detectConnectionType(pc) {
+    try {
+        const stats = await pc.getStats();
+        for (const [, report] of stats) {
+            if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                const localId = report.localCandidateId;
+                for (const [, r] of stats) {
+                    if (r.id === localId) {
+                        if (r.candidateType === 'relay') return 'relay';
+                        if (r.candidateType === 'srflx') return 'srflx';
+                        if (r.candidateType === 'host') return 'host';
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("[useWebRTC] Stats error:", e);
+    }
+    return 'unknown';
+}
 
 export function useWebRTC(socket, childId, isAudioOnly = false) {
     const [stream, setStream] = useState(null);
     const [status, setStatus] = useState('disconnected');
     const [networkQuality, setNetworkQuality] = useState('Good');
+    const [connectionType, setConnectionType] = useState('unknown'); // 'host' | 'srflx' | 'relay' | 'unknown'
     const [retryCount, setRetryCount] = useState(0);
     const [isRetryExhausted, setIsRetryExhausted] = useState(false);
 
@@ -19,6 +67,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
     const reconnectTimeoutRef = useRef(null);
     const retryTimeoutRef = useRef(null);
     const retryCountRef = useRef(0);
+    const iceServersRef = useRef(null); // Cached ICE servers for this session
 
     /**
      * Clean up an existing PeerConnection
@@ -43,19 +92,16 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
     }, []);
 
     /**
-     * Create a fresh RTCPeerConnection with all event handlers
+     * Create a fresh RTCPeerConnection with dynamic ICE servers
      */
-    const createPeerConnection = useCallback(() => {
+    const createPeerConnection = useCallback(async () => {
+        // Fetch ICE servers (cached per session)
+        if (!iceServersRef.current) {
+            iceServersRef.current = await fetchIceServers();
+        }
+
         const pc = new RTCPeerConnection({
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                {
-                    urls: 'turn:turn.fsafe.com:3478',
-                    username: 'fsafe_rtc_user',
-                    credential: 'fsafe_rtc_password'
-                }
-            ]
+            iceServers: iceServersRef.current
         });
 
         pc.ontrack = (event) => {
@@ -66,6 +112,15 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
                 setRetryCount(0);
                 setIsRetryExhausted(false);
                 retryCountRef.current = 0;
+
+                // Detect connection type after 3s (let ICE stabilize)
+                setTimeout(async () => {
+                    if (isMountedRef.current && pc.signalingState !== 'closed') {
+                        const type = await detectConnectionType(pc);
+                        setConnectionType(type);
+                        console.log(`[WebRTC] Connection type: ${type}`);
+                    }
+                }, 3000);
             }
         };
 
@@ -87,9 +142,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
                     break;
 
                 case 'disconnected':
-                    // Transient — allow 10s grace period for network recovery (like moving WiFi to Cellular)
                     if (status !== 'reconnecting') setStatus('reconnecting');
-
                     if (!reconnectTimeoutRef.current) {
                         reconnectTimeoutRef.current = setTimeout(() => {
                             if (!isMountedRef.current) return;
@@ -101,12 +154,10 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
                 case 'failed':
                     console.error("[WebRTC] ICE failed decisively");
-                    // ICE failed means we must restart the peer connection from scratch
                     attemptRetry();
                     break;
 
                 case 'closed':
-                    // Explicit tear down
                     break;
 
                 default:
@@ -126,7 +177,6 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
     /**
      * Attempt to retry the connection with a fresh PeerConnection.
-     * Limited to MAX_RETRIES attempts.
      */
     const attemptRetry = useCallback(() => {
         if (!isMountedRef.current || !socket) return;
@@ -147,10 +197,11 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         const delay = RETRY_BACKOFF_MS[currentRetry] || 8000;
         console.log(`[WebRTC] Peer Connection failed. Retry attempt ${retryCountRef.current}/${MAX_RETRIES} in ${delay}ms`);
 
-        // Tear down old PC
         cleanupPC();
 
-        // Wait using exponential backoff then create fresh connection
+        // Invalidate cached ICE servers on retry to get fresh credentials
+        iceServersRef.current = null;
+
         retryTimeoutRef.current = setTimeout(() => {
             if (!isMountedRef.current) return;
             initiateCall();
@@ -159,7 +210,6 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
     /**
      * Initiate the call: ping child, then create offer.
-     * Includes exponential backoff for offline pings.
      */
     const initiateCall = useCallback((pingRetry = 0) => {
         if (!isMountedRef.current || !socket || !childId) return;
@@ -174,7 +224,6 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
             if (data.status === "offline") {
                 console.warn(`[WebRTC] Child offline (ping attempt ${pingRetry + 1})`);
 
-                // Retry ping with backoff
                 if (pingRetry < PING_BACKOFF_MS.length) {
                     const delay = PING_BACKOFF_MS[pingRetry];
                     console.log(`[WebRTC] Retrying ping in ${delay}ms...`);
@@ -194,8 +243,8 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
             const latency = Date.now() - startTime;
             console.log(`[WebRTC] Child responded! Latency: ${latency}ms`);
 
-            // Create fresh PeerConnection and start call
-            const pc = createPeerConnection();
+            // Create fresh PeerConnection with dynamic ICE servers
+            const pc = await createPeerConnection();
 
             try {
                 if (!isAudioOnly) {
@@ -225,6 +274,8 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         setRetryCount(0);
         setIsRetryExhausted(false);
         setStream(null);
+        setConnectionType('unknown');
+        iceServersRef.current = null; // Force re-fetch on manual retry
         cleanupPC();
         initiateCall();
     }, [cleanupPC, initiateCall]);
@@ -242,8 +293,8 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         retryCountRef.current = 0;
         setRetryCount(0);
         setIsRetryExhausted(false);
+        iceServersRef.current = null;
 
-        // Handle signaling updates (answer + ICE candidates from child)
         const handleSignal = async (data) => {
             const pc = pcRef.current;
             if (!pc || pc.signalingState === 'closed') return;
@@ -285,12 +336,10 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
             toast.error(data.message || "Failed to negotiate stream with the device.");
             if (isMountedRef.current) {
-                // Don't immediately fail — let retry logic handle it
                 attemptRetry();
             }
         };
 
-        // Listen for child status updates (online/offline from heartbeat system)
         const handleChildStatus = (data) => {
             if (data.childId === childId && data.status === 'offline') {
                 console.warn("[WebRTC] Child went offline (heartbeat timeout)");
@@ -308,7 +357,6 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         socket.on('webrtc_error', handleError);
         socket.on('child_status_update', handleChildStatus);
 
-        // Start the first call
         initiateCall();
 
         return () => {
@@ -323,7 +371,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
             cleanupPC();
             socket.emit('stop_stream', { childId });
         };
-    }, [childId, socket]); // Only re-run on childId or socket change
+    }, [childId, socket]);
 
     const switchCamera = useCallback(() => {
         if (!socket) return;
@@ -334,6 +382,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         stream,
         status,
         networkQuality,
+        connectionType,
         switchCamera,
         retryCount,
         isRetryExhausted,

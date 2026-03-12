@@ -5,14 +5,14 @@ import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
-import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation } from '@/hooks/useApi';
+import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation, useAdminApks, useAdminApkMutation } from '@/hooks/useApi';
 import {
     LayoutDashboard, Users, CreditCard, Smartphone, LifeBuoy,
     ShieldAlert, BarChart3, UploadCloud, Search, Bell, Settings,
     MoreVertical, ArrowUpRight, ArrowDownRight, MapPin, CheckCircle,
     XCircle, Clock, Download, Plus, Terminal, AlertTriangle,
     Filter, UserPlus, LogOut, Loader2,
-    Map, RefreshCcw, FileText, Send, HardDrive, DollarSign, Mail, Database, SmartphoneCharging, Play, Pause, Server, Globe, Trash2, GripVertical, Eye, Type, Star, MessageSquare, Zap
+    Map, RefreshCcw, FileText, Send, HardDrive, DollarSign, Mail, Database, SmartphoneCharging, Play, Pause, Server, Globe, Trash2, GripVertical, Eye, Type, Star, MessageSquare, Zap, Radio, Wifi, WifiOff, Copy, ChevronDown, ChevronUp, Activity, Shield
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -61,6 +61,7 @@ export default function AdminPage() {
                     <NavItem icon={<BarChart3 />} label={t('analytics')} isActive={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
                     <NavItem icon={<UploadCloud />} label={t('apk')} isActive={activeTab === 'apk'} onClick={() => setActiveTab('apk')} />
                     <NavItem icon={<Globe />} label="Landing Page" isActive={activeTab === 'landing'} onClick={() => setActiveTab('landing')} />
+                    <NavItem icon={<Radio />} label="TURN Servers" isActive={activeTab === 'turn'} onClick={() => setActiveTab('turn')} />
                 </nav>
 
                 <div className="p-4 border-t border-slate-800 space-y-1">
@@ -105,6 +106,7 @@ export default function AdminPage() {
                     {activeTab === 'analytics' && <AnalyticsTab />}
                     {activeTab === 'apk' && <ApkTab />}
                     {activeTab === 'landing' && <LandingConfigTab />}
+                    {activeTab === 'turn' && <TurnServersTab />}
                     {activeTab === 'settings' && <SettingsTab />}
                 </main>
             </div>
@@ -822,63 +824,302 @@ function AnalyticsTab() {
 }
 
 // ==========================================
-// APK MANAGEMENT TAB (UI Only)
+// APK MANAGEMENT TAB
 // ==========================================
 function ApkTab() {
+    const { apks, isLoading, mutate } = useAdminApks();
+    const { trigger: apkAction } = useAdminApkMutation();
+    const [showModal, setShowModal] = useState(false);
+
+    // Upload State
+    const [file, setFile] = useState(null);
+    const [version, setVersion] = useState('');
+    const [buildNumber, setBuildNumber] = useState('');
+    const [targetSdk, setTargetSdk] = useState('34');
+    const [releaseNotes, setReleaseNotes] = useState('');
+    const [isCritical, setIsCritical] = useState(false);
+    const [appType, setAppType] = useState('CHILD'); // 'CHILD' or 'WIZARD'
+    const [progress, setProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleAction = async (id, actionType) => {
+        try {
+            if (actionType === 'DELETE') {
+                if (!confirm('Are you sure you want to delete this APK?')) return;
+                await apkAction({ method: 'DELETE', body: {} }, { url: `/api/admin/apk?id=${id}` });
+                toast.success('APK deleted');
+            } else if (actionType === 'ACTIVATE') {
+                await apkAction({ method: 'PUT', body: { id } });
+                toast.success('APK set as LIVE');
+            }
+            mutate();
+        } catch (e) {
+            toast.error(e.message || 'Action failed');
+        }
+    };
+
+    const handleUpload = () => {
+        if (!file || !version || !buildNumber) {
+            toast.error('File, Version, and Build Number are required');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('version', version);
+        formData.append('buildNumber', buildNumber);
+        formData.append('targetSdk', targetSdk);
+        formData.append('releaseNotes', releaseNotes);
+        formData.append('isCriticalUpdate', isCritical);
+        formData.append('appType', appType);
+
+        setIsUploading(true);
+        setProgress(0);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/admin/apk/upload', true);
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                setProgress(percent);
+            }
+        };
+
+        xhr.onload = () => {
+            setIsUploading(false);
+            setProgress(0);
+            if (xhr.status >= 200 && xhr.status < 300) {
+                toast.success('Build uploaded successfully!');
+                setShowModal(false);
+                setFile(null);
+                setVersion('');
+                setBuildNumber('');
+                setReleaseNotes('');
+                setIsCritical(false);
+                setAppType('CHILD');
+                mutate();
+            } else {
+                let err = 'Upload failed';
+                try { err = JSON.parse(xhr.responseText).error || err; } catch (e) { }
+                toast.error(err);
+            }
+        };
+
+        xhr.onerror = () => {
+            setIsUploading(false);
+            setProgress(0);
+            toast.error('Network error during upload');
+        };
+
+        xhr.send(formData);
+    };
+
+    const liveChildApk = apks?.find(a => a.status === 'LIVE' && a.appType === 'CHILD');
+    const liveWizardApk = apks?.find(a => a.status === 'LIVE' && a.appType === 'WIZARD');
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-300">
+        <div className="space-y-6 animate-in fade-in duration-300 relative">
             <h2 className="text-xl font-bold">APK Management & OTA Updates</h2>
 
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6">
-                <div className="flex-1 text-left w-full">
-                    <h3 className="text-lg font-black text-indigo-900 dark:text-indigo-400 mb-2">Current Production Version (Child App)</h3>
-                    <p className="text-sm text-indigo-700 dark:text-indigo-300">Version: <span className="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded ml-1 border border-indigo-100 dark:border-indigo-700">v2.1.4 (Build 42)</span></p>
-                    <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">Uploaded: <span className="font-semibold">2 days ago</span></p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                {/* Child App Release */}
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6 flex flex-col items-start gap-4 h-full">
+                    <div className="flex-1 w-full relative h-full">
+                        <div className="absolute top-0 right-0">
+                            <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 px-2 py-1 text-[10px] font-bold uppercase rounded border border-indigo-200 dark:border-indigo-700">Client Payload</span>
+                        </div>
+                        <h3 className="text-lg font-black text-indigo-900 dark:text-indigo-400 mb-2">Main Child App</h3>
+                        {liveChildApk ? (
+                            <>
+                                <p className="text-sm text-indigo-700 dark:text-indigo-300">Version: <span className="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded ml-1 border border-indigo-100 dark:border-indigo-700">{liveChildApk.version} (Build {liveChildApk.buildNumber})</span></p>
+                                <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">Uploaded: <span className="font-semibold">{new Date(liveChildApk.createdAt).toLocaleDateString()}</span></p>
+                            </>
+                        ) : (
+                            <p className="text-sm text-indigo-700 dark:text-indigo-300">No LIVE release currently set.</p>
+                        )}
+                    </div>
                 </div>
-                <button className="whitespace-nowrap w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20">
-                    <UploadCloud className="w-5 h-5" /> Upload New Build
-                </button>
+
+                {/* Wizard App Release */}
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6 flex flex-col items-start gap-4 h-full">
+                    <div className="flex-1 w-full relative h-full">
+                        <div className="absolute top-0 right-0">
+                            <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 px-2 py-1 text-[10px] font-bold uppercase rounded border border-emerald-200 dark:border-emerald-700">Bypass Tool</span>
+                        </div>
+                        <h3 className="text-lg font-black text-emerald-900 dark:text-emerald-400 mb-2">Wizard Installer</h3>
+                        {liveWizardApk ? (
+                            <>
+                                <p className="text-sm text-emerald-700 dark:text-emerald-300">Version: <span className="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded ml-1 border border-emerald-100 dark:border-emerald-700">{liveWizardApk.version} (Build {liveWizardApk.buildNumber})</span></p>
+                                <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">Uploaded: <span className="font-semibold">{new Date(liveWizardApk.createdAt).toLocaleDateString()}</span></p>
+                            </>
+                        ) : (
+                            <p className="text-sm text-emerald-700 dark:text-emerald-300">No LIVE release currently set.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="md:col-span-2 flex justify-end mt-[-10px]">
+                    <button onClick={() => setShowModal(true)} className="whitespace-nowrap w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition">
+                        <UploadCloud className="w-5 h-5" /> Upload New Build
+                    </button>
+                </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase text-xs font-bold">
-                        <tr>
-                            <th className="px-6 py-4">Version Info</th>
-                            <th className="px-6 py-4">File Size</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Date Uploaded</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                            <td className="px-6 py-4">
-                                <p className="font-bold text-slate-900 dark:text-white">v2.1.4</p>
-                                <p className="text-xs text-slate-500">Build 42 • Target SDK 34</p>
-                            </td>
-                            <td className="px-6 py-4 text-slate-500 font-medium">14.2 MB</td>
-                            <td className="px-6 py-4"><span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-[10px] tracking-wider font-extrabold rounded">LIVE (PRODUCTION)</span></td>
-                            <td className="px-6 py-4 text-slate-500 text-xs">Oct 12, 2024</td>
-                            <td className="px-6 py-4 text-right">
-                                <button className="text-indigo-500 dark:text-indigo-400 font-bold text-xs bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded disabled:opacity-50 cursor-default border border-transparent">Active</button>
-                            </td>
-                        </tr>
-                        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                            <td className="px-6 py-4">
-                                <p className="font-bold text-slate-900 dark:text-white">v2.1.3</p>
-                                <p className="text-xs text-slate-500">Build 41 • Target SDK 33</p>
-                            </td>
-                            <td className="px-6 py-4 text-slate-500 font-medium">13.8 MB</td>
-                            <td className="px-6 py-4"><span className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-[10px] tracking-wider font-extrabold rounded">ARCHIVED</span></td>
-                            <td className="px-6 py-4 text-slate-500 text-xs">Sep 28, 2024</td>
-                            <td className="px-6 py-4 text-right">
-                                <button className="text-slate-600 dark:text-slate-400 font-bold text-xs border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition">Restore</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden min-h-[300px]">
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-48 text-slate-400">
+                        <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading versions...
+                    </div>
+                ) : apks?.length === 0 ? (
+                    <div className="flex justify-center items-center h-48 text-slate-400">
+                        No APKs uploaded yet.
+                    </div>
+                ) : (
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase text-xs font-bold">
+                            <tr>
+                                <th className="px-6 py-4">Version Info</th>
+                                <th className="px-6 py-4">File Size</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Date Uploaded</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                            {apks?.map((apk) => (
+                                <tr key={apk.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-bold text-slate-900 dark:text-white">{apk.version}</p>
+                                            {apk.appType === 'WIZARD' ? (
+                                                <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 text-[10px] rounded font-bold uppercase tracking-wider">Wizard</span>
+                                            ) : (
+                                                <span className="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 text-[10px] rounded font-bold uppercase tracking-wider">Child App</span>
+                                            )}
+                                            {apk.isCriticalUpdate && <span className="bg-red-100 text-red-700 px-1.5 py-0.5 text-[10px] rounded font-bold uppercase tracking-wider">Critical</span>}
+                                        </div>
+                                        <p className="text-xs text-slate-500">Build {apk.buildNumber} • Target SDK {apk.targetSdk}</p>
+                                    </td>
+                                    <td className="px-6 py-4 text-slate-500 font-medium">{apk.fileSize}</td>
+                                    <td className="px-6 py-4">
+                                        {apk.status === 'LIVE' ? (
+                                            <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-[10px] tracking-wider font-extrabold rounded">LIVE (PRODUCTION)</span>
+                                        ) : (
+                                            <span className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-[10px] tracking-wider font-extrabold rounded">ARCHIVED</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-slate-500 text-xs">{new Date(apk.createdAt).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                        {apk.status !== 'LIVE' && (
+                                            <>
+                                                <button onClick={() => handleAction(apk.id, 'ACTIVATE')} className="text-indigo-600 dark:text-indigo-400 font-bold text-xs bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition border border-transparent">Set Active</button>
+                                                <button onClick={() => handleAction(apk.id, 'DELETE')} className="text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 p-1.5 rounded transition"><Trash2 className="w-4 h-4" /></button>
+                                            </>
+                                        )}
+                                        {apk.status === 'LIVE' && (
+                                            <button disabled className="text-emerald-500 dark:text-emerald-400 font-bold text-xs bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded disabled:opacity-50 cursor-default border border-transparent">Active</button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
+
+            {/* Upload Modal */}
+            {showModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+                        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-lg flex items-center gap-2 text-slate-800 dark:text-slate-200"><UploadCloud className="w-5 h-5 text-indigo-500" /> Upload New Build</h3>
+                            {!isUploading && <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"><XCircle className="w-5 h-5" /></button>}
+                        </div>
+
+                        <div className="p-6 overflow-y-auto space-y-5">
+                            <div className={`border-2 border-dashed rounded-xl p-6 text-center transition ${file ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10' : 'border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                                <input type="file" accept=".apk" onChange={e => setFile(e.target.files[0])} className="hidden" id="apk-upload" disabled={isUploading} />
+                                <label htmlFor="apk-upload" className="cursor-pointer flex flex-col items-center justify-center">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition ${file ? 'bg-indigo-100 dark:bg-indigo-900/50' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                                        <UploadCloud className={`w-6 h-6 ${file ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
+                                    </div>
+                                    <p className="font-bold text-slate-700 dark:text-slate-200">{file ? file.name : 'Click to browse APK file'}</p>
+                                    <p className="text-xs text-slate-500 mt-1">{file ? `Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Max size: 100MB'}</p>
+                                </label>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">App Type <span className="text-red-500">*</span></label>
+                                    <div className="flex gap-4">
+                                        <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition ${appType === 'CHILD' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'}`}>
+                                            <input type="radio" name="appType" value="CHILD" checked={appType === 'CHILD'} onChange={(e) => setAppType(e.target.value)} className="hidden" />
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${appType === 'CHILD' ? 'border-indigo-500' : 'border-slate-300'}`}>
+                                                {appType === 'CHILD' && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
+                                            </div>
+                                            <span className="font-bold text-sm">Main Child App</span>
+                                        </label>
+                                        <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition ${appType === 'WIZARD' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'}`}>
+                                            <input type="radio" name="appType" value="WIZARD" checked={appType === 'WIZARD'} onChange={(e) => setAppType(e.target.value)} className="hidden" />
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${appType === 'WIZARD' ? 'border-emerald-500' : 'border-slate-300'}`}>
+                                                {appType === 'WIZARD' && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                                            </div>
+                                            <span className="font-bold text-sm">Wizard Installer</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Version String <span className="text-red-500">*</span></label>
+                                    <input type="text" placeholder="e.g. v2.1.5" value={version} onChange={e => setVersion(e.target.value)} disabled={isUploading} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-slate-200 transition" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Build Number <span className="text-red-500">*</span></label>
+                                    <input type="number" placeholder="e.g. 43" value={buildNumber} onChange={e => setBuildNumber(e.target.value)} disabled={isUploading} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-slate-200 transition" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Target SDK</label>
+                                <input type="number" placeholder="e.g. 34" value={targetSdk} onChange={e => setTargetSdk(e.target.value)} disabled={isUploading} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-slate-200 transition" />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Release Notes</label>
+                                <textarea placeholder="What's new in this version?" value={releaseNotes} onChange={e => setReleaseNotes(e.target.value)} disabled={isUploading} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px] dark:text-slate-200 transition" />
+                            </div>
+
+                            <label className="flex items-start gap-3 cursor-pointer p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg transition hover:bg-red-100/50">
+                                <input type="checkbox" checked={isCritical} onChange={e => setIsCritical(e.target.checked)} disabled={isUploading} className="mt-0.5 rounded text-red-600 focus:ring-red-500 bg-white border-red-200" />
+                                <div>
+                                    <p className="text-sm font-bold text-red-800 dark:text-red-400">Critical Update</p>
+                                    <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-0.5">Force all child devices to download and install this immediately upon next ping.</p>
+                                </div>
+                            </label>
+
+                            {isUploading && (
+                                <div className="mt-2 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                                    <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">
+                                        <span className="flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading to server...</span>
+                                        <span>{progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                                        <div className="bg-indigo-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 rounded-b-2xl">
+                            {!isUploading && <button onClick={() => setShowModal(false)} className="px-5 py-2.5 font-bold text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700 rounded-lg transition">Cancel</button>}
+                            <button onClick={handleUpload} disabled={isUploading || !file || !version || !buildNumber} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-sm disabled:opacity-50 transition flex items-center gap-2">
+                                {isUploading ? 'Please wait...' : 'Start Upload'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -937,6 +1178,13 @@ function SettingsTab() {
                             <select value={settings.maintenance_mode || 'false'} onChange={e => update('maintenance_mode', e.target.value)} className={inputCls}>
                                 <option value="false">Off — Normal Operation</option>
                                 <option value="true">On — Show Maintenance Page</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Default Language</label>
+                            <select value={settings.default_locale || 'en'} onChange={e => update('default_locale', e.target.value)} className={inputCls}>
+                                <option value="en">English (en)</option>
+                                <option value="bn">Bengali (bn)</option>
                             </select>
                         </div>
                     </div>
@@ -1471,6 +1719,511 @@ function LandingConfigTab() {
         </div>
     );
 }
+
+// ==========================================
+// TURN SERVERS TAB (10/10 Premium)
+// ==========================================
+function TurnServersTab() {
+    const { settings: initialSettings, isLoading: loading, mutate: refetchSettings } = useAdminSettings();
+    const { trigger: saveSettings } = useAdminSettingsMutation();
+
+    const [turnEnabled, setTurnEnabled] = useState(true);
+    const [turnServers, setTurnServers] = useState([]);
+    const [turnSecret, setTurnSecret] = useState('');
+    const [turnTTL, setTurnTTL] = useState('86400');
+    const [stunServers, setStunServers] = useState('');
+    const [meteredApiKey, setMeteredApiKey] = useState('');
+    const [bandwidthUsed, setBandwidthUsed] = useState(0);
+    const [bandwidthLimit, setBandwidthLimit] = useState(20480);
+    const [showSecret, setShowSecret] = useState(false);
+    const [showMeteredKey, setShowMeteredKey] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [healthResults, setHealthResults] = useState({});
+    const [testingAll, setTestingAll] = useState(false);
+    const [showAndroidSnippet, setShowAndroidSnippet] = useState(false);
+    const [fetchingMetered, setFetchingMetered] = useState(false);
+
+    // Add server form
+    const [newUrl, setNewUrl] = useState('');
+    const [newTransport, setNewTransport] = useState('auto');
+    const [newRegion, setNewRegion] = useState('Global');
+    const [newPriority, setNewPriority] = useState(10);
+    const [newUsername, setNewUsername] = useState('');
+    const [newCredential, setNewCredential] = useState('');
+
+    // Initialize from settings
+    useEffect(() => {
+        if (initialSettings && Object.keys(initialSettings).length > 0) {
+            setTurnEnabled(initialSettings.turn_enabled !== 'false');
+            setTurnSecret(initialSettings.turn_secret || '');
+            setTurnTTL(initialSettings.turn_credential_ttl || '86400');
+            setMeteredApiKey(initialSettings.turn_metered_api_key || '');
+            setBandwidthUsed(parseFloat(initialSettings.turn_bandwidth_used_mb || '0'));
+            setBandwidthLimit(parseFloat(initialSettings.turn_bandwidth_limit_mb || '20480'));
+            try {
+                setTurnServers(JSON.parse(initialSettings.turn_servers || '[]'));
+            } catch { setTurnServers([]); }
+            try {
+                const arr = JSON.parse(initialSettings.turn_stun_servers || '[]');
+                setStunServers(arr.join('\n'));
+            } catch { setStunServers('stun:stun.l.google.com:19302'); }
+        }
+    }, [initialSettings]);
+
+    const save = async () => {
+        setSaving(true);
+        try {
+            await saveSettings({
+                method: 'PUT',
+                body: {
+                    turn_enabled: turnEnabled ? 'true' : 'false',
+                    turn_servers: JSON.stringify(turnServers),
+                    turn_secret: turnSecret,
+                    turn_credential_ttl: turnTTL,
+                    turn_stun_servers: JSON.stringify(stunServers.split('\n').map(s => s.trim()).filter(Boolean)),
+                    turn_metered_api_key: meteredApiKey,
+                    turn_bandwidth_used_mb: String(bandwidthUsed),
+                    turn_bandwidth_limit_mb: String(bandwidthLimit),
+                }
+            });
+            toast.success('TURN configuration saved successfully');
+            refetchSettings();
+        } catch (e) {
+            toast.error(e.message || 'Failed to save TURN config');
+        }
+        setSaving(false);
+    };
+
+    const addServer = () => {
+        if (!newUrl.trim()) { toast.error('Server URL is required'); return; }
+        let url = newUrl.trim();
+        if (newTransport !== 'auto' && !url.includes('?transport=')) {
+            url += `?transport=${newTransport}`;
+        }
+        const server = {
+            url,
+            region: newRegion,
+            priority: parseInt(newPriority) || 10,
+            enabled: true,
+            username: newUsername.trim() || undefined,
+            credential: newCredential.trim() || undefined,
+        };
+        setTurnServers(prev => [...prev, server]);
+        setShowAddModal(false);
+        setNewUrl(''); setNewTransport('auto'); setNewRegion('Global'); setNewPriority(10); setNewUsername(''); setNewCredential('');
+        toast.success('Server added — click Save to persist');
+    };
+
+    const removeServer = (idx) => {
+        setTurnServers(prev => prev.filter((_, i) => i !== idx));
+        toast.success('Server removed — click Save to persist');
+    };
+
+    const toggleServer = (idx) => {
+        setTurnServers(prev => prev.map((s, i) => i === idx ? { ...s, enabled: !s.enabled } : s));
+    };
+
+    const moveServer = (idx, direction) => {
+        const newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= turnServers.length) return;
+        const arr = [...turnServers];
+        [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+        // Update priorities
+        arr.forEach((s, i) => s.priority = i + 1);
+        setTurnServers(arr);
+    };
+
+    const testServer = async (url, idx) => {
+        setHealthResults(prev => ({ ...prev, [idx]: { status: 'testing' } }));
+        try {
+            const res = await fetch('/api/admin/turn-health');
+            if (res.ok) {
+                const data = await res.json();
+                const result = data.servers?.find(s => s.url === url);
+                if (result) {
+                    setHealthResults(prev => ({ ...prev, [idx]: result }));
+                } else {
+                    setHealthResults(prev => ({ ...prev, [idx]: { status: 'unreachable', error: 'Not found in test results' } }));
+                }
+            }
+        } catch {
+            setHealthResults(prev => ({ ...prev, [idx]: { status: 'unreachable', error: 'Network error' } }));
+        }
+    };
+
+    const testAllServers = async () => {
+        setTestingAll(true);
+        try {
+            const res = await fetch('/api/admin/turn-health');
+            if (res.ok) {
+                const data = await res.json();
+                const map = {};
+                data.servers?.forEach((r, i) => { map[i] = r; });
+                setHealthResults(map);
+            }
+        } catch { toast.error('Health check failed'); }
+        setTestingAll(false);
+    };
+
+    const fetchMeteredServers = async () => {
+        if (!meteredApiKey) { toast.error('Enter your Metered.ca API key first'); return; }
+        setFetchingMetered(true);
+        try {
+            const res = await fetch(`/api/turn-credentials`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.source === 'metered' && data.iceServers?.length > 0) {
+                    const newServers = data.iceServers
+                        .filter(s => s.urls && String(s.urls).startsWith('turn'))
+                        .map((s, i) => ({
+                            url: Array.isArray(s.urls) ? s.urls[0] : s.urls,
+                            username: s.username || '',
+                            credential: s.credential || '',
+                            region: 'Global',
+                            priority: i + 1,
+                            enabled: true,
+                        }));
+                    setTurnServers(newServers);
+                    toast.success(`Fetched ${newServers.length} TURN servers from Metered.ca`);
+                } else {
+                    toast.warning('No TURN servers returned. Check your API key.');
+                }
+            }
+        } catch { toast.error('Failed to fetch from Metered.ca'); }
+        setFetchingMetered(false);
+    };
+
+    const bandwidthPercent = bandwidthLimit > 0 ? Math.min((bandwidthUsed / bandwidthLimit) * 100, 100) : 0;
+    const bandwidthColor = bandwidthPercent > 80 ? 'text-red-500' : bandwidthPercent > 50 ? 'text-amber-500' : 'text-emerald-500';
+    const enabledCount = turnServers.filter(s => s.enabled !== false).length;
+    const disabledCount = turnServers.length - enabledCount;
+
+    const healthDot = (idx) => {
+        const r = healthResults[idx];
+        if (!r) return null;
+        if (r.status === 'testing') return <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />;
+        if (r.status === 'healthy') return <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" title={`${r.latencyMs}ms`} />;
+        if (r.status === 'slow') return <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" title={`${r.latencyMs}ms (slow)`} />;
+        return <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" title={r.error || 'Unreachable'} />;
+    };
+
+    const regionFlag = (region) => {
+        const flags = { Bangladesh: '🇧🇩', UAE: '🇦🇪', KSA: '🇸🇦', UK: '🇬🇧', USA: '🇺🇸', Singapore: '🇸🇬', Global: '🌐' };
+        return flags[region] || '🌐';
+    };
+
+    const protocolBadge = (url) => {
+        if (!url) return 'TURN';
+        if (url.startsWith('turns:')) return 'TURNS/TLS';
+        if (url.includes('transport=tcp')) return 'TURN/TCP';
+        return 'TURN/UDP';
+    };
+
+    const inputCls = "w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition text-slate-800 dark:text-slate-200";
+    const labelCls = "block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5";
+
+    if (loading) return <div className="p-8 text-center text-slate-400"><Loader2 className="w-6 h-6 animate-spin inline mr-2" />Loading TURN configuration...</div>;
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-300 max-w-5xl">
+            {/* === HEADER === */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-bold flex items-center gap-2"><Radio className="w-6 h-6 text-cyan-500" /> TURN Server Management</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Configure WebRTC relay servers for NAT traversal. Changes apply to all clients instantly.</p>
+                </div>
+                <div className="flex gap-3">
+                    <button onClick={testAllServers} disabled={testingAll || turnServers.length === 0} className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm disabled:opacity-50">
+                        {testingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />} Test All
+                    </button>
+                    <button onClick={save} disabled={saving} className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-sm shadow-cyan-500/20 disabled:opacity-50">
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />} Save Configuration
+                    </button>
+                </div>
+            </div>
+
+            {/* === STATUS BANNER === */}
+            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800 rounded-2xl p-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {/* Global Toggle */}
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-500 uppercase mb-2">TURN Relay</span>
+                        <button onClick={() => setTurnEnabled(!turnEnabled)} className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${turnEnabled ? 'bg-cyan-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                            <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${turnEnabled ? 'translate-x-7' : 'translate-x-0.5'}`} />
+                        </button>
+                        <span className={`text-xs font-bold mt-1 ${turnEnabled ? 'text-cyan-600' : 'text-slate-400'}`}>{turnEnabled ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+
+                    {/* Server counts */}
+                    <div>
+                        <span className="text-xs font-bold text-slate-500 uppercase mb-2 block">Servers</span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl font-black text-slate-900 dark:text-white">{turnServers.length}</span>
+                            <div className="flex flex-col text-[10px] font-bold">
+                                <span className="text-emerald-500">{enabledCount} active</span>
+                                {disabledCount > 0 && <span className="text-slate-400">{disabledCount} disabled</span>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bandwidth Gauge */}
+                    <div>
+                        <span className="text-xs font-bold text-slate-500 uppercase mb-2 block">Bandwidth Used</span>
+                        <div className="flex items-center gap-3">
+                            <div className="relative w-12 h-12">
+                                <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" className="text-slate-200 dark:text-slate-700" strokeWidth="3" />
+                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeDasharray={`${bandwidthPercent}, 100`} className={bandwidthColor} strokeLinecap="round" />
+                                </svg>
+                                <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black ${bandwidthColor}`}>{Math.round(bandwidthPercent)}%</span>
+                            </div>
+                            <div className="text-xs">
+                                <p className="font-bold text-slate-700 dark:text-slate-300">{(bandwidthUsed / 1024).toFixed(1)} GB</p>
+                                <p className="text-slate-400">of {(bandwidthLimit / 1024).toFixed(0)} GB</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Metered Status */}
+                    <div>
+                        <span className="text-xs font-bold text-slate-500 uppercase mb-2 block">Metered.ca</span>
+                        {meteredApiKey ? (
+                            <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Connected</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+                                <span className="text-sm font-medium text-slate-400">Not configured</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* === TURN SERVER CARDS === */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                    <h3 className="font-bold flex items-center gap-2"><Server className="w-5 h-5 text-cyan-500" /> TURN Servers ({turnServers.length})</h3>
+                    <button onClick={() => setShowAddModal(true)} className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm">
+                        <Plus className="w-4 h-4" /> Add Server
+                    </button>
+                </div>
+
+                {turnServers.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <Radio className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                        <p className="font-bold text-slate-600 dark:text-slate-300">No TURN servers configured</p>
+                        <p className="text-sm text-slate-400 mt-1">Add a server manually or connect your Metered.ca account below.</p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                        {turnServers.map((server, idx) => (
+                            <div key={idx} className={`p-4 flex items-center gap-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/30 ${server.enabled === false ? 'opacity-50' : ''}`}>
+                                {/* Priority arrows */}
+                                <div className="flex flex-col gap-0.5">
+                                    <button onClick={() => moveServer(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-cyan-500 disabled:opacity-30 transition"><ChevronUp className="w-4 h-4" /></button>
+                                    <span className="text-[10px] font-bold text-center text-slate-400">#{idx + 1}</span>
+                                    <button onClick={() => moveServer(idx, 1)} disabled={idx === turnServers.length - 1} className="text-slate-400 hover:text-cyan-500 disabled:opacity-30 transition"><ChevronDown className="w-4 h-4" /></button>
+                                </div>
+
+                                {/* Health dot */}
+                                <div className="w-5 flex justify-center">{healthDot(idx)}</div>
+
+                                {/* Server info */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-mono text-sm font-bold text-slate-900 dark:text-white truncate">{server.url}</span>
+                                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${server.url?.startsWith('turns:') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>{protocolBadge(server.url)}</span>
+                                        <span className="text-xs">{regionFlag(server.region)} {server.region || 'Global'}</span>
+                                    </div>
+                                    {server.username && <p className="text-xs text-slate-400 mt-0.5">Credentials: static (user: {server.username.slice(0, 8)}...)</p>}
+                                    {!server.username && turnSecret && <p className="text-xs text-slate-400 mt-0.5">Credentials: HMAC (auto-generated)</p>}
+                                    {healthResults[idx]?.latencyMs != null && <p className="text-xs text-slate-500 mt-0.5">Latency: {healthResults[idx].latencyMs}ms</p>}
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => testServer(server.url, idx)} className="text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20 hover:bg-cyan-100 dark:hover:bg-cyan-900/40 px-3 py-1.5 rounded-lg transition border border-transparent">Test</button>
+                                    <button onClick={() => toggleServer(idx)} className={`p-1.5 rounded-lg transition ${server.enabled !== false ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100' : 'text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200'}`}>
+                                        {server.enabled !== false ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+                                    </button>
+                                    <button onClick={() => removeServer(idx)} className="text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg transition">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* === METERED.CA INTEGRATION === */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+                <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-amber-500" /> Metered.ca Integration
+                </h3>
+                <p className="text-xs text-slate-500">Connect your free Metered.ca account to auto-provision TURN servers with 20GB/month free bandwidth. <a href="https://www.metered.ca/tools/openrelay/" target="_blank" rel="noopener" className="text-cyan-600 hover:underline">Get a free API key →</a></p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                        <label className={labelCls}>Metered.ca API Key</label>
+                        <div className="relative">
+                            <input type={showMeteredKey ? 'text' : 'password'} value={meteredApiKey} onChange={e => setMeteredApiKey(e.target.value)} className={inputCls} placeholder="Your Metered.ca API key" />
+                            <button onClick={() => setShowMeteredKey(!showMeteredKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><Eye className="w-4 h-4" /></button>
+                        </div>
+                    </div>
+                    <div className="flex items-end">
+                        <button onClick={fetchMeteredServers} disabled={fetchingMetered || !meteredApiKey} className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm disabled:opacity-50">
+                            {fetchingMetered ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Fetch Servers
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* === GLOBAL CREDENTIALS === */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+                <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-indigo-500" /> HMAC Credentials (Self-Hosted TURN)
+                </h3>
+                <p className="text-xs text-slate-500">For self-hosted TURN servers (coturn), set a shared secret to generate time-limited credentials. Clients receive auto-expiring credentials via the API.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className={labelCls}>Shared Secret</label>
+                        <div className="relative">
+                            <input type={showSecret ? 'text' : 'password'} value={turnSecret} onChange={e => setTurnSecret(e.target.value)} className={inputCls} placeholder="e.g. my-super-secret-key" />
+                            <button onClick={() => setShowSecret(!showSecret)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><Eye className="w-4 h-4" /></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Credential TTL</label>
+                        <select value={turnTTL} onChange={e => setTurnTTL(e.target.value)} className={inputCls}>
+                            <option value="3600">1 Hour</option>
+                            <option value="21600">6 Hours</option>
+                            <option value="86400">24 Hours (Default)</option>
+                            <option value="604800">7 Days</option>
+                        </select>
+                    </div>
+                </div>
+                {turnSecret && (
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                        <p className="text-xs font-bold text-slate-500 mb-1">Preview: Clients will receive credentials like this:</p>
+                        <code className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">username: "{Math.floor(Date.now() / 1000) + parseInt(turnTTL)}"  •  credential: "[HMAC-SHA1 hash]"</code>
+                    </div>
+                )}
+            </div>
+
+            {/* === STUN SERVERS === */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="font-bold flex items-center gap-2"><Globe className="w-5 h-5 text-blue-500" /> STUN Servers</h3>
+                    <button onClick={() => setStunServers('stun:stun.l.google.com:19302\nstun:stun1.l.google.com:19302\nstun:openrelay.metered.ca:80')} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Reset to defaults</button>
+                </div>
+                <textarea value={stunServers} onChange={e => setStunServers(e.target.value)} rows={4} className={inputCls + ' font-mono text-xs'} placeholder="One STUN URL per line\nstun:stun.l.google.com:19302" />
+            </div>
+
+            {/* === CONNECTION QUALITY LEGEND === */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+                <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2 mb-4"><Activity className="w-5 h-5 text-emerald-500" /> Connection Quality Guide</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-start gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/30">
+                        <span className="text-lg">🟢</span>
+                        <div><p className="font-bold text-sm text-emerald-700 dark:text-emerald-400">Direct (P2P)</p><p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">Best quality. Both devices can connect directly. No relay needed.</p></div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                        <span className="text-lg">🔵</span>
+                        <div><p className="font-bold text-sm text-blue-700 dark:text-blue-400">STUN (NAT Traversal)</p><p className="text-xs text-blue-600/70 dark:text-blue-400/70">Good quality. STUN helps devices behind NAT find each other.</p></div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-100 dark:border-amber-900/30">
+                        <span className="text-lg">🟡</span>
+                        <div><p className="font-bold text-sm text-amber-700 dark:text-amber-400">TURN Relay</p><p className="text-xs text-amber-600/70 dark:text-amber-400/70">All traffic relayed through TURN server. Works behind strict firewalls but uses bandwidth quota.</p></div>
+                    </div>
+                </div>
+            </div>
+
+            {/* === ANDROID SNIPPET === */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+                <button onClick={() => setShowAndroidSnippet(!showAndroidSnippet)} className="w-full p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                    <h3 className="font-bold flex items-center gap-2"><Terminal className="w-5 h-5 text-slate-500" /> Android Integration Snippet</h3>
+                    {showAndroidSnippet ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                </button>
+                {showAndroidSnippet && (
+                    <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-950 text-emerald-400 font-mono text-xs overflow-x-auto relative">
+                        <button onClick={() => { navigator.clipboard.writeText(androidSnippetText); toast.success('Copied!'); }} className="absolute top-2 right-2 text-slate-400 hover:text-white transition"><Copy className="w-4 h-4" /></button>
+                        <pre>{androidSnippetText}</pre>
+                    </div>
+                )}
+            </div>
+
+            {/* === ADD SERVER MODAL === */}
+            {showAddModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800">
+                        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-lg flex items-center gap-2"><Plus className="w-5 h-5 text-cyan-500" /> Add TURN Server</h3>
+                            <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-red-500 transition"><XCircle className="w-5 h-5" /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className={labelCls}>Server URL <span className="text-red-500">*</span></label>
+                                <input type="text" value={newUrl} onChange={e => setNewUrl(e.target.value)} className={inputCls} placeholder="turn:relay.metered.ca:80" />
+                                <p className="text-[10px] text-slate-400 mt-1">Examples: turn:relay.example.com:3478 • turns:relay.example.com:443</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className={labelCls}>Transport</label>
+                                    <select value={newTransport} onChange={e => setNewTransport(e.target.value)} className={inputCls}>
+                                        <option value="auto">Auto</option>
+                                        <option value="udp">UDP</option>
+                                        <option value="tcp">TCP</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Region</label>
+                                    <select value={newRegion} onChange={e => setNewRegion(e.target.value)} className={inputCls}>
+                                        <option>Global</option>
+                                        <option>Bangladesh</option>
+                                        <option>UAE</option>
+                                        <option>KSA</option>
+                                        <option>UK</option>
+                                        <option>USA</option>
+                                        <option>Singapore</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Priority</label>
+                                    <input type="number" min="1" max="99" value={newPriority} onChange={e => setNewPriority(e.target.value)} className={inputCls} />
+                                </div>
+                            </div>
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <p className="text-xs font-bold text-slate-500 mb-2">Static Credentials (optional — leave blank for HMAC mode)</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)} className={inputCls} placeholder="Username" />
+                                    <input type="text" value={newCredential} onChange={e => setNewCredential(e.target.value)} className={inputCls} placeholder="Credential" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
+                            <button onClick={() => setShowAddModal(false)} className="px-5 py-2 font-bold text-sm text-slate-600 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:bg-slate-700 rounded-lg transition">Cancel</button>
+                            <button onClick={addServer} disabled={!newUrl.trim()} className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-sm disabled:opacity-50 transition flex items-center gap-2">
+                                <Plus className="w-4 h-4" /> Add Server
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+const androidSnippetText = `// In WebRTCManager.kt — replace hardcoded iceServers with:
+val iceServers = IceConfigFetcher(context).getIceServers()
+
+// IceConfigFetcher.kt fetches from:
+// GET {SERVER_URL}/api/turn-credentials
+// Returns: { iceServers: [{ urls, username?, credential? }] }
+// Cached for 1 hour in EncryptedSharedPreferences`;
 
 // ==========================================
 // SMALL UI COMPONENTS (unchanged)

@@ -266,3 +266,23 @@ model MessageNotification {
   childId     String
   child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
+
+// =============================================
+// APK MANAGEMENT & OTA UPDATES
+// =============================================
+
+model ApkRelease {
+  id               String   @id @default(cuid())
+  appType          String   @default("CHILD")      // "CHILD" or "WIZARD"
+  version          String   // e.g. "v2.1.5"
+  buildNumber      Int      // e.g. 43
+  targetSdk        Int      // e.g. 34
+  fileSize         String   // e.g. "14.5 MB"
+  filePath         String   // local path to the file
+  status           String   @default("ARCHIVED") // "LIVE" or "ARCHIVED"
+  isCriticalUpdate Boolean  @default(false)      // Force the child app to update immediately
+  releaseNotes     String?  @db.Text             // Markdown support for changelog
+  gitCommitHash    String?                       // For developer tracking
+  uploadedBy       String                        // Admin email
+  createdAt        DateTime @default(now())
+}

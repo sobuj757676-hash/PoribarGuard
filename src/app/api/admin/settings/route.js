@@ -12,6 +12,15 @@ const DEFAULTS = {
     sendgrid_api_key: "",
     fcm_server_key: "",
     maintenance_mode: "false",
+    // TURN Server Management
+    turn_enabled: "true",
+    turn_servers: "[]",
+    turn_secret: "",
+    turn_credential_ttl: "86400",
+    turn_stun_servers: '["stun:stun.l.google.com:19302","stun:openrelay.metered.ca:80"]',
+    turn_metered_api_key: "",
+    turn_bandwidth_used_mb: "0",
+    turn_bandwidth_limit_mb: "20480",
 };
 
 // GET — Read all system settings (admin only)
@@ -50,8 +59,8 @@ export async function PUT(request) {
             updates.push(
                 prisma.systemConfig.upsert({
                     where: { key },
-                    update: { value: sanitize(String(value), 500) },
-                    create: { key, value: sanitize(String(value), 500) },
+                    update: { value: sanitize(String(value), 5000) },
+                    create: { key, value: sanitize(String(value), 5000) },
                 })
             );
         }
