@@ -12,7 +12,7 @@ import {
     MoreVertical, ArrowUpRight, ArrowDownRight, MapPin, CheckCircle,
     XCircle, Clock, Download, Plus, Terminal, AlertTriangle,
     Filter, UserPlus, LogOut, Loader2,
-    Map, RefreshCcw, FileText, Send, HardDrive, DollarSign, Mail, Database, SmartphoneCharging, Play, Pause, Server, Globe, Trash2, GripVertical, Eye, Type, Star, MessageSquare, Zap, Radio, Wifi, WifiOff, Copy, ChevronDown, ChevronUp, Activity, Shield
+    Map, RefreshCcw, FileText, Send, HardDrive, DollarSign, Mail, Database, SmartphoneCharging, Play, Pause, Server, Globe, Trash2, GripVertical, Eye, Type, Star, MessageSquare, Zap, Radio, Wifi, WifiOff, Copy, ChevronDown, ChevronUp, Activity, Shield, Menu
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -21,6 +21,7 @@ export default function AdminPage() {
     const { data: session } = useSession();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const userName = session?.user?.name || 'Admin';
     const userEmail = session?.user?.email || '';
     const initials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -28,14 +29,28 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex transition-colors duration-200">
 
+            {/* --- SIDEBAR OVERLAY --- */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-900/50 dark:bg-black/50 backdrop-blur-sm z-40 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* --- SIDEBAR --- */}
-            <aside className="w-64 fixed top-0 left-0 bottom-0 bg-slate-900 dark:bg-slate-900 text-slate-300 shadow-2xl z-50 flex flex-col hidden md:flex">
-                <div className="h-16 flex items-center px-6 bg-slate-950/50 border-b border-slate-800">
+            <aside className={`w-64 fixed top-0 left-0 bottom-0 bg-slate-900 dark:bg-slate-900 text-slate-300 shadow-2xl z-50 flex flex-col transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+                <div className="h-16 flex items-center justify-between px-6 bg-slate-950/50 border-b border-slate-800">
                     <ShieldAlert className="w-6 h-6 text-emerald-500 mr-3" />
-                    <div>
-                        <h1 className="text-lg font-black text-white tracking-tight leading-tight">PG Admin Hub</h1>
-                        <p className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">PoribarGuard BD</p>
+                    <div className="flex items-center">
+                        <ShieldAlert className="w-6 h-6 text-emerald-500 mr-3" />
+                        <div>
+                            <h1 className="text-lg font-black text-white tracking-tight leading-tight">PG Admin Hub</h1>
+                            <p className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">PoribarGuard BD</p>
+                        </div>
                     </div>
+                    <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white">
+                        <XCircle className="w-6 h-6" />
+                    </button>
                 </div>
 
                 <div className="px-6 py-4">
@@ -52,20 +67,32 @@ export default function AdminPage() {
                 </div>
 
                 <nav className="flex-1 px-4 space-y-1 overflow-y-auto mt-2">
-                    <NavItem icon={<LayoutDashboard />} label={t('dashboard')} isActive={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-                    <NavItem icon={<Users />} label={t('parents')} isActive={activeTab === 'parents'} onClick={() => setActiveTab('parents')} />
-                    <NavItem icon={<CreditCard />} label={t('billing')} isActive={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
-                    <NavItem icon={<Smartphone />} label={t('devices')} isActive={activeTab === 'devices'} onClick={() => setActiveTab('devices')} />
-                    <NavItem icon={<LifeBuoy />} label={t('support')} isActive={activeTab === 'support'} onClick={() => setActiveTab('support')} />
-                    <NavItem icon={<ShieldAlert />} label={t('filters')} isActive={activeTab === 'filters'} onClick={() => setActiveTab('filters')} />
-                    <NavItem icon={<BarChart3 />} label={t('analytics')} isActive={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-                    <NavItem icon={<UploadCloud />} label={t('apk')} isActive={activeTab === 'apk'} onClick={() => setActiveTab('apk')} />
-                    <NavItem icon={<Globe />} label="Landing Page" isActive={activeTab === 'landing'} onClick={() => setActiveTab('landing')} />
-                    <NavItem icon={<Radio />} label="TURN Servers" isActive={activeTab === 'turn'} onClick={() => setActiveTab('turn')} />
+                    <NavItem icon={<LayoutDashboard />} label={t('dashboard')} isActive={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<Users />} label={t('parents')} isActive={activeTab === 'parents'} onClick={() => { setActiveTab('parents'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<CreditCard />} label={t('billing')} isActive={activeTab === 'billing'} onClick={() => { setActiveTab('billing'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<Smartphone />} label={t('devices')} isActive={activeTab === 'devices'} onClick={() => { setActiveTab('devices'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<LifeBuoy />} label={t('support')} isActive={activeTab === 'support'} onClick={() => { setActiveTab('support'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<ShieldAlert />} label={t('filters')} isActive={activeTab === 'filters'} onClick={() => { setActiveTab('filters'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<BarChart3 />} label={t('analytics')} isActive={activeTab === 'analytics'} onClick={() => { setActiveTab('analytics'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<UploadCloud />} label={t('apk')} isActive={activeTab === 'apk'} onClick={() => { setActiveTab('apk'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<Globe />} label="Landing Page" isActive={activeTab === 'landing'} onClick={() => { setActiveTab('landing'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<Radio />} label="TURN Servers" isActive={activeTab === 'turn'} onClick={() => { setActiveTab('turn'); setIsSidebarOpen(false); }} />
                 </nav>
 
                 <div className="p-4 border-t border-slate-800 space-y-1">
-                    <NavItem icon={<Settings />} label={t('settings')} isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                    <div className="md:hidden mb-4 space-y-3">
+                        <div className="flex items-center justify-between px-3">
+                            <span className="text-sm font-medium text-slate-400">Language</span>
+                            <div className="scale-90 origin-right">
+                                <LanguageSwitcher />
+                            </div>
+                        </div>
+                        <div className="px-3 flex items-center gap-2 text-sm font-semibold text-emerald-500">
+                            <Terminal className="w-4 h-4" /> System Status: Normal
+                        </div>
+                    </div>
+
+                    <NavItem icon={<Settings />} label={t('settings')} isActive={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }} />
                     <button onClick={() => signOut({ callbackUrl: '/login' })} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-900/20 transition-colors">
                         <LogOut className="w-5 h-5" />
                         <span className="font-medium text-sm">{t('logOut')}</span>
@@ -74,29 +101,47 @@ export default function AdminPage() {
             </aside>
 
             {/* --- MAIN CONTENT --- */}
-            <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative">
+            <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative w-full overflow-x-hidden">
 
-                <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-40">
-                    <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 w-96 border border-slate-200 dark:border-slate-700">
-                        <Search className="w-4 h-4 text-slate-400 mr-2" />
-                        <input type="text" placeholder={t('searchPlaceholder')} className="bg-transparent border-none outline-none text-sm w-full text-slate-700 dark:text-slate-200 placeholder-slate-400" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                        <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">⌘K</span>
+                <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 flex flex-col">
+                    <div className="h-16 flex items-center justify-between px-4 md:px-6">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                                <Menu className="w-6 h-6" />
+                            </button>
+                            <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 w-96 border border-slate-200 dark:border-slate-700">
+                                <Search className="w-4 h-4 text-slate-400 mr-2" />
+                                <input type="text" placeholder={t('searchPlaceholder')} className="bg-transparent border-none outline-none text-sm w-full text-slate-700 dark:text-slate-200 placeholder-slate-400" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                                <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">⌘K</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 md:gap-4">
+                            <div className="hidden md:block">
+                                <LanguageSwitcher />
+                            </div>
+                            <button className="hidden md:flex text-sm font-semibold text-indigo-600 dark:text-indigo-400 items-center gap-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition">
+                                <Terminal className="w-4 h-4" /> System Status: Normal
+                            </button>
+                            <div className="hidden md:block w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
+                            <ThemeToggle />
+                            <button className="relative text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 p-2">
+                                <Bell className="w-5 h-5" />
+                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <LanguageSwitcher />
-                        <button className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition">
-                            <Terminal className="w-4 h-4" /> System Status: Normal
-                        </button>
-                        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
-                        <ThemeToggle />
-                        <button className="relative text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                            <Bell className="w-5 h-5" />
-                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-                        </button>
+
+                    {/* Mobile Search Bar */}
+                    <div className="md:hidden px-4 pb-3">
+                        <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-2 w-full border border-slate-200 dark:border-slate-700">
+                            <Search className="w-4 h-4 text-slate-400 mr-2" />
+                            <input type="text" placeholder={t('searchPlaceholder')} className="bg-transparent border-none outline-none text-sm w-full text-slate-700 dark:text-slate-200 placeholder-slate-400" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        </div>
                     </div>
                 </header>
 
-                <main className="flex-1 p-6 overflow-x-hidden">
+                <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
                     {activeTab === 'dashboard' && <DashboardTab />}
                     {activeTab === 'parents' && <ParentsTab searchQuery={searchQuery} />}
                     {activeTab === 'billing' && <BillingTab />}
@@ -171,9 +216,9 @@ function DashboardTab() {
 
     if (loading) return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
                 {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5">
+                    <div key={i} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 w-full">
                         <Skeleton className="h-4 w-32 mb-4" />
                         <Skeleton className="h-8 w-20 mb-2" />
                         <Skeleton className="h-3 w-24" />
@@ -195,13 +240,13 @@ function DashboardTab() {
                             <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-red-500 transition"><XCircle className="w-5 h-5" /></button>
                         </div>
                         <form onSubmit={submitParent} className="p-5 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div><label className="text-xs font-bold text-slate-500 mb-1 block">Full Name *</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/50" /></div>
                                 <div><label className="text-xs font-bold text-slate-500 mb-1 block">Phone Number *</label><input type="text" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/50" /></div>
                             </div>
                             <div><label className="text-xs font-bold text-slate-500 mb-1 block">Email Address *</label><input type="email" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/50" /></div>
                             <div><label className="text-xs font-bold text-slate-500 mb-1 block">Password *</label><input type="password" required minLength="6" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/50" /></div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div><label className="text-xs font-bold text-slate-500 mb-1 block">Country *</label><input type="text" required value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="e.g. Bangladesh" /></div>
                                 <div><label className="text-xs font-bold text-slate-500 mb-1 block">City *</label><input type="text" required value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="e.g. Dhaka" /></div>
                             </div>
@@ -230,17 +275,17 @@ function DashboardTab() {
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Business Overview</h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Live metrics from PoribarGuard BD database.</p>
                 </div>
-                <div className="flex gap-3">
-                    <button className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <button className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm w-full sm:w-auto">
                         <Download className="w-4 h-4" /> Export Report
                     </button>
-                    <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm shadow-emerald-500/30">
+                    <button onClick={() => setShowModal(true)} className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm shadow-emerald-500/30 w-full sm:w-auto">
                         <UserPlus className="w-4 h-4" /> Add Parent
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
                 <StatCard title="Active Subscriptions" value={stats.activeSubscriptions.toLocaleString()} trend={`${stats.totalParents} parents`} isUp={true} icon={<Users className="w-6 h-6 text-blue-500" />} subtitle="Total BD Families" />
                 <StatCard title="Total Revenue" value={formatBDT(stats.totalRevenue)} trend={`${stats.totalChildren} children`} isUp={true} icon={<CreditCard className="w-6 h-6 text-emerald-500" />} subtitle="bKash / Nagad / Rocket" />
                 <StatCard title="Devices Online" value={stats.onlineDevices.toLocaleString()} trend={`${stats.todayAlerts} alerts today`} isUp={null} icon={<Smartphone className="w-6 h-6 text-indigo-500" />} subtitle="Connected devices" />
@@ -311,14 +356,14 @@ function ParentsTab({ searchQuery }) {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold">Parents & Families Directory</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                         {!loading ? `${pagination.total} registered families` : 'Loading...'}
                     </p>
                 </div>
-                <button onClick={exportCSV} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+                <button onClick={exportCSV} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
                     <Download className="w-4 h-4" /> Export CSV
                 </button>
             </div>
@@ -502,12 +547,12 @@ function FiltersTab() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold">Global Content Filters (BD Region)</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Manage blacklists and keyword alerts pushed to all child devices.</p>
                 </div>
-                <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2">
+                <button className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm flex items-center justify-center gap-2">
                     <ShieldAlert className="w-4 h-4" /> Push Rules to All Devices
                 </button>
             </div>
@@ -564,12 +609,12 @@ function DevicesTab() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold">Device Grid & Map</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Live view of {devices.length} connected devices</p>
                 </div>
-                <button onClick={fetchDevices} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+                <button onClick={fetchDevices} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
                     <RefreshCcw className="w-4 h-4" /> Sync Status
                 </button>
             </div>
@@ -810,12 +855,12 @@ function AnalyticsTab() {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h3 className="font-bold text-slate-800 dark:text-slate-200">Generate Custom Report</h3>
                     <p className="text-sm text-slate-500 mt-1">Export detailed DB dumps in CSV or PDF formats.</p>
                 </div>
-                <button className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 transition hover:opacity-90">
+                <button className="w-full sm:w-auto bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition hover:opacity-90">
                     <Download className="w-4 h-4" /> Download Dump
                 </button>
             </div>
@@ -1049,8 +1094,8 @@ function ApkTab() {
                                 </label>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="col-span-1 sm:col-span-2">
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">App Type <span className="text-red-500">*</span></label>
                                     <div className="flex gap-4">
                                         <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition ${appType === 'CHILD' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'}`}>
@@ -1499,7 +1544,7 @@ function LandingConfigTab() {
                                     </div>
                                     <input type="text" value={feat.title} onChange={e => { const feats = [...featuresConfig.features]; feats[idx] = { ...feats[idx], title: e.target.value }; setFeaturesConfig({ ...featuresConfig, features: feats }); }} className={inputCls} placeholder="Title" />
                                     <textarea value={feat.desc} onChange={e => { const feats = [...featuresConfig.features]; feats[idx] = { ...feats[idx], desc: e.target.value }; setFeaturesConfig({ ...featuresConfig, features: feats }); }} className={textareaCls} placeholder="Description" />
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <label className={labelCls}>Icon Name</label>
                                             <input type="text" value={feat.icon} onChange={e => { const feats = [...featuresConfig.features]; feats[idx] = { ...feats[idx], icon: e.target.value }; setFeaturesConfig({ ...featuresConfig, features: feats }); }} className={inputCls} placeholder="e.g. Map, Video, Clock" />
@@ -1543,7 +1588,7 @@ function LandingConfigTab() {
                                         <span className="text-xs font-bold text-slate-400">Tier #{idx + 1} {tier.isPopular && <span className="text-emerald-500">★ Popular</span>}</span>
                                         <button onClick={() => { const t = pricingConfig.tiers.filter((_, i) => i !== idx); setPricingConfig({ ...pricingConfig, tiers: t }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
                                     </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                         <input type="text" value={tier.name} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], name: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Plan Name" />
                                         <input type="text" value={tier.price} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], price: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Price (e.g. ৳299)" />
                                         <input type="text" value={tier.btnText} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], btnText: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Button Text" />
@@ -1616,12 +1661,12 @@ function LandingConfigTab() {
                                         <span className="text-xs font-bold text-slate-400">Review #{idx + 1}</span>
                                         <button onClick={() => { const ts = testimonialsConfig.testimonials.filter((_, i) => i !== idx); setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <input type="text" value={t.name} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], name: e.target.value }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={inputCls} placeholder="Name" />
                                         <input type="text" value={t.location} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], location: e.target.value }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={inputCls} placeholder="Location (e.g. 🇦🇪 Dubai)" />
                                     </div>
                                     <textarea value={t.text} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], text: e.target.value }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={textareaCls} placeholder="Review text" />
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div><label className={labelCls}>Rating (1-5)</label><input type="number" min="1" max="5" value={t.rating} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], rating: parseInt(e.target.value) || 5 }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={inputCls} /></div>
                                         <div><label className={labelCls}>Avatar URL</label><input type="text" value={t.imgUrl} onChange={e => { const ts = [...testimonialsConfig.testimonials]; ts[idx] = { ...ts[idx], imgUrl: e.target.value }; setTestimonialsConfig({ ...testimonialsConfig, testimonials: ts }); }} className={inputCls} placeholder="https://..." /></div>
                                     </div>
@@ -1933,11 +1978,11 @@ function TurnServersTab() {
                     <h2 className="text-xl font-bold flex items-center gap-2"><Radio className="w-6 h-6 text-cyan-500" /> TURN Server Management</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Configure WebRTC relay servers for NAT traversal. Changes apply to all clients instantly.</p>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={testAllServers} disabled={testingAll || turnServers.length === 0} className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm disabled:opacity-50">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <button onClick={testAllServers} disabled={testingAll || turnServers.length === 0} className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm disabled:opacity-50 w-full sm:w-auto">
                         {testingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />} Test All
                     </button>
-                    <button onClick={save} disabled={saving} className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-sm shadow-cyan-500/20 disabled:opacity-50">
+                    <button onClick={save} disabled={saving} className="flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-sm shadow-cyan-500/20 disabled:opacity-50 w-full sm:w-auto">
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />} Save Configuration
                     </button>
                 </div>
@@ -1945,7 +1990,7 @@ function TurnServersTab() {
 
             {/* === STATUS BANNER === */}
             <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800 rounded-2xl p-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                     {/* Global Toggle */}
                     <div className="flex flex-col">
                         <span className="text-xs font-bold text-slate-500 uppercase mb-2">TURN Relay</span>
@@ -2170,7 +2215,7 @@ function TurnServersTab() {
                                 <input type="text" value={newUrl} onChange={e => setNewUrl(e.target.value)} className={inputCls} placeholder="turn:relay.metered.ca:80" />
                                 <p className="text-[10px] text-slate-400 mt-1">Examples: turn:relay.example.com:3478 • turns:relay.example.com:443</p>
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <label className={labelCls}>Transport</label>
                                     <select value={newTransport} onChange={e => setNewTransport(e.target.value)} className={inputCls}>
@@ -2198,7 +2243,7 @@ function TurnServersTab() {
                             </div>
                             <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                                 <p className="text-xs font-bold text-slate-500 mb-2">Static Credentials (optional — leave blank for HMAC mode)</p>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)} className={inputCls} placeholder="Username" />
                                     <input type="text" value={newCredential} onChange={e => setNewCredential(e.target.value)} className={inputCls} placeholder="Credential" />
                                 </div>
