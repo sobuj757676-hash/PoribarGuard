@@ -226,7 +226,7 @@ export default function DashboardPage() {
             </aside>
 
             {/* --- MAIN CONTENT --- */}
-            <main className="pt-20 pb-24 md:pb-6 md:pl-64 min-h-screen">
+            <main className="pt-20 pb-36 md:pb-6 md:pl-64 min-h-screen">
                 <div className="max-w-5xl mx-auto px-4 md:px-8">
 
                     {/* Child Selector */}
@@ -1288,7 +1288,7 @@ function SidebarItem({ icon, label, isActive, onClick }) {
 
 function BottomNavItem({ icon, label, isActive, onClick }) {
     return (
-        <button onClick={onClick} className="flex flex-col items-center justify-center w-16 h-12">
+        <button onClick={onClick} className="flex flex-col items-center justify-center w-16 h-14">
             <div className={`mb-1 transition-colors ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
                 {React.cloneElement(icon, { className: 'w-6 h-6' })}
             </div>

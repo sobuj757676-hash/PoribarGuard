@@ -44,7 +44,7 @@ body {
 
 /* Safe area insets for standalone PWA */
 .pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
 }
 
 /* Animations */
