@@ -20,26 +20,31 @@ function parseConfig(configs, key) {
 
 export default async function Home() {
   // Fetch all landing configs server-side (great for SEO)
-  const configs = await prisma.systemConfig.findMany({
-    where: {
-      key: {
-        in: [
-          'landing_hero', 'landing_features', 'landing_pricing',
-          'landing_faq', 'landing_testimonials', 'landing_howitworks',
-          'landing_cta', 'landing_footer'
-        ]
+  let configs = [];
+  try {
+    configs = await prisma.systemConfig.findMany({
+      where: {
+        key: {
+          in: [
+            'landing_hero', 'landing_features', 'landing_pricing',
+            'landing_faq', 'landing_testimonials', 'landing_howitworks',
+            'landing_cta', 'landing_footer'
+          ]
+        }
       }
-    }
-  });
+    });
+  } catch (err) {
+    console.warn("Could not fetch system configs, using default landing config fallback", err.message);
+  }
 
-  const heroConfig = parseConfig(configs, 'landing_hero');
-  const featuresConfig = parseConfig(configs, 'landing_features');
-  const pricingConfig = parseConfig(configs, 'landing_pricing');
-  const faqConfig = parseConfig(configs, 'landing_faq');
-  const testimonialsConfig = parseConfig(configs, 'landing_testimonials');
-  const howItWorksConfig = parseConfig(configs, 'landing_howitworks');
-  const ctaConfig = parseConfig(configs, 'landing_cta');
-  const footerConfig = parseConfig(configs, 'landing_footer');
+  const heroConfig = parseConfig(configs, 'landing_hero') || {};
+  const featuresConfig = parseConfig(configs, 'landing_features') || {};
+  const pricingConfig = parseConfig(configs, 'landing_pricing') || {};
+  const faqConfig = parseConfig(configs, 'landing_faq') || {};
+  const testimonialsConfig = parseConfig(configs, 'landing_testimonials') || {};
+  const howItWorksConfig = parseConfig(configs, 'landing_howitworks') || {};
+  const ctaConfig = parseConfig(configs, 'landing_cta') || {};
+  const footerConfig = parseConfig(configs, 'landing_footer') || {};
 
   // CTA defaults
   const cta = ctaConfig || {};
