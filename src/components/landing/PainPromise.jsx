@@ -46,14 +46,17 @@ export default function PainPromise() {
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent"></div>
 
                         {/* Overlay Video Call Mock */}
-                        <div className="absolute bottom-6 left-6 right-6 bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-red-500 rounded-full animate-pulse flex items-center justify-center">
-                                    <Clock className="w-6 h-6 text-white" />
+                        <div className="absolute bottom-6 left-6 right-6 bg-white/20 backdrop-blur-lg border border-white/30 p-5 rounded-2xl flex items-center justify-between shadow-2xl">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center relative">
+                                    <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping opacity-50"></div>
+                                    <div className="w-10 h-10 bg-red-500 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.5)] flex items-center justify-center">
+                                        <Clock className="w-5 h-5 text-white" />
+                                    </div>
                                 </div>
                                 <div>
-                                    <p className="text-white font-bold text-sm">রাত ১১:৩০ (বাংলাদেশ সময়)</p>
-                                    <p className="text-gray-200 text-xs">সন্তান এখনো বাইরে?</p>
+                                    <p className="text-white font-extrabold text-base tracking-wide">রাত ১১:৩০ (বাংলাদেশ সময়)</p>
+                                    <p className="text-red-200 font-medium text-sm mt-0.5">সন্তান এখনো বাইরে?</p>
                                 </div>
                             </div>
                         </div>
@@ -106,11 +109,12 @@ export default function PainPromise() {
 
 function PainCard({ icon, text, bgColor }) {
     return (
-        <div className={`p-4 rounded-2xl border ${bgColor} flex items-center gap-4 transition-transform hover:-translate-y-1`}>
-            <div className="bg-white p-3 rounded-xl shadow-sm">
+        <div className={`p-5 rounded-2xl border ${bgColor} flex items-center gap-5 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-white/50 backdrop-blur-sm relative overflow-hidden`}>
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-current to-transparent opacity-20"></div>
+            <div className="bg-white p-3.5 rounded-xl shadow-sm ring-1 ring-gray-100 shrink-0">
                 {icon}
             </div>
-            <p className="font-bold text-gray-800 text-lg" style={{ fontFamily: 'Noto Sans Bengali, sans-serif' }}>{text}</p>
+            <p className="font-bold text-gray-800 text-lg leading-snug" style={{ fontFamily: 'Noto Sans Bengali, sans-serif' }}>{text}</p>
         </div>
     );
 }

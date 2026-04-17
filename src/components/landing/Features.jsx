@@ -74,17 +74,20 @@ export default function Features({ config }) {
                             <motion.div
                                 key={idx}
                                 variants={item}
-                                className={`group flex flex-col items-center text-center p-8 rounded-3xl ${colors.bg} border border-transparent hover:border-gray-200 shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${colors.hover}`}
+                                className={`group flex flex-col items-center text-center p-8 rounded-3xl bg-white/60 backdrop-blur-lg border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-500 transform hover:-translate-y-2 cursor-pointer relative overflow-hidden`}
                             >
-                                <div className={`p-4 rounded-2xl bg-white shadow-sm mb-6 ${colors.text} group-hover:text-current transition-colors duration-300`}>
+                                {/* Background glow effect on hover */}
+                                <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${colors.bg}`}></div>
+
+                                <div className={`relative z-10 p-4 rounded-2xl bg-white shadow-sm mb-6 ${colors.text} ring-1 ring-gray-100 group-hover:ring-0 group-hover:scale-110 transition-all duration-300`}>
                                     <IconComponent className="w-8 h-8" />
                                 </div>
-                                <h4 className="text-xl font-bold mb-3 text-gray-900 group-hover:text-white transition-colors duration-300">{feat.title}</h4>
-                                <p className="text-gray-600 font-medium group-hover:text-gray-100 transition-colors duration-300" style={{ fontFamily: 'Noto Sans Bengali, sans-serif' }}>
+                                <h4 className="relative z-10 text-xl font-extrabold mb-3 text-gray-900 tracking-tight">{feat.title}</h4>
+                                <p className="relative z-10 text-gray-500 font-medium leading-relaxed" style={{ fontFamily: 'Noto Sans Bengali, sans-serif' }}>
                                     {feat.desc}
                                 </p>
-                                <div className="mt-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-4 group-hover:translate-y-0 text-sm font-bold bg-white/20 px-6 py-2 rounded-full hidden md:block">
-                                    Learn More
+                                <div className={`relative z-10 mt-8 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 text-sm font-bold ${colors.text} flex items-center gap-2`}>
+                                    Learn More <span className="text-lg">→</span>
                                 </div>
                             </motion.div>
                         );

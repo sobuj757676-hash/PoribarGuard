@@ -1336,7 +1336,8 @@ function LandingConfigTab() {
                 ctaText: 'Start Free 7-Day Trial',
                 ctaLink: '/dashboard',
                 videoBtnText: 'Watch 45-sec Video',
-                trustBadges: ['Trusted by 2,347+ BD families', '100% Legal', 'bKash/Nagad Accepted']
+                trustBadges: ['Trusted by 2,347+ BD families', '100% Legal', 'bKash/Nagad Accepted'],
+                heroTheme: 'dark'
             });
             setFeaturesConfig(landingConfig.landing_features || {
                 sectionTag: '6 Core Pillars',
@@ -1509,6 +1510,15 @@ function LandingConfigTab() {
                             ))}
                             <button onClick={() => setHeroConfig({ ...heroConfig, trustBadges: [...heroConfig.trustBadges, ''] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Badge</button>
                         </div>
+                    </div>
+
+                    <div>
+                        <label className={labelCls}>Hero Theme Override</label>
+                        <select value={heroConfig.heroTheme || 'dark'} onChange={e => setHeroConfig({ ...heroConfig, heroTheme: e.target.value })} className={inputCls}>
+                            <option value="dark">Dark Theme (Default Premium)</option>
+                            <option value="light">Light Theme</option>
+                            <option value="auto">Auto (Matches User Prefs)</option>
+                        </select>
                     </div>
 
                     <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
