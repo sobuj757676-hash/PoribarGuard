@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import prisma from "@/lib/prisma";
 
@@ -9,6 +10,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         signIn: "/en/login", // Default language path
     },
     providers: [
+        Google({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        }),
         Credentials({
             name: "credentials",
             credentials: {
@@ -38,8 +43,70 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }),
     ],
     callbacks: {
-        async jwt({ token, user }) {
+        async signIn({ user, account, profile }) {
+            if (account?.provider === "google") {
+                try {
+                    const existingUser = await prisma.user.findUnique({
+                        where: { email: user.email },
+                    });
+
+                    if (existingUser) {
+                        // User exists, allow sign in
+                        // Attach id and role to user object so jwt callback can use them
+                        user.id = existingUser.id;
+                        user.role = existingUser.role;
+                        return true;
+                    }
+
+                    // New user via Google: create account and trial subscription
+                    const trialDaysConfig = await prisma.systemConfig.findUnique({ where: { key: "trial_days" } });
+                    const trialDays = trialDaysConfig ? parseInt(trialDaysConfig.value) || 7 : 7;
+                    const trialEndDate = new Date();
+                    trialEndDate.setDate(trialEndDate.getDate() + trialDays);
+
+                    const newUser = await prisma.$transaction(async (tx) => {
+                        const createdUser = await tx.user.create({
+                            data: {
+                                name: user.name || "Google User",
+                                email: user.email,
+                                passwordHash: "OAUTH", // Marker for oauth
+                                role: "PARENT",
+                                avatarUrl: user.image,
+                            },
+                        });
+
+                        await tx.subscription.create({
+                            data: {
+                                userId: createdUser.id,
+                                plan: "TRIAL",
+                                status: "ACTIVE",
+                                billingCycle: "MONTHLY",
+                                amount: 0,
+                                startDate: new Date(),
+                                endDate: trialEndDate,
+                                autoRenew: false,
+                            },
+                        });
+
+                        return createdUser;
+                    });
+
+                    // Attach id and role to user object
+                    user.id = newUser.id;
+                    user.role = newUser.role;
+                    return true;
+                } catch (error) {
+                    console.error("Error during Google sign-in:", error);
+                    return false;
+                }
+            }
+            return true;
+        },
+        async jwt({ token, user, account }) {
+            // When user logs in, user object is provided
             if (user) {
+                // For Google login, user object from signIn callback already has correct id and role
+                // For credentials, authorize returns it
                 token.id = user.id;
                 token.role = user.role;
             }
