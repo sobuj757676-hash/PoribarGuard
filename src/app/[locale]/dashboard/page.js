@@ -951,27 +951,49 @@ function SettingsTab({ dict, session }) {
     const { subscription } = useSubscription();
     const { trigger: updateProfile } = useUpdateProfile();
 
-    const [profile, setProfile] = useState({ name: session?.user?.name || '', phone: '' });
+    const [profile, setProfile] = useState({ name: session?.user?.name || '', phone: '', country: '', city: '' });
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
 
     // Sync profile state when SWR data loads
     useEffect(() => {
         if (user) {
-            setProfile(prev => ({ ...prev, name: user.name || prev.name, phone: user.phone || '' }));
+            setProfile(prev => ({
+                ...prev,
+                name: user.name || prev.name,
+                phone: user.phone || '',
+                country: user.country || '',
+                city: user.city || ''
+            }));
         }
     }, [user]);
 
     const saveProfile = async () => {
         setSaving(true);
         try {
-            await updateProfile({ method: 'PUT', body: { name: profile.name, phone: profile.phone } });
+            await updateProfile({ method: 'PUT', body: { name: profile.name, phone: profile.phone, country: profile.country, city: profile.city } });
             toast.success(dict('saved') || 'Profile updated successfully');
         } catch (e) {
             toast.error(e.message || 'Failed to update profile');
         }
         setSaving(false);
     };
+
+    const COUNTRIES = [
+        { value: "UAE", label: "🇦🇪 United Arab Emirates" },
+        { value: "KSA", label: "🇸🇦 Saudi Arabia" },
+        { value: "UK", label: "🇬🇧 United Kingdom" },
+        { value: "USA", label: "🇺🇸 United States" },
+        { value: "Malaysia", label: "🇲🇾 Malaysia" },
+        { value: "Singapore", label: "🇸🇬 Singapore" },
+        { value: "Qatar", label: "🇶🇦 Qatar" },
+        { value: "Kuwait", label: "🇰🇼 Kuwait" },
+        { value: "Oman", label: "🇴🇲 Oman" },
+        { value: "Bahrain", label: "🇧🇭 Bahrain" },
+        { value: "Italy", label: "🇮🇹 Italy" },
+        { value: "Bangladesh", label: "🇧🇩 Bangladesh" },
+        { value: "Other", label: "🌍 Other" },
+    ];
 
     const planLabel = subscription ? (subscription.plan === 'TRIAL' ? 'Free Trial' : `${subscription.plan} Plan`) : 'No Plan';
     const statusLabel = subscription?.status === 'ACTIVE' ? 'ACTIVE' : (subscription?.status || 'NONE');
@@ -1021,6 +1043,25 @@ function SettingsTab({ dict, session }) {
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Phone Number</label>
                         <input type="tel" value={profile.phone} onChange={(e) => setProfile(p => ({ ...p, phone: e.target.value }))} placeholder="+8801700000000" className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Country</label>
+                        <select
+                            value={profile.country}
+                            onChange={(e) => setProfile(p => ({ ...p, country: e.target.value }))}
+                            className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200 appearance-none"
+                        >
+                            <option value="">Select your country</option>
+                            {COUNTRIES.map((c) => (
+                                <option key={c.value} value={c.value}>
+                                    {c.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">City</label>
+                        <input type="text" value={profile.city} onChange={(e) => setProfile(p => ({ ...p, city: e.target.value }))} placeholder="Dhaka, Dubai, London..." className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
                     </div>
                     <div className="pt-2 flex items-center gap-3">
                         <button onClick={saveProfile} disabled={saving} className={`bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 ${saving ? 'opacity-50' : ''}`}>

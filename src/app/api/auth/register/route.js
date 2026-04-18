@@ -23,9 +23,6 @@ export async function POST(request) {
         const name = sanitize(body.name, 100);
         const email = sanitize(body.email, 200);
         const password = body.password;
-        const phone = sanitize(body.phone, 20);
-        const country = sanitize(body.country, 50);
-        const city = sanitize(body.city, 100);
 
         // Validation
         if (!name || !email || !password) {
@@ -64,9 +61,6 @@ export async function POST(request) {
                     email: email.toLowerCase().trim(),
                     passwordHash,
                     role: "PARENT",
-                    phone: phone || null,
-                    country: country || null,
-                    city: city || null,
                 },
             });
 
