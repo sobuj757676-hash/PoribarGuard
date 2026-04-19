@@ -32,9 +32,9 @@ export async function GET(request) {
             features = JSON.parse(subscription.package.features);
         } catch(e) {}
     } else {
-        const oldFeatures = {
-           PREMIUM: ['app_blocking', 'geofencing', 'prayer_lock', 'location_tracking', 'web_filtering'],
-           STANDARD: ['app_blocking', 'location_tracking']
+const oldFeatures = {
+           PREMIUM: ['app_blocking', 'geofencing', 'prayer_lock', 'location_tracking', 'web_filtering', 'live_camera', 'live_mic', 'live_screen', 'message_sync', 'activity_feed', 'reports'],
+           STANDARD: ['app_blocking', 'location_tracking', 'activity_feed']
        };
        features = oldFeatures[subscription.plan] || [];
     }

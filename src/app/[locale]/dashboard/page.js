@@ -377,11 +377,11 @@ export default function DashboardPage() {
                             </div>
 
                             {/* Tabs */}
-                            {activeTab === 'home' && <HomeTab dict={dict} child={child} device={device} fetchChildren={fetchChildren} onOpenCamera={() => checkFeature('location_tracking', () => setCameraModalOpen(true))} onOpenScreen={() => checkFeature('location_tracking', () => setScreenModalOpen(true))} checkFeature={checkFeature} />}
+                            {activeTab === 'home' && <HomeTab dict={dict} child={child} device={device} fetchChildren={fetchChildren} onOpenCamera={() => checkFeature('live_camera', () => setCameraModalOpen(true))} onOpenScreen={() => checkFeature('live_screen', () => setScreenModalOpen(true))} checkFeature={checkFeature} />}
                             {activeTab === 'map' && <MapTab dict={dict} child={child} device={device} liveLocation={liveLocation} checkFeature={checkFeature} />}
                             {activeTab === 'controls' && <ControlsTab dict={dict} child={child} checkFeature={checkFeature} />}
                             {activeTab === 'messages' && <MessagesTab dict={dict} child={child} socket={socket} checkFeature={checkFeature} />}
-                            {activeTab === 'tools' && <LiveToolsTab dict={dict} onOpenCamera={() => checkFeature('location_tracking', () => setCameraModalOpen(true))} onOpenMic={() => checkFeature('location_tracking', () => setAmbientMicModalOpen(true))} onOpenScreen={() => checkFeature('location_tracking', () => setScreenModalOpen(true))} checkFeature={checkFeature} />}
+                            {activeTab === 'tools' && <LiveToolsTab dict={dict} onOpenCamera={() => checkFeature('live_camera', () => setCameraModalOpen(true))} onOpenMic={() => checkFeature('live_mic', () => setAmbientMicModalOpen(true))} onOpenScreen={() => checkFeature('live_screen', () => setScreenModalOpen(true))} checkFeature={checkFeature} />}
                             {activeTab === 'feed' && <FeedTab dict={dict} child={child} checkFeature={checkFeature} />}
                             {activeTab === 'reports' && <ReportsTab dict={dict} child={child} checkFeature={checkFeature} />}
                             {activeTab === 'settings' && <SettingsTab dict={dict} session={session} />}
