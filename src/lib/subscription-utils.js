@@ -62,9 +62,9 @@ export async function checkSubscriptionAccess(userId, requiredFeature = null) {
       // Legacy plans (STANDARD, PREMIUM) don't have explicit packages, assuming access for backward compat or handle accordingly
       // Or you can map old plans to features here. For simplicity, we assume they have access to old features, or we could strict deny.
       // Let's assume old PREMIUM had everything, STANDARD had some.
-       const oldFeatures = {
-           PREMIUM: ['app_blocking', 'geofencing', 'prayer_lock', 'location_tracking', 'web_filtering'],
-           STANDARD: ['app_blocking', 'location_tracking']
+const oldFeatures = {
+           PREMIUM: ['app_blocking', 'geofencing', 'prayer_lock', 'location_tracking', 'web_filtering', 'live_camera', 'live_mic', 'live_screen', 'message_sync', 'activity_feed', 'reports'],
+           STANDARD: ['app_blocking', 'location_tracking', 'activity_feed']
        };
        const features = oldFeatures[subscription.plan] || [];
        if (!features.includes(requiredFeature)) {

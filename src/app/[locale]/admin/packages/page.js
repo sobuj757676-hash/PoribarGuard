@@ -60,8 +60,8 @@ export default function AdminPackagesPage() {
                 </Link>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <table className="w-full text-left border-collapse">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto shadow-sm">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
                     <thead>
                         <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                             <th className="p-4 font-semibold text-sm">Name</th>
@@ -83,7 +83,7 @@ export default function AdminPackagesPage() {
                                     <td className="p-4 font-medium">{pkg.name}</td>
                                     <td className="p-4">৳{pkg.priceMonthly}</td>
                                     <td className="p-4">
-                                        <div className="flex flex-wrap gap-1">
+                                        <div className="flex flex-wrap gap-1 max-w-sm whitespace-normal">
                                             {Array.isArray(featuresList) && featuresList.map(f => (
                                                 <span key={f} className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300">
                                                     {f.replace('_', ' ')}
