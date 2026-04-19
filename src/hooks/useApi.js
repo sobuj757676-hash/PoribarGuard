@@ -49,11 +49,12 @@ export function useProfile() {
 }
 
 export function useSubscription() {
-    const { data, error, isLoading } = useSWR('/api/subscriptions');
+    const { data, error, isLoading, mutate } = useSWR('/api/user/subscription');
     return {
-        subscription: data?.subscription || null,
+        subscription: data || null,
         isLoading,
-        isError: error
+        isError: error,
+        mutate
     };
 }
 

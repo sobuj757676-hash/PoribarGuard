@@ -176,9 +176,26 @@ model PrayerTimeLock {
 // BILLING & SUBSCRIPTIONS
 // =============================================
 
+model SubscriptionPackage {
+  id            String   @id @default(cuid())
+  name          String   // e.g., "Standard", "Premium", "Ultimate"
+  description   String?
+  priceMonthly  Float    // in BDT
+  priceYearly   Float?   // in BDT
+  features      String   // JSON string of allowed features (e.g., "['geofencing', 'app_blocking']")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  subscriptions Subscription[]
+}
+
 model Subscription {
   id            String   @id @default(cuid())
-  plan          String   // STANDARD | PREMIUM | ULTIMATE | TRIAL
+  packageId     String?
+  package       SubscriptionPackage? @relation(fields: [packageId], references: [id])
+  plan          String   // This is kept for backward compatibility (e.g. STANDARD, PREMIUM, TRIAL)
   status        String   @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED
   billingCycle  String   @default("MONTHLY") // MONTHLY | SEMI_ANNUAL | YEARLY
   amount        Float    // in BDT (Taka)

@@ -8,7 +8,8 @@ import {
     Clock, MapPin, Activity, CheckCircle, ShieldAlert, FileText,
     Lock, Unlock, LogOut, Globe, Camera, Loader2,
     Download, Trash2, CreditCard, Save, Edit3, Calendar, Mail, MessageSquare,
-    Navigation, RefreshCw, MapPinOff, Moon
+    Navigation, RefreshCw, MapPinOff, Moon,
+    Zap, Compass, MicOff, LockKeyhole, SmartphoneNfc, LayoutGrid, Check, ExternalLink, Filter, Type
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import InstallPrompt from '@/components/InstallPrompt';
@@ -69,12 +70,30 @@ export default function DashboardPage() {
     const [isScreenModalOpen, setScreenModalOpen] = useState(false);
     const [reconnectChildId, setReconnectChildId] = useState(null);
 
+    // Premium Feature Modal
+    const [upgradeModal, setUpgradeModal] = useState({ isOpen: false, feature: null });
+
+    // Helper for feature checking
+    const checkFeature = (feature, callback) => {
+        if (!subscription) return;
+        if (!subscription.active || (subscription.isExpired && subscription.isTrial)) {
+            setUpgradeModal({ isOpen: true, feature });
+            return;
+        }
+        if (subscription.features && !subscription.features.includes(feature)) {
+            setUpgradeModal({ isOpen: true, feature });
+            return;
+        }
+        callback();
+    };
+
     // Real data state
     const [selectedChildIdx, setSelectedChildIdx] = useState(0);
     const [liveLocation, setLiveLocation] = useState(null);
 
     const { children, isLoading: loading, mutate: fetchChildren } = useChildren();
     const { trigger: markAlertsRead } = useMarkAlertsRead();
+    const { subscription } = useSubscription();
 
 
     const userName = session?.user?.name || 'Parent';
@@ -83,7 +102,7 @@ export default function DashboardPage() {
     const device = child?.device || null;
 
     useEffect(() => {
-        setLiveLocation(null);
+        setTimeout(() => setLiveLocation(null), 0);
     }, [selectedChildIdx]);
 
     // Derived Status for Global Header
@@ -91,6 +110,9 @@ export default function DashboardPage() {
     const battery = liveLocation?.batteryLevel ?? device?.batteryLevel;
     const network = liveLocation?.networkType || device?.networkType;
     const lastUpdated = liveLocation?.timestamp ? new Date(liveLocation.timestamp) : (device?.locationUpdatedAt ? new Date(device.locationUpdatedAt) : null);
+
+    const planLabel = subscription ? (subscription.isTrial ? 'Free Trial' : `${subscription.planName} Plan`) : 'No Plan';
+    const endDate = subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
     // Socket.IO real-time listeners (Task 3: SOS + Task 9: Status Updates)
     const socket = useSocket();
@@ -248,6 +270,57 @@ export default function DashboardPage() {
                         </div>
                     ) : (
                         <>
+                            {/* Premium Upgrade Modal */}
+                            {upgradeModal.isOpen && (
+                                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+                                    <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative overflow-hidden border border-gray-100 dark:border-gray-800 scale-in-center">
+                                        <div className="absolute top-0 right-0 p-4">
+                                            <button onClick={() => setUpgradeModal({ isOpen: false, feature: null })} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                        <div className="flex justify-center mb-4">
+                                            <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-500">
+                                                <Lock className="w-8 h-8" />
+                                            </div>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-center mb-2 text-gray-900 dark:text-white">Premium Feature</h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
+                                            {subscription?.isTrial && subscription?.isExpired
+                                                ? "Your free trial has ended. Please upgrade your plan to continue using this feature."
+                                                : "This feature is not included in your current active plan. Please upgrade to a premium plan to unlock it."}
+                                        </p>
+                                        <div className="flex flex-col gap-3">
+                                            <button onClick={() => { setUpgradeModal({ isOpen: false, feature: null }); setActiveTab('settings'); }} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+                                                <Zap className="w-5 h-5" /> Upgrade Plan
+                                            </button>
+                                            <button onClick={() => setUpgradeModal({ isOpen: false, feature: null })} className="w-full py-3 font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                                Not Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Subscription Status Header */}
+                            {subscription && (
+                                <div className="bg-gradient-to-r from-emerald-600 to-teal-500 rounded-xl p-3 shadow-md mb-6 flex justify-between items-center text-white">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white/20 rounded-lg">
+                                            <Shield className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-emerald-100 font-medium">Active Plan</p>
+                                            <p className="font-bold">{planLabel}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-emerald-100 font-medium">Expires</p>
+                                        <p className="font-bold">{endDate}</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Child ribbon with selector */}
                             <div className="flex flex-wrap sm:flex-nowrap items-center justify-between bg-white dark:bg-gray-900 rounded-[2rem] p-2.5 shadow-md mb-6 border border-gray-200 dark:border-gray-800/60 overflow-hidden">
                                 <div className="flex items-center gap-4 pl-1 min-w-0">
@@ -304,13 +377,13 @@ export default function DashboardPage() {
                             </div>
 
                             {/* Tabs */}
-                            {activeTab === 'home' && <HomeTab dict={dict} child={child} device={device} fetchChildren={fetchChildren} onOpenCamera={() => setCameraModalOpen(true)} onOpenScreen={() => setScreenModalOpen(true)} />}
-                            {activeTab === 'map' && <MapTab dict={dict} child={child} device={device} liveLocation={liveLocation} />}
-                            {activeTab === 'controls' && <ControlsTab dict={dict} child={child} />}
-                            {activeTab === 'messages' && <MessagesTab dict={dict} child={child} socket={socket} />}
-                            {activeTab === 'tools' && <LiveToolsTab dict={dict} onOpenCamera={() => setCameraModalOpen(true)} onOpenMic={() => setAmbientMicModalOpen(true)} onOpenScreen={() => setScreenModalOpen(true)} />}
-                            {activeTab === 'feed' && <FeedTab dict={dict} child={child} />}
-                            {activeTab === 'reports' && <ReportsTab dict={dict} child={child} />}
+                            {activeTab === 'home' && <HomeTab dict={dict} child={child} device={device} fetchChildren={fetchChildren} onOpenCamera={() => checkFeature('location_tracking', () => setCameraModalOpen(true))} onOpenScreen={() => checkFeature('location_tracking', () => setScreenModalOpen(true))} checkFeature={checkFeature} />}
+                            {activeTab === 'map' && <MapTab dict={dict} child={child} device={device} liveLocation={liveLocation} checkFeature={checkFeature} />}
+                            {activeTab === 'controls' && <ControlsTab dict={dict} child={child} checkFeature={checkFeature} />}
+                            {activeTab === 'messages' && <MessagesTab dict={dict} child={child} socket={socket} checkFeature={checkFeature} />}
+                            {activeTab === 'tools' && <LiveToolsTab dict={dict} onOpenCamera={() => checkFeature('location_tracking', () => setCameraModalOpen(true))} onOpenMic={() => checkFeature('location_tracking', () => setAmbientMicModalOpen(true))} onOpenScreen={() => checkFeature('location_tracking', () => setScreenModalOpen(true))} checkFeature={checkFeature} />}
+                            {activeTab === 'feed' && <FeedTab dict={dict} child={child} checkFeature={checkFeature} />}
+                            {activeTab === 'reports' && <ReportsTab dict={dict} child={child} checkFeature={checkFeature} />}
                             {activeTab === 'settings' && <SettingsTab dict={dict} session={session} />}
                         </>
                     )}
@@ -373,13 +446,13 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
             if (!res.ok) throw new Error('Failed to send alarm');
 
             fetchChildren?.();
-            toast.success('🚨 SOS Alarm sent to child\'s device!');
+            toast.success('🚨 SOS Alarm sent to child&apos;s device!');
         } catch {
             toast.error('Network error. Failed to send alarm.');
         }
     };
 
-    const comingSoon = () => toast.info('⏳ This feature requires the child\'s Android app to be connected.');
+    const comingSoon = () => toast.info('⏳ This feature requires the child&apos;s Android app to be connected.');
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
             <div>
@@ -623,7 +696,7 @@ function LiveToolsTab({ dict, onOpenCamera, onOpenMic, onOpenScreen }) {
                 <p className="text-red-100 opacity-90 text-sm mb-6">{dict('liveToolsDesc')}</p>
                 <div className="grid grid-cols-1 gap-4">
                     <button onClick={onOpenScreen} className="flex items-center justify-between bg-white/20 hover:bg-white/30 backdrop-blur-sm p-4 rounded-xl transition-all group">
-                        <div className="flex items-center gap-4"><div className="bg-white p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform"><Video className="w-6 h-6" /></div><div className="text-left"><h4 className="font-bold text-lg">Live Screen View</h4><p className="text-xs text-red-100">Watch child's screen in 1080p</p></div></div>
+                        <div className="flex items-center gap-4"><div className="bg-white p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform"><Video className="w-6 h-6" /></div><div className="text-left"><h4 className="font-bold text-lg">Live Screen View</h4><p className="text-xs text-red-100">Watch child&apos;s screen in 1080p</p></div></div>
                         <span className="bg-red-700 px-3 py-1 rounded-full text-xs font-bold">START</span>
                     </button>
                     <button onClick={onOpenCamera} className="flex items-center justify-between bg-white/20 hover:bg-white/30 backdrop-blur-sm p-4 rounded-xl transition-all group">
@@ -762,7 +835,7 @@ function AddChildWorkflow({ dict, step, setStep, onClose, onChildAdded, reconnec
                     {step === 2 && (
                         <div className="space-y-5 text-center">
                             <h3 className="font-bold text-gray-700 dark:text-gray-300">Pairing Code Generated</h3>
-                            <p className="text-sm text-gray-500">Enter this code in the child's app to pair the device instantly.</p>
+                            <p className="text-sm text-gray-500">Enter this code in the child&apos;s app to pair the device instantly.</p>
 
                             <div className="bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-500 border-dashed rounded-2xl py-6 flex flex-col items-center justify-center relative group cursor-pointer" onClick={copyCode}>
                                 <div className="text-4xl font-black text-emerald-600 tracking-[0.2em]">{pairingCode}</div>
@@ -789,7 +862,7 @@ function AddChildWorkflow({ dict, step, setStep, onClose, onChildAdded, reconnec
                             </div>
                             <div>
                                 <h3 className="font-bold text-2xl mb-1">Device Connected!</h3>
-                                <p className="text-base text-gray-500">{name}'s phone is now secured and active.</p>
+                                <p className="text-base text-gray-500">{name}&apos;s phone is now secured and active.</p>
                             </div>
                         </div>
                     )}
@@ -834,7 +907,7 @@ function FeedTab({ dict, child }) {
     };
 
     const timeAgo = (date) => {
-        const s = Math.floor((Date.now() - new Date(date)) / 1000);
+        const s = Math.floor((new Date().getTime() - new Date(date)) / 1000);
         if (s < 60) return 'just now';
         if (s < 3600) return `${Math.floor(s / 60)}m ago`;
         if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
@@ -846,7 +919,7 @@ function FeedTab({ dict, child }) {
             <div className="flex justify-between items-end mb-6">
                 <div>
                     <h2 className="text-xl font-bold">Activity Feed</h2>
-                    <p className="text-sm text-gray-500">Live monitoring stream for {child?.name || 'child'}</p>
+                    <p className="text-sm text-gray-500">Live monitoring stream for {child?.name || 'child'}&apos;s device.</p>
                 </div>
             </div>
 
@@ -854,7 +927,7 @@ function FeedTab({ dict, child }) {
                 <div className="text-center py-16 text-gray-400">
                     <Bell className="w-12 h-12 mx-auto mb-3 opacity-40" />
                     <p className="font-bold">No activity yet</p>
-                    <p className="text-sm mt-1">Alerts and activity from {child?.name || 'child'}'s device will appear here</p>
+                    <p className="text-sm mt-1">Alerts and activity from {child?.name || 'child'}&apos;s device will appear here</p>
                 </div>
             ) : (
                 <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 dark:before:via-gray-800 before:to-transparent">
@@ -886,7 +959,10 @@ function ReportsTab({ dict, child }) {
     const alerts = child?.alerts || [];
 
     // Group alerts into weekly buckets
-    const now = Date.now();
+    const [now, setNow] = useState(null);
+    useEffect(() => { setTimeout(() => setNow(Date.now()), 0); }, []);
+    if (!now) return null;
+
     const weeks = [0, 1, 2, 3].map(i => {
         const start = new Date(now - (i + 1) * 7 * 86400000);
         const end = new Date(now - i * 7 * 86400000);
@@ -914,7 +990,7 @@ function ReportsTab({ dict, child }) {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-xl font-bold">Generated Reports</h2>
-                    <p className="text-sm text-gray-500">Weekly activity summaries of {child?.name || 'child'}'s device activity</p>
+                    <p className="text-sm text-gray-500">Weekly activity summaries of {child?.name || 'child'}&apos;s device activity</p>
                 </div>
             </div>
 
@@ -958,13 +1034,13 @@ function SettingsTab({ dict, session }) {
     // Sync profile state when SWR data loads
     useEffect(() => {
         if (user) {
-            setProfile(prev => ({
+            setTimeout(() => setProfile(prev => ({
                 ...prev,
                 name: user.name || prev.name,
                 phone: user.phone || '',
                 country: user.country || '',
                 city: user.city || ''
-            }));
+            })), 0);
         }
     }, [user]);
 
@@ -995,9 +1071,9 @@ function SettingsTab({ dict, session }) {
         { value: "Other", label: "🌍 Other" },
     ];
 
-    const planLabel = subscription ? (subscription.plan === 'TRIAL' ? 'Free Trial' : `${subscription.plan} Plan`) : 'No Plan';
-    const statusLabel = subscription?.status === 'ACTIVE' ? 'ACTIVE' : (subscription?.status || 'NONE');
-    const endDate = subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    const planLabel = subscription ? (subscription.isTrial ? 'Free Trial' : `${subscription.planName} Plan`) : 'No Plan';
+    const statusLabel = subscription?.active ? 'ACTIVE' : (subscription?.isExpired ? 'EXPIRED' : 'INACTIVE');
+    const endDate = subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
     const handleCheckout = async (gateway) => {
         setSaving(true);
@@ -1150,7 +1226,7 @@ function MessagesTab({ dict, child, socket }) {
                         </div>
                     ) : messages.length === 0 ? (
                         <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                            <p>No messages intercepted yet. Ensure PoribarGuard is active on child's device.</p>
+                            <p>No messages intercepted yet. Ensure PoribarGuard is active on child&apos;s device.</p>
                         </div>
                     ) : (
                         messages.map((msg, i) => (

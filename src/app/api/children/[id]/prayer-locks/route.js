@@ -24,6 +24,12 @@ export async function PUT(request, { params }) {
     }
 
     // Verify child belongs to parent
+    // Check subscription access for prayer_lock
+    const access = await checkSubscriptionAccess(session.user.id, "prayer_lock");
+    if (!access.hasAccess) {
+        return NextResponse.json({ error: access.message, reason: access.reason }, { status: 403 });
+    }
+
     const child = await prisma.child.findFirst({
         where: { id: childId, parentId: session.user.id },
     });
