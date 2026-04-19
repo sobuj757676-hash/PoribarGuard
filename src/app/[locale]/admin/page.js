@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
 import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation, useAdminApks, useAdminApkMutation } from '@/hooks/useApi';
+import AdminPackagesTab from './packages/page';
 import {
     LayoutDashboard, Users, CreditCard, Smartphone, LifeBuoy,
     ShieldAlert, BarChart3, UploadCloud, Search, Bell, Settings,
@@ -76,6 +77,7 @@ export default function AdminPage() {
                     <NavItem icon={<BarChart3 />} label={t('analytics')} isActive={activeTab === 'analytics'} onClick={() => { setActiveTab('analytics'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<UploadCloud />} label={t('apk')} isActive={activeTab === 'apk'} onClick={() => { setActiveTab('apk'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Globe />} label="Landing Page" isActive={activeTab === 'landing'} onClick={() => { setActiveTab('landing'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<Database />} label="Packages" isActive={activeTab === 'packages'} onClick={() => { setActiveTab('packages'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Radio />} label="TURN Servers" isActive={activeTab === 'turn'} onClick={() => { setActiveTab('turn'); setIsSidebarOpen(false); }} />
                 </nav>
 
@@ -151,6 +153,7 @@ export default function AdminPage() {
                     {activeTab === 'analytics' && <AnalyticsTab />}
                     {activeTab === 'apk' && <ApkTab />}
                     {activeTab === 'landing' && <LandingConfigTab />}
+                    {activeTab === 'packages' && <AdminPackagesTab />}
                     {activeTab === 'turn' && <TurnServersTab />}
                     {activeTab === 'settings' && <SettingsTab />}
                 </main>
@@ -338,7 +341,7 @@ function ParentsTab({ searchQuery }) {
     const [page, setPage] = useState(1);
 
     // Reset page when search changes
-    useEffect(() => { setPage(1); }, [searchQuery]);
+    useEffect(() => { setTimeout(() => setPage(1), 0); }, [searchQuery]);
 
     const { parents, pagination, isLoading: loading } = useAdminParents(page, searchQuery);
 
@@ -396,7 +399,7 @@ function ParentsTab({ searchQuery }) {
                                     key={p.id}
                                     name={p.name} email={p.email} phone={p.phone || '—'}
                                     ipLoc={`${p.city || ''}, ${p.country || 'BD'}`}
-                                    children={p.children.map(c => ({
+                                    childrenList={p.children.map(c => ({
                                         name: `${c.name} (${c.age})`,
                                         phone: c.phone || '—',
                                         status: c.isOnline ? 'online' : 'offline'
@@ -1182,7 +1185,7 @@ function SettingsTab() {
 
     useEffect(() => {
         if (initialSettings && Object.keys(initialSettings).length > 0) {
-            setSettings(initialSettings);
+            setTimeout(() => setSettings(initialSettings), 0);
         }
     }, [initialSettings]);
 
@@ -1323,86 +1326,47 @@ function LandingConfigTab() {
     // Initialize local state from fetched data
     useEffect(() => {
         if (landingConfig && Object.keys(landingConfig).length >= 0) {
-            setHeroConfig(landingConfig.landing_hero || {
-                badgeText: 'BD EDITION — #1 PARENTAL CONTROL APP',
-                locations: [
-                    { host: 'Dubai', home: 'Jessore' },
-                    { host: 'Riyadh', home: 'Sylhet' },
-                    { host: 'London', home: 'Dhaka' },
-                    { host: 'Malaysia', home: 'Comilla' },
-                    { host: 'Oman', home: 'Chittagong' },
-                    { host: 'Singapore', home: 'Barisal' }
-                ],
-                ctaText: 'Start Free 7-Day Trial',
-                ctaLink: '/dashboard',
-                videoBtnText: 'Watch 45-sec Video',
-                trustBadges: ['Trusted by 2,347+ BD families', '100% Legal', 'bKash/Nagad Accepted'],
-                heroTheme: 'dark'
-            });
-            setFeaturesConfig(landingConfig.landing_features || {
-                sectionTag: '6 Core Pillars',
-                sectionTitle: 'যা আপনি পাবেন — শুধুমাত্র PoribarGuard BD-এ',
-                features: [
-                    { title: 'Remote Install from Abroad', desc: 'TeamViewer বা Magic APK দিয়ে দূর থেকে ইনস্টল করুন', icon: 'DownloadCloud', color: 'blue' },
-                    { title: 'Live Location + Village Geofence', desc: 'স্কুল, টিউশন, বাড়ি, মসজিদ — সব জায়গায় সীমানা', icon: 'Map', color: 'emerald' },
-                    { title: 'Live Camera, Mic & Screen', desc: 'চাইলেই দেখুন, শুনুন, স্ক্রিন দেখুন (on-demand)', icon: 'Video', color: 'red' },
-                    { title: 'Prayer Time + Study Auto Lock', desc: 'Fajr, Maghrib, Isha ও পড়াশোনার সময় অটো লক', icon: 'Clock', color: 'indigo' },
-                    { title: 'SOS Panic Button', desc: 'এক ট্যাপে লোকেশন + ভয়েস নোট + ফটো পাঠায়', icon: 'ShieldAlert', color: 'orange' },
-                    { title: 'Full Stealth Mode', desc: 'শিশু কখনো জানবে না যে মনিটর হচ্ছে', icon: 'EyeOff', color: 'gray' }
-                ]
-            });
-            setPricingConfig(landingConfig.landing_pricing || {
-                sectionTitle: 'সাশ্রয়ী মূল্যে পরিবারের নিরাপত্তা',
-                sectionSubtitle: 'Pay securely via bKash, Nagad, or any International Card.',
-                saveBadge: 'Save 20% on Annual Plans (2 months FREE)',
-                tiers: [
-                    { name: 'Standard', price: '৳299', desc: 'Basic safety for one child', features: ['Live Location Tracking', 'Geofence Alerts (School/Home)', 'Daily Screen Time Reports', 'SOS Button Access'], isPopular: false, btnText: 'Start Free Trial' },
-                    { name: 'Premium', price: '৳599', desc: 'Most Popular! Best for ultimate peace of mind.', features: ['Everything in Standard', 'Live Camera & Mic On-Demand', 'Live Screen Viewing', 'Prayer Time Auto-Lock', 'App Blocking (TikTok, FreeFire)'], isPopular: true, btnText: 'Start 7-Day Free Trial' },
-                    { name: 'Ultimate', price: '৳899', desc: 'For multiple children & strict control', features: ['Everything in Premium', 'Device Owner Mode (Uninstall block)', 'Remote Wipe Data', 'Priority 24/7 Phone Support', 'Up to 3 Children'], isPopular: false, btnText: 'Start Free Trial' }
-                ]
-            });
-            setFaqConfig(landingConfig.landing_faq || {
-                sectionTitle: 'Frequently Asked Questions',
-                faqs: [
-                    { q: 'Is it completely legal to install this app?', a: 'Yes. In Bangladesh, as a parent or legal guardian, it is completely legal to monitor the devices of your minor children (under 18) for their safety and digital wellbeing.' },
-                    { q: 'আমি কি প্রবাস থেকে এটি সেটআপ করতে পারব?', a: 'জি, ১০০%। আপনি শুধু আমাদের Magic SMS লিঙ্কটি সন্তানের ফোনে পাঠাবেন।' },
-                    { q: 'Can the child uninstall the PoribarGuard app?', a: 'If you subscribe to the Ultimate plan, you can enable Device Owner Mode.' },
-                    { q: 'গ্রামের বাজে ইন্টারনেট স্পিডে কি এটা কাজ করবে?', a: 'হ্যাঁ। লোকেশন এবং ছোট টেক্সট অ্যালার্টগুলো 2G/3G নেটওয়ার্কেও কাজ করবে।' },
-                    { q: 'How does the Prayer Time Auto Lock work?', a: 'The system syncs with local Bangladesh prayer times.' }
-                ]
-            });
-            setTestimonialsConfig(landingConfig.landing_testimonials || {
-                sectionTitle: 'যারা ইতিমধ্যে ব্যবহার করছেন',
-                statBadge: '2,347+ Probashi Families Protected',
-                testimonials: [
-                    { name: 'Rahim Chowdhury', location: '🇦🇪 Dubai, UAE', text: 'ভাই, এটা আসলেই ম্যাজিক।', rating: 5, imgUrl: 'https://i.pravatar.cc/150?img=11' },
-                    { name: 'Fatema Begum', location: '🇸🇦 Riyadh, KSA', text: 'প্রথম দিকে ভাবছিলাম কীভাবে সেটআপ করব...', rating: 5, imgUrl: 'https://i.pravatar.cc/150?img=5' },
-                    { name: 'Kamrul Hasan', location: '🇬🇧 London, UK', text: 'The auto-lock feature is exactly what we needed.', rating: 5, imgUrl: 'https://i.pravatar.cc/150?img=12' }
-                ],
-                featuredLogos: ['Prothom Alo', 'Daily Star', 'Probashi FB Groups', 'Somoy TV']
-            });
-            setHowItWorksConfig(landingConfig.landing_howitworks || {
-                sectionTitle: '৩ মিনিটে শুরু করুন',
-                sectionSubtitle: 'No technical skills needed. Setup from anywhere in the world.',
-                steps: [
-                    { title: 'Sign Up & Pay', desc: 'Create account securely using bKash, Nagad, or International Cards.' },
-                    { title: 'Send Magic Link', desc: 'Send the custom SMS link to child. It auto-installs in stealth mode.' },
-                    { title: 'Monitor Silently', desc: 'Open dashboard from Dubai, London, or Riyadh. Start tracking.' }
-                ]
-            });
-            setCtaConfig(landingConfig.landing_cta || {
-                heading: 'আজই শুরু করুন —',
-                subheading: 'আপনার সন্তানের নিরাপত্তা আপনার হাতে',
-                btnText: 'Get Started Free',
-                btnLink: '/register',
-                footerNote: 'No credit card required for 7-day trial.'
-            });
-            setFooterConfig(landingConfig.landing_footer || {
-                description: 'Bringing peace of mind to Bangladeshi expatriates worldwide.',
-                supportEmail: 'support@poribarguardbd.com',
-                productLinks: ['Features', 'Pricing', 'How it Works', 'Download Test APK'],
-                companyLinks: ['About Us', 'Privacy Policy (for Minors)', 'Terms of Service']
-            });
+            setTimeout(() => {
+                setHeroConfig(landingConfig.landing_hero || {
+                    badgeText: 'BD EDITION — #1 PARENTAL CONTROL APP',
+                    locations: [
+                        { host: 'Dubai', home: 'Jessore' },
+                        { host: 'Riyadh', home: 'Sylhet' },
+                        { host: 'London', home: 'Dhaka' },
+                        { host: 'Malaysia', home: 'Comilla' },
+                        { host: 'Oman', home: 'Chittagong' },
+                        { host: 'Singapore', home: 'Barisal' }
+                    ],
+                    ctaText: 'Start Free 7-Day Trial',
+                    ctaLink: '/dashboard',
+                    videoBtnText: 'Watch 45-sec Video',
+                    trustBadges: ['Trusted by 2,347+ BD families', '100% Legal', 'bKash/Nagad Accepted'],
+                    heroTheme: 'dark'
+                });
+                setFeaturesConfig(landingConfig.landing_features || {
+                    sectionTag: '6 Core Pillars',
+                    sectionTitle: 'যা আপনি পাবেন — শুধুমাত্র PoribarGuard BD-এ',
+                    features: [
+                        { title: 'Remote Install from Abroad', desc: 'TeamViewer বা Magic APK দিয়ে দূর থেকে ইনস্টল করুন', icon: 'DownloadCloud', color: 'blue' },
+                        { title: 'Live Location + Village Geofence', desc: 'স্কুল, টিউশন, বাড়ি, মসজিদ — সব জায়গায় সীমানা', icon: 'Map', color: 'emerald' },
+                        { title: 'Live Camera, Mic & Screen', desc: 'চাইলেই দেখুন, শুনুন, স্ক্রিন দেখুন (on-demand)', icon: 'Video', color: 'red' },
+                        { title: 'Prayer Time + Study Auto Lock', desc: 'Fajr, Maghrib, Isha ও পড়াশোনার সময় অটো লক', icon: 'Clock', color: 'indigo' },
+                        { title: 'SOS Panic Button', desc: 'এক ট্যাপে লোকেশন + ভয়েস নোট + ফটো পাঠায়', icon: 'ShieldAlert', color: 'orange' },
+                        { title: 'Full Stealth Mode', desc: 'শিশু কখনো জানবে না যে মনিটর হচ্ছে', icon: 'EyeOff', color: 'gray' }
+                    ]
+                });
+                setPricingConfig(landingConfig.landing_pricing || {
+                    sectionTitle: 'সাশ্রয়ী মূল্যে পরিবারের নিরাপত্তা',
+                    sectionSubtitle: 'Pay securely via bKash, Nagad, or any International Card.',
+                    saveBadge: 'Save 20% on Annual Plans (2 months FREE)',
+                    plans: []
+                });
+                setFaqConfig(landingConfig.landing_faq || { sectionTitle: 'FAQ', faqs: [] });
+                setTestimonialsConfig(landingConfig.landing_testimonials || { sectionTitle: 'Reviews', testimonials: [] });
+                setHowItWorksConfig(landingConfig.landing_how_it_works || { sectionTitle: 'How It Works', steps: [] });
+                setCtaConfig(landingConfig.landing_cta || { heading: 'Start now', buttonText: 'Click here' });
+                setFooterConfig(landingConfig.landing_footer || { description: 'Footer', contactEmail: 'test@test.com' });
+            }, 0);
         }
     }, [landingConfig]);
 
@@ -1810,19 +1774,21 @@ function TurnServersTab() {
     // Initialize from settings
     useEffect(() => {
         if (initialSettings && Object.keys(initialSettings).length > 0) {
-            setTurnEnabled(initialSettings.turn_enabled !== 'false');
-            setTurnSecret(initialSettings.turn_secret || '');
-            setTurnTTL(initialSettings.turn_credential_ttl || '86400');
-            setMeteredApiKey(initialSettings.turn_metered_api_key || '');
-            setBandwidthUsed(parseFloat(initialSettings.turn_bandwidth_used_mb || '0'));
-            setBandwidthLimit(parseFloat(initialSettings.turn_bandwidth_limit_mb || '20480'));
-            try {
-                setTurnServers(JSON.parse(initialSettings.turn_servers || '[]'));
-            } catch { setTurnServers([]); }
-            try {
-                const arr = JSON.parse(initialSettings.turn_stun_servers || '[]');
-                setStunServers(arr.join('\n'));
-            } catch { setStunServers('stun:stun.l.google.com:19302'); }
+            setTimeout(() => {
+                setTurnEnabled(initialSettings.turn_enabled !== 'false');
+                setTurnSecret(initialSettings.turn_secret || '');
+                setTurnTTL(initialSettings.turn_credential_ttl || '86400');
+                setMeteredApiKey(initialSettings.turn_metered_api_key || '');
+                setBandwidthUsed(parseFloat(initialSettings.turn_bandwidth_used_mb || '0'));
+                setBandwidthLimit(parseFloat(initialSettings.turn_bandwidth_limit_mb || '20480'));
+                try {
+                    setTurnServers(JSON.parse(initialSettings.turn_servers || '[]'));
+                } catch { setTurnServers([]); }
+                try {
+                    const arr = JSON.parse(initialSettings.turn_stun_servers || '[]');
+                    setStunServers(arr.join('\n'));
+                } catch { setStunServers('stun:stun.l.google.com:19302'); }
+            }, 0);
         }
     }, [initialSettings]);
 
@@ -2164,7 +2130,7 @@ function TurnServersTab() {
                 {turnSecret && (
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
                         <p className="text-xs font-bold text-slate-500 mb-1">Preview: Clients will receive credentials like this:</p>
-                        <code className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">username: "{Math.floor(Date.now() / 1000) + parseInt(turnTTL)}"  •  credential: "[HMAC-SHA1 hash]"</code>
+                        <code className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">username: &quot;[timestamp + TTL]&quot;  •  credential: &quot;[HMAC-SHA1 hash]&quot;</code>
                     </div>
                 )}
             </div>

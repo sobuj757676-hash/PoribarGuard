@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { rateLimit, checkCsrf } from "@/lib/api-utils";
+import { checkSubscriptionAccess } from "@/lib/subscription-utils";
 
 // GET — List geofence zones for a child
 export async function GET(request) {
@@ -16,6 +17,12 @@ export async function GET(request) {
 
     if (!childId) {
         return NextResponse.json({ error: "childId is required" }, { status: 400 });
+    }
+
+    // Check subscription access for geofencing
+    const access = await checkSubscriptionAccess(session.user.id, "geofencing");
+    if (!access.hasAccess) {
+        return NextResponse.json({ error: access.message, reason: access.reason }, { status: 403 });
     }
 
     // Verify ownership
@@ -52,6 +59,12 @@ export async function POST(request) {
             { error: "childId, name, latitude, longitude, and radius are required" },
             { status: 400 }
         );
+    }
+
+    // Check subscription access for geofencing
+    const access = await checkSubscriptionAccess(session.user.id, "geofencing");
+    if (!access.hasAccess) {
+        return NextResponse.json({ error: access.message, reason: access.reason }, { status: 403 });
     }
 
     // Verify ownership
