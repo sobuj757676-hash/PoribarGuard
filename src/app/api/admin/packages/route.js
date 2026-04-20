@@ -33,7 +33,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, priceMonthly, priceYearly, features, isActive, isPopular, btnText } = body;
+    const { name, description, priceMonthly, priceYearly, features, displayFeatures, isActive, isPopular, btnText } = body;
 
     if (!name || priceMonthly === undefined || !features) {
       return NextResponse.json(
@@ -45,6 +45,7 @@ export async function POST(request) {
     // validate JSON format of features
     try {
       JSON.parse(features);
+      if (displayFeatures) JSON.parse(displayFeatures);
     } catch (e) {
       return NextResponse.json(
         { error: "Invalid features format (must be valid JSON string)" },
@@ -59,6 +60,7 @@ export async function POST(request) {
         priceMonthly: parseFloat(priceMonthly),
         priceYearly: priceYearly ? parseFloat(priceYearly) : null,
         features,
+        displayFeatures: displayFeatures || "[]",
         isActive: isActive !== undefined ? isActive : true,
         isPopular: isPopular !== undefined ? isPopular : false,
         btnText: btnText || 'Start Free Trial',

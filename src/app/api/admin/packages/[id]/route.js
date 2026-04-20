@@ -12,7 +12,7 @@ export async function PUT(request, { params }) {
 
     const { id } = params;
     const body = await request.json();
-    const { name, description, priceMonthly, priceYearly, features, isActive, isPopular, btnText } = body;
+    const { name, description, priceMonthly, priceYearly, features, displayFeatures, isActive, isPopular, btnText } = body;
 
     if (features) {
       try {
@@ -25,12 +25,24 @@ export async function PUT(request, { params }) {
       }
     }
 
+    if (displayFeatures) {
+      try {
+        JSON.parse(displayFeatures);
+      } catch (e) {
+        return NextResponse.json(
+          { error: "Invalid displayFeatures format (must be valid JSON string)" },
+          { status: 400 }
+        );
+      }
+    }
+
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (priceMonthly !== undefined) updateData.priceMonthly = parseFloat(priceMonthly);
     if (priceYearly !== undefined) updateData.priceYearly = priceYearly ? parseFloat(priceYearly) : null;
     if (features !== undefined) updateData.features = features;
+    if (displayFeatures !== undefined) updateData.displayFeatures = displayFeatures;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (isPopular !== undefined) updateData.isPopular = isPopular;
     if (btnText !== undefined) updateData.btnText = btnText;

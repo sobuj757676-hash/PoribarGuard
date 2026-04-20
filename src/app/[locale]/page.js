@@ -54,13 +54,18 @@ export default async function Home() {
   if (subscriptionPackages.length > 0) {
     pricingConfig.tiers = subscriptionPackages.map(pkg => {
       let parsedFeatures = [];
-      try { parsedFeatures = JSON.parse(pkg.features); } catch(e) { }
+      try {
+        parsedFeatures = JSON.parse(pkg.displayFeatures || '[]');
+        if (!parsedFeatures || parsedFeatures.length === 0) {
+          parsedFeatures = JSON.parse(pkg.features).map(f => f.replace('_', ' '));
+        }
+      } catch(e) { }
       return {
         id: pkg.id,
         name: pkg.name,
         price: `৳${pkg.priceMonthly}`,
         desc: pkg.description || '',
-        features: parsedFeatures.map(f => f.replace('_', ' ')), // simple format for landing page
+        features: parsedFeatures,
         isPopular: pkg.isPopular,
         btnText: pkg.btnText || 'Start Free Trial'
       };
