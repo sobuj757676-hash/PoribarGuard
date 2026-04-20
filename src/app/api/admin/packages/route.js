@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 // Get all subscription packages
 export async function GET(request) {
@@ -35,7 +33,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, priceMonthly, priceYearly, features, isActive } = body;
+    const { name, description, priceMonthly, priceYearly, features, isActive, isPopular, btnText } = body;
 
     if (!name || priceMonthly === undefined || !features) {
       return NextResponse.json(
@@ -62,6 +60,8 @@ export async function POST(request) {
         priceYearly: priceYearly ? parseFloat(priceYearly) : null,
         features,
         isActive: isActive !== undefined ? isActive : true,
+        isPopular: isPopular !== undefined ? isPopular : false,
+        btnText: btnText || 'Start Free Trial',
       },
     });
 
