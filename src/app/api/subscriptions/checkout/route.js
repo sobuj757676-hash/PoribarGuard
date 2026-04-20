@@ -16,10 +16,23 @@ export async function POST(request) {
     try {
         const body = await request.json();
         const gateway = sanitize(body.gateway || "");
-        const plan = sanitize(body.plan || "PREMIUM");
+        const packageId = sanitize(body.packageId || "");
 
         if (!gateway || !["bkash", "amarpay"].includes(gateway)) {
             return NextResponse.json({ error: "Invalid payment gateway" }, { status: 400 });
+        }
+
+        if (!packageId) {
+            return NextResponse.json({ error: "Package ID is required" }, { status: 400 });
+        }
+
+        // Validate package exists and is active
+        const selectedPackage = await prisma.subscriptionPackage.findUnique({
+            where: { id: packageId }
+        });
+
+        if (!selectedPackage || !selectedPackage.isActive) {
+            return NextResponse.json({ error: "Invalid or inactive subscription package" }, { status: 400 });
         }
 
         // Retrieve gateway configuration from SystemConfig
@@ -34,7 +47,7 @@ export async function POST(request) {
             }, { status: 503 });
         }
 
-        const amount = plan === "PREMIUM" ? 499 : 999; // Mock pricing logic
+        const amount = selectedPackage.priceMonthly;
 
         // Create pending transaction in database to track the intent
         const transaction = await prisma.transaction.create({
@@ -46,7 +59,8 @@ export async function POST(request) {
                 status: "PENDING",
                 transactionId: `TXN_${crypto.randomBytes(8).toString('hex').toUpperCase()}`,
                 metadata: {
-                    plan,
+                    packageId,
+                    plan: selectedPackage.name, // Keep plan name for backward compatibility/reference
                     gatewayConf: config.value // Only for debugging, typically omitted
                 }
             }

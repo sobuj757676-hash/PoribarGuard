@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 // Update a subscription package
 export async function PUT(request, { params }) {
@@ -14,7 +12,7 @@ export async function PUT(request, { params }) {
 
     const { id } = params;
     const body = await request.json();
-    const { name, description, priceMonthly, priceYearly, features, isActive } = body;
+    const { name, description, priceMonthly, priceYearly, features, isActive, isPopular, btnText } = body;
 
     if (features) {
       try {
@@ -34,6 +32,8 @@ export async function PUT(request, { params }) {
     if (priceYearly !== undefined) updateData.priceYearly = priceYearly ? parseFloat(priceYearly) : null;
     if (features !== undefined) updateData.features = features;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (isPopular !== undefined) updateData.isPopular = isPopular;
+    if (btnText !== undefined) updateData.btnText = btnText;
 
     const updatedPackage = await prisma.subscriptionPackage.update({
       where: { id },

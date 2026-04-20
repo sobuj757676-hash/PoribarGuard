@@ -1030,6 +1030,26 @@ function SettingsTab({ dict, session }) {
     const [profile, setProfile] = useState({ name: session?.user?.name || '', phone: '', country: '', city: '' });
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
+    const [packages, setPackages] = useState([]);
+    const [selectedPackageId, setSelectedPackageId] = useState(null);
+
+    useEffect(() => {
+        const fetchPackages = async () => {
+            try {
+                const res = await fetch('/api/subscriptions/packages');
+                if (res.ok) {
+                    const data = await res.json();
+                    setPackages(data);
+                    if (data.length > 0) {
+                        setSelectedPackageId(data[0].id);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch subscription packages");
+            }
+        };
+        fetchPackages();
+    }, []);
 
     // Sync profile state when SWR data loads
     useEffect(() => {
@@ -1076,12 +1096,16 @@ function SettingsTab({ dict, session }) {
     const endDate = subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
     const handleCheckout = async (gateway) => {
+        if (!selectedPackageId) {
+            toast.error("Please select a package first");
+            return;
+        }
         setSaving(true);
         try {
             const res = await fetch('/api/subscriptions/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gateway, plan: 'PREMIUM' })
+                body: JSON.stringify({ gateway, packageId: selectedPackageId })
             });
             const data = await res.json();
             if (res.ok && data.checkoutUrl) {
@@ -1150,20 +1174,43 @@ function SettingsTab({ dict, session }) {
 
             <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-indigo-500" /> Subscription Plan</h3>
-                <div className="p-4 border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+
+                {/* Current Plan Info */}
+                <div className="p-4 border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                     <div>
                         <p className="font-bold text-indigo-900 dark:text-indigo-400">{planLabel}</p>
                         <p className="text-sm text-indigo-700 dark:text-indigo-500 mt-1">Status: <span className={`font-bold px-2 py-0.5 rounded ml-1 text-[10px] tracking-wider ${statusLabel === 'ACTIVE' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30' : 'text-red-600 bg-red-100'}`}>{statusLabel}</span></p>
                         <p className="text-xs text-indigo-600 dark:text-indigo-500 mt-1.5 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Expires: {endDate}</p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <button onClick={() => handleCheckout('bkash')} disabled={saving} className="bg-[#E2136E] hover:bg-[#d10f63] text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-[#E2136E]/20 transition whitespace-nowrap disabled:opacity-50">
-                            Pay with bKash
-                        </button>
-                        <button onClick={() => handleCheckout('amarpay')} disabled={saving} className="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-slate-900/20 transition whitespace-nowrap disabled:opacity-50">
-                            Pay with AmarPay
-                        </button>
-                    </div>
+                </div>
+
+                {/* Available Packages */}
+                <h4 className="font-bold text-md mb-3 text-gray-800 dark:text-gray-200">Upgrade / Renew</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {packages.map(pkg => (
+                        <div
+                            key={pkg.id}
+                            onClick={() => setSelectedPackageId(pkg.id)}
+                            className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${selectedPackageId === pkg.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-md' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'}`}
+                        >
+                            <div className="flex justify-between items-start mb-2">
+                                <h5 className="font-bold text-lg text-gray-900 dark:text-white">{pkg.name}</h5>
+                                {pkg.isPopular && <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase">Popular</span>}
+                            </div>
+                            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mb-1">৳{pkg.priceMonthly}<span className="text-sm text-gray-500 font-medium">/mo</span></p>
+                            <p className="text-xs text-gray-500 line-clamp-2">{pkg.description}</p>
+                        </div>
+                    ))}
+                    {packages.length === 0 && <p className="text-sm text-gray-500">No packages available at the moment.</p>}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                    <button onClick={() => handleCheckout('bkash')} disabled={saving || !selectedPackageId} className="bg-[#E2136E] hover:bg-[#d10f63] text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-[#E2136E]/20 transition whitespace-nowrap disabled:opacity-50 flex-1">
+                        Pay with bKash
+                    </button>
+                    <button onClick={() => handleCheckout('amarpay')} disabled={saving || !selectedPackageId} className="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-slate-900/20 transition whitespace-nowrap disabled:opacity-50 flex-1">
+                        Pay with AmarPay
+                    </button>
                 </div>
             </div>
 

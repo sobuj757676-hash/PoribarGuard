@@ -28,9 +28,11 @@ export default function EditPackagePage() {
         description: '',
         priceMonthly: '',
         priceYearly: '',
-        isActive: true
+        isActive: true,
+        isPopular: false,
+        btnText: 'Start Free Trial'
     });
-    const [selectedFeatures, setSelectedFeatures] = useState([]);
+    const [customFeatures, setCustomFeatures] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -48,10 +50,15 @@ export default function EditPackagePage() {
                             description: pkg.description || '',
                             priceMonthly: pkg.priceMonthly,
                             priceYearly: pkg.priceYearly || '',
-                            isActive: pkg.isActive
+                            isActive: pkg.isActive,
+                            isPopular: pkg.isPopular,
+                            btnText: pkg.btnText || 'Start Free Trial'
                         });
                         try {
-                            setSelectedFeatures(JSON.parse(pkg.features));
+                            const parsedFeatures = JSON.parse(pkg.features);
+                            if (Array.isArray(parsedFeatures)) {
+                                setCustomFeatures(parsedFeatures.join('\n'));
+                            }
                         } catch(e) {}
                     }
                 }
@@ -64,24 +71,18 @@ export default function EditPackagePage() {
         fetchPackage();
     }, [id]);
 
-    const handleFeatureToggle = (featureId) => {
-        setSelectedFeatures(prev =>
-            prev.includes(featureId)
-                ? prev.filter(id => id !== featureId)
-                : [...prev, featureId]
-        );
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
+            const featuresArray = customFeatures.split('\n').map(f => f.trim()).filter(f => f);
+
             const res = await fetch(`/api/admin/packages/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
-                    features: JSON.stringify(selectedFeatures)
+                    features: JSON.stringify(featuresArray)
                 })
             });
 
@@ -124,16 +125,22 @@ export default function EditPackagePage() {
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 mb-3">Included Features</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {AVAILABLE_FEATURES.map(f => (
-                            <label key={f.id} className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
-                                <input type="checkbox" checked={selectedFeatures.includes(f.id)} onChange={() => handleFeatureToggle(f.id)} className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900" />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{f.label}</span>
-                            </label>
-                        ))}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Button Text</label>
+                        <input type="text" value={formData.btnText} onChange={e => setFormData({...formData, btnText: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition text-slate-800 dark:text-slate-200" placeholder="e.g. Start Free Trial" />
                     </div>
+                    <div className="flex items-end pb-2">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" checked={formData.isPopular} onChange={e => setFormData({...formData, isPopular: e.target.checked})} className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900" />
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Mark as Most Popular</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Included Features (one per line)</label>
+                    <textarea value={customFeatures} onChange={e => setCustomFeatures(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition text-slate-800 dark:text-slate-200" rows="5" placeholder="Live Location Tracking&#10;Live Screen Viewing" />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">

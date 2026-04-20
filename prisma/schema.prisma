@@ -184,6 +184,8 @@ model SubscriptionPackage {
   priceYearly   Float?   // in BDT
   features      String   // JSON string of allowed features (e.g., "['geofencing', 'app_blocking']")
   isActive      Boolean  @default(true)
+  isPopular     Boolean  @default(false)
+  btnText       String   @default("Start Free Trial")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

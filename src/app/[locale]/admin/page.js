@@ -1553,37 +1553,14 @@ function LandingConfigTab() {
                     </div>
                     <div><label className={labelCls}>Subtitle</label><input type="text" value={pricingConfig.sectionSubtitle} onChange={e => setPricingConfig({ ...pricingConfig, sectionSubtitle: e.target.value })} className={inputCls} /></div>
 
-                    <div>
-                        <label className={labelCls}>Pricing Tiers</label>
-                        <div className="space-y-4">
-                            {pricingConfig.tiers.map((tier, idx) => (
-                                <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs font-bold text-slate-400">Tier #{idx + 1} {tier.isPopular && <span className="text-emerald-500">★ Popular</span>}</span>
-                                        <button onClick={() => { const t = pricingConfig.tiers.filter((_, i) => i !== idx); setPricingConfig({ ...pricingConfig, tiers: t }); }} className={btnRemoveCls}><Trash2 className="w-4 h-4" /></button>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                        <input type="text" value={tier.name} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], name: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Plan Name" />
-                                        <input type="text" value={tier.price} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], price: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Price (e.g. ৳299)" />
-                                        <input type="text" value={tier.btnText} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], btnText: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Button Text" />
-                                    </div>
-                                    <input type="text" value={tier.desc} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], desc: e.target.value }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={inputCls} placeholder="Description" />
-                                    <div className="flex items-center gap-2">
-                                        <input type="checkbox" checked={tier.isPopular} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], isPopular: e.target.checked }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className="rounded" />
-                                        <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">Mark as Popular</span>
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Features (one per line)</label>
-                                        <textarea value={tier.features.join('\n')} onChange={e => { const t = [...pricingConfig.tiers]; t[idx] = { ...t[idx], features: e.target.value.split('\n') }; setPricingConfig({ ...pricingConfig, tiers: t }); }} className={textareaCls} placeholder="One feature per line" />
-                                    </div>
-                                </div>
-                            ))}
-                            <button onClick={() => setPricingConfig({ ...pricingConfig, tiers: [...pricingConfig.tiers, { name: '', price: '', desc: '', features: [], isPopular: false, btnText: 'Start Free Trial' }] })} className={btnAddCls}><Plus className="w-4 h-4" /> Add Tier</button>
-                        </div>
+                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
+                        <p className="font-bold mb-1">Pricing Tiers are now managed automatically!</p>
+                        <p>The pricing cards shown on the landing page are synced in real-time with the active Subscription Packages you create in the <strong>Subscription Packages</strong> tab.</p>
                     </div>
+
                     <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <button onClick={() => saveSection('landing_pricing', pricingConfig)} disabled={saving} className={btnSaveCls}>
-                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Pricing
+                        <button onClick={() => saveSection('landing_pricing', { sectionTitle: pricingConfig.sectionTitle, saveBadge: pricingConfig.saveBadge, sectionSubtitle: pricingConfig.sectionSubtitle })} disabled={saving} className={btnSaveCls}>
+                            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Pricing Header
                         </button>
                     </div>
                 </div>

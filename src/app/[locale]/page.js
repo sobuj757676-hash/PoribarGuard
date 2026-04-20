@@ -21,25 +21,52 @@ function parseConfig(configs, key) {
 export default async function Home() {
   // Fetch all landing configs server-side (great for SEO)
   let configs = [];
+  let subscriptionPackages = [];
   try {
-    configs = await prisma.systemConfig.findMany({
-      where: {
-        key: {
-          in: [
-            'landing_hero', 'landing_features', 'landing_pricing',
-            'landing_faq', 'landing_testimonials', 'landing_howitworks',
-            'landing_cta', 'landing_footer'
-          ]
+    const [fetchedConfigs, fetchedPackages] = await Promise.all([
+      prisma.systemConfig.findMany({
+        where: {
+          key: {
+            in: [
+              'landing_hero', 'landing_features', 'landing_pricing',
+              'landing_faq', 'landing_testimonials', 'landing_howitworks',
+              'landing_cta', 'landing_footer'
+            ]
+          }
         }
-      }
-    });
+      }),
+      prisma.subscriptionPackage.findMany({
+        where: { isActive: true },
+        orderBy: { priceMonthly: 'asc' }
+      })
+    ]);
+    configs = fetchedConfigs;
+    subscriptionPackages = fetchedPackages;
   } catch (err) {
-    console.warn("Could not fetch system configs, using default landing config fallback", err.message);
+    console.warn("Could not fetch system configs or packages, using default landing config fallback", err.message);
   }
 
   const heroConfig = parseConfig(configs, 'landing_hero') || {};
   const featuresConfig = parseConfig(configs, 'landing_features') || {};
-  const pricingConfig = parseConfig(configs, 'landing_pricing') || {};
+  let pricingConfig = parseConfig(configs, 'landing_pricing') || {};
+
+  // Transform dynamic packages for pricing config
+  if (subscriptionPackages.length > 0) {
+    pricingConfig.tiers = subscriptionPackages.map(pkg => {
+      let parsedFeatures = [];
+      try { parsedFeatures = JSON.parse(pkg.features); } catch(e) { }
+      return {
+        id: pkg.id,
+        name: pkg.name,
+        price: `৳${pkg.priceMonthly}`,
+        desc: pkg.description || '',
+        features: parsedFeatures.map(f => f.replace('_', ' ')), // simple format for landing page
+        isPopular: pkg.isPopular,
+        btnText: pkg.btnText || 'Start Free Trial'
+      };
+    });
+  }
+
   const faqConfig = parseConfig(configs, 'landing_faq') || {};
   const testimonialsConfig = parseConfig(configs, 'landing_testimonials') || {};
   const howItWorksConfig = parseConfig(configs, 'landing_howitworks') || {};
