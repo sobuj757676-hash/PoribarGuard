@@ -1198,7 +1198,19 @@ function SettingsTab({ dict, session }) {
                                 {pkg.isPopular && <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase">Popular</span>}
                             </div>
                             <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mb-1">৳{pkg.priceMonthly}<span className="text-sm text-gray-500 font-medium">/mo</span></p>
-                            <p className="text-xs text-gray-500 line-clamp-2">{pkg.description}</p>
+                            <p className="text-xs text-gray-500 mb-2">{pkg.description}</p>
+                            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                                {(()=>{
+                                    let list = [];
+                                    try {
+                                        list = JSON.parse(pkg.displayFeatures || '[]');
+                                        if (!list || list.length === 0) list = JSON.parse(pkg.features || '[]').map(f => f.replace('_', ' '));
+                                    } catch(e) {}
+                                    return list.slice(0, 3).map((f, i) => (
+                                        <li key={i} className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-500 shrink-0" /> <span className="truncate">{f}</span></li>
+                                    ));
+                                })()}
+                            </ul>
                         </div>
                     ))}
                     {packages.length === 0 && <p className="text-sm text-gray-500">No packages available at the moment.</p>}

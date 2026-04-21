@@ -177,17 +177,18 @@ model PrayerTimeLock {
 // =============================================
 
 model SubscriptionPackage {
-  id            String   @id @default(cuid())
-  name          String   // e.g., "Standard", "Premium", "Ultimate"
-  description   String?
-  priceMonthly  Float    // in BDT
-  priceYearly   Float?   // in BDT
-  features      String   // JSON string of allowed features (e.g., "['geofencing', 'app_blocking']")
-  isActive      Boolean  @default(true)
-  isPopular     Boolean  @default(false)
-  btnText       String   @default("Start Free Trial")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(cuid())
+  name             String   // e.g., "Standard", "Premium", "Ultimate"
+  description      String?
+  priceMonthly     Float    // in BDT
+  priceYearly      Float?   // in BDT
+  features         String   // JSON string of allowed system features (e.g., "['geofencing', 'app_blocking']")
+  displayFeatures  String   @default("[]") // JSON string of custom UI features for landing page
+  isActive         Boolean  @default(true)
+  isPopular        Boolean  @default(false)
+  btnText          String   @default("Start Free Trial")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
   subscriptions Subscription[]
