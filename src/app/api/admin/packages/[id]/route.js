@@ -10,7 +10,8 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
     const body = await request.json();
     const { name, description, priceMonthly, priceYearly, features, displayFeatures, isActive, isPopular, btnText } = body;
 
@@ -70,7 +71,8 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
 
     await prisma.subscriptionPackage.delete({
       where: { id },
