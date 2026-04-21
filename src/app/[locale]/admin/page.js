@@ -2286,7 +2286,7 @@ function TicketRow({ title, user, time, status }) {
     );
 }
 
-function ParentTableRow({ name, email, phone, ipLoc, children, plan, status, expiry }) {
+function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status, expiry }) {
     const [menuOpen, setMenuOpen] = useState(false);
     return (
         <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
@@ -2302,14 +2302,14 @@ function ParentTableRow({ name, email, phone, ipLoc, children, plan, status, exp
             </td>
             <td className="px-6 py-4">
                 <div className="space-y-1.5">
-                    {children.map((child, idx) => (
+                    {childrenList.map((child, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-sm">
                             <span className={`w-2 h-2 rounded-full ${child.status === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
                             <span className="font-semibold text-slate-700 dark:text-slate-200">{child.name}</span>
                             <span className="text-xs text-slate-500">({child.phone})</span>
                         </div>
                     ))}
-                    {children.length === 0 && <span className="text-xs text-slate-400">No children</span>}
+                    {childrenList.length === 0 && <span className="text-xs text-slate-400">No children</span>}
                 </div>
             </td>
             <td className="px-6 py-4">
