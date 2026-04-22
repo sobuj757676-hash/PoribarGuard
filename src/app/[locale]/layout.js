@@ -1,4 +1,5 @@
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { NextIntlClientProvider } from 'next-intl';
@@ -88,26 +89,7 @@ export default async function RootLayout({ children, params }) {
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var t = localStorage.getItem('pg-theme');
-                  if (t === 'light') {
-                    document.documentElement.classList.remove('dark');
-                  } else if (t === 'dark') {
-                    document.documentElement.classList.add('dark');
-                  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch(e) {
-                  document.documentElement.classList.add('dark');
-                }
-              })();
-            `,
-          }}
-        />
+        <Script id="theme-strategy" src="/scripts/theme-init.js" strategy="beforeInteractive" />
         <NextIntlClientProvider messages={messages}>
           <Providers>
             {children}
