@@ -16,10 +16,10 @@ export default function ClientPage({ id, locale }) {
     if (isLoading) {
         return (
             <div className="p-8 space-y-6 animate-pulse">
-                <div className="h-32 bg-slate-200 rounded-xl w-full"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="h-64 bg-slate-200 rounded-xl w-full"></div>
-                    <div className="h-64 bg-slate-200 rounded-xl w-full"></div>
+                <div className="h-32 bg-slate-200 dark:bg-slate-800 rounded-xl w-full"></div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl w-full col-span-1 lg:col-span-2"></div>
+                    <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl w-full"></div>
                 </div>
             </div>
         );
@@ -37,17 +37,25 @@ export default function ClientPage({ id, locale }) {
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-800">Family Details</h1>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Family Details</h1>
                 <div className="flex items-center space-x-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${parent.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {parent.isActive ? 'Active' : 'Suspended'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                        parent.isActive
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50'
+                            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50'
+                    }`}>
+                        {parent.isActive ? 'ACTIVE ACCOUNT' : 'SUSPENDED'}
                     </span>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <ParentProfileCard parent={parent} locale={locale} />
-                <SubscriptionCard subscription={parent.subscription} locale={locale} />
+                <div className="lg:col-span-2">
+                    <ParentProfileCard parent={parent} locale={locale} />
+                </div>
+                <div className="lg:col-span-1">
+                    <SubscriptionCard subscription={parent.subscription} locale={locale} />
+                </div>
             </div>
 
             <ChildDevicesList childrenList={parent.children} locale={locale} />
