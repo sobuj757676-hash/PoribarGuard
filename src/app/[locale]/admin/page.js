@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -2288,6 +2289,45 @@ function TicketRow({ title, user, time, status }) {
 
 function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status, expiry }) {
     const [menuOpen, setMenuOpen] = useState(false);
+    const buttonRef = useRef(null);
+    const [menuCoords, setMenuCoords] = useState({ top: 0, left: 0 });
+
+    const toggleMenu = () => {
+        if (!menuOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            // Position it below the button, aligned to the right edge of the button
+            setMenuCoords({
+                top: rect.bottom + window.scrollY,
+                left: rect.right + window.scrollX - 160 // 160px is the w-40 of the dropdown
+            });
+        }
+        setMenuOpen(!menuOpen);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuOpen && buttonRef.current && !buttonRef.current.contains(event.target) && !event.target.closest('.action-menu-dropdown')) {
+                setMenuOpen(false);
+            }
+        };
+
+        const handleScrollOrResize = () => {
+            if (menuOpen) setMenuOpen(false);
+        };
+
+        if (menuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            window.addEventListener('scroll', handleScrollOrResize, true);
+            window.addEventListener('resize', handleScrollOrResize);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+            window.removeEventListener('resize', handleScrollOrResize);
+        };
+    }, [menuOpen]);
+
     return (
         <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
             <td className="px-6 py-4">
@@ -2322,15 +2362,20 @@ function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status,
                 </div>
             </td>
             <td className="px-6 py-4 text-right relative">
-                <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition">
+                <button ref={buttonRef} onClick={toggleMenu} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition">
                     <MoreVertical className="w-5 h-5" />
                 </button>
-                {menuOpen && (
-                    <div className="absolute right-6 top-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-20 py-1 w-40" onMouseLeave={() => setMenuOpen(false)}>
+                {menuOpen && typeof document !== 'undefined' && createPortal(
+                    <div
+                        className="action-menu-dropdown absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 py-1 w-40"
+                        style={{ top: menuCoords.top, left: menuCoords.left }}
+                        onMouseLeave={() => setMenuOpen(false)}
+                    >
                         <button className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium">View Details</button>
                         <button className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 font-medium">Suspend</button>
                         <button className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 font-medium">Delete</button>
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </td>
         </tr>
