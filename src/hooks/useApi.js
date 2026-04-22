@@ -94,8 +94,9 @@ export function useAdminParents(page = 1, search = '') {
     const params = new URLSearchParams({ page: page.toString(), limit: '10' });
     if (search) params.append('search', search);
 
-    const { data, error, isLoading } = useSWR(`/api/admin/parents?${params.toString()}`);
+    const { data, error, isLoading, mutate } = useSWR(`/api/admin/parents?${params.toString()}`);
     return {
+        mutate,
         parents: data?.parents || [],
         pagination: data?.pagination || { total: 0, totalPages: 1 },
         isLoading,
