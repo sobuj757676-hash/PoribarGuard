@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
 import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation, useAdminApks, useAdminApkMutation } from '@/hooks/useApi';
@@ -344,7 +345,7 @@ function ParentsTab({ searchQuery }) {
     // Reset page when search changes
     useEffect(() => { setTimeout(() => setPage(1), 0); }, [searchQuery]);
 
-    const { parents, pagination, isLoading: loading } = useAdminParents(page, searchQuery);
+    const { parents, pagination, isLoading: loading, mutate } = useAdminParents(page, searchQuery);
 
     const exportCSV = () => {
         if (!parents) return;
@@ -398,6 +399,9 @@ function ParentsTab({ searchQuery }) {
                             ) : parents?.map(p => (
                                 <ParentTableRow
                                     key={p.id}
+                                    id={p.id}
+                                    isActive={p.isActive}
+                                    mutate={mutate}
                                     name={p.name} email={p.email} phone={p.phone || '—'}
                                     ipLoc={`${p.city || ''}, ${p.country || 'BD'}`}
                                     childrenList={p.children.map(c => ({
@@ -2287,7 +2291,13 @@ function TicketRow({ title, user, time, status }) {
     );
 }
 
-function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status, expiry }) {
+function ParentTableRow({ id, isActive, mutate, name, email, phone, ipLoc, childrenList, plan, status, expiry }) {
+    const router = useRouter();
+    const [isSuspending, setIsSuspending] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showConfirmSuspend, setShowConfirmSuspend] = useState(false);
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
     const [menuOpen, setMenuOpen] = useState(false);
     const buttonRef = useRef(null);
     const [menuCoords, setMenuCoords] = useState({ top: 0, left: 0 });
@@ -2304,11 +2314,55 @@ function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status,
         setMenuOpen(!menuOpen);
     };
 
+
     const handleAction = (e, action) => {
         e.stopPropagation();
         setMenuOpen(false);
-        toast.info(`Action "${action}" clicked for ${name}`);
+        if (action === 'View Details') {
+            router.push(`/admin/parents/${id}`);
+        } else if (action === 'Suspend') {
+            setShowConfirmSuspend(true);
+        } else if (action === 'Delete') {
+            setShowConfirmDelete(true);
+        }
     };
+
+    const confirmSuspend = async () => {
+        setIsSuspending(true);
+        try {
+            const res = await fetch(`/api/admin/parents/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: !isActive }),
+            });
+            if (!res.ok) throw new Error('Failed to suspend/unsuspend');
+            toast.success(isActive ? 'Parent suspended' : 'Parent unsuspended');
+            mutate();
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setIsSuspending(false);
+            setShowConfirmSuspend(false);
+        }
+    };
+
+    const confirmDelete = async () => {
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`/api/admin/parents/${id}`, {
+                method: 'DELETE',
+            });
+            if (!res.ok) throw new Error('Failed to delete');
+            toast.success('Parent deleted');
+            mutate();
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setIsDeleting(false);
+            setShowConfirmDelete(false);
+        }
+    };
+
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -2360,13 +2414,17 @@ function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status,
             </td>
             <td className="px-6 py-4">
                 <div className="flex flex-col items-start gap-1">
-                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full border ${status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50'}`}>
-                        {status.toUpperCase()}
+                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full border ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50'}`}>
+                        {isActive ? 'ACTIVE ACCOUNT' : 'SUSPENDED'}
+                    </span>
+                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full border ${status === 'active' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800/50' : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50'}`}>
+                        {status.toUpperCase()} PLAN
                     </span>
                     <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{plan}</p>
                     <p className="text-[10px] text-slate-400">Exp: {expiry}</p>
                 </div>
             </td>
+
             <td className="px-6 py-4 text-right relative">
                 <button ref={buttonRef} onClick={toggleMenu} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition">
                     <MoreVertical className="w-5 h-5" />
@@ -2378,13 +2436,51 @@ function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status,
                         onMouseLeave={() => setMenuOpen(false)}
                     >
                         <button onClick={(e) => handleAction(e, 'View Details')} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium">View Details</button>
-                        <button onClick={(e) => handleAction(e, 'Suspend')} className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 font-medium">Suspend</button>
+                        <button onClick={(e) => handleAction(e, 'Suspend')} className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 font-medium">{isActive ? 'Suspend' : 'Unsuspend'}</button>
                         <button onClick={(e) => handleAction(e, 'Delete')} className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 font-medium">Delete</button>
+                    </div>,
+                    document.body
+                )}
+
+                {/* Modals rendered inline using createPortal */}
+                {showConfirmSuspend && typeof document !== 'undefined' && createPortal(
+                    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+                            <h3 className="text-lg font-bold mb-2">{isActive ? 'Suspend' : 'Unsuspend'} Parent</h3>
+                            <p className="text-sm text-slate-500 mb-6">
+                                {isActive ? 'Are you sure you want to suspend this parent? They will not be able to log in, and all connected children will be offline.' : 'Are you sure you want to unsuspend this parent? They will regain access.'}
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button onClick={() => setShowConfirmSuspend(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-lg transition">Cancel</button>
+                                <button onClick={confirmSuspend} disabled={isSuspending} className="px-4 py-2 text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition disabled:opacity-50">
+                                    {isSuspending ? 'Processing...' : 'Confirm'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
+
+                {showConfirmDelete && typeof document !== 'undefined' && createPortal(
+                    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-800">
+                            <h3 className="text-lg font-bold mb-2 text-red-600">Delete Parent</h3>
+                            <p className="text-sm text-slate-500 mb-6">
+                                Are you absolutely sure you want to delete this parent? This action is highly destructive and will permanently remove all connected child data, configurations, and history.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button onClick={() => setShowConfirmDelete(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-lg transition">Cancel</button>
+                                <button onClick={confirmDelete} disabled={isDeleting} className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition disabled:opacity-50">
+                                    {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+                                </button>
+                            </div>
+                        </div>
                     </div>,
                     document.body
                 )}
             </td>
         </tr>
+
     );
 }
 
