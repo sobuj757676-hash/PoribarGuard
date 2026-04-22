@@ -50,3 +50,48 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ error: "Failed to delete parent" }, { status: 500 });
     }
 }
+
+
+export async function GET(request, { params }) {
+    const session = await auth();
+    if (!session?.user || session.user.role !== "ADMIN") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const { id } = await params;
+
+        const parent = await prisma.user.findUnique({
+            where: { id },
+            include: {
+                children: {
+                    include: {
+                        device: true,
+                        alerts: {
+                            orderBy: { createdAt: 'desc' },
+                            take: 5
+                        }
+                    }
+                },
+                subscription: true,
+                transactions: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 10
+                },
+                supportTickets: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 5
+                }
+            }
+        });
+
+        if (!parent || parent.role !== "PARENT") {
+            return NextResponse.json({ error: "Parent not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({ parent });
+    } catch (error) {
+        console.error("Fetch Parent error:", error);
+        return NextResponse.json({ error: "Failed to fetch parent details" }, { status: 500 });
+    }
+}
