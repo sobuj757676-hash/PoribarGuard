@@ -2304,6 +2304,12 @@ function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status,
         setMenuOpen(!menuOpen);
     };
 
+    const handleAction = (e, action) => {
+        e.stopPropagation();
+        setMenuOpen(false);
+        toast.info(`Action "${action}" clicked for ${name}`);
+    };
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuOpen && buttonRef.current && !buttonRef.current.contains(event.target) && !event.target.closest('.action-menu-dropdown')) {
@@ -2371,9 +2377,9 @@ function ParentTableRow({ name, email, phone, ipLoc, childrenList, plan, status,
                         style={{ top: menuCoords.top, left: menuCoords.left }}
                         onMouseLeave={() => setMenuOpen(false)}
                     >
-                        <button className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium">View Details</button>
-                        <button className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 font-medium">Suspend</button>
-                        <button className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 font-medium">Delete</button>
+                        <button onClick={(e) => handleAction(e, 'View Details')} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium">View Details</button>
+                        <button onClick={(e) => handleAction(e, 'Suspend')} className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 font-medium">Suspend</button>
+                        <button onClick={(e) => handleAction(e, 'Delete')} className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 font-medium">Delete</button>
                     </div>,
                     document.body
                 )}
