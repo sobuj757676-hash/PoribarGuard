@@ -90,6 +90,21 @@ export function useAdminStats() {
     };
 }
 
+
+export function useAdminParentDetails(id) {
+    const { data, error, isLoading, mutate } = useSWR(id ? `/api/admin/parents/${id}` : null);
+    return {
+        parent: data?.parent || null,
+        isLoading,
+        isError: error,
+        mutate
+    };
+}
+
+export function useAdminParentMutation(id) {
+    return useSWRMutation(id ? `/api/admin/parents/${id}` : null, sendRequest);
+}
+
 export function useAdminParents(page = 1, search = '') {
     const params = new URLSearchParams({ page: page.toString(), limit: '10' });
     if (search) params.append('search', search);
