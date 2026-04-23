@@ -15,17 +15,45 @@ export async function PATCH(request, { params }) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const { isActive } = body;
 
-        const user = await prisma.user.update({
-            where: { id },
-            data: { isActive },
-        });
+        // Handle Subscription Update
+        if (body.subscriptionUpdate) {
+            const { plan, status, endDate } = body.subscriptionUpdate;
 
-        return NextResponse.json({ message: "Parent status updated successfully", user });
+            const subscription = await prisma.subscription.findUnique({
+                where: { userId: id }
+            });
+
+            if (!subscription) {
+                return NextResponse.json({ error: "No subscription found for this user" }, { status: 404 });
+            }
+
+            await prisma.subscription.update({
+                where: { userId: id },
+                data: {
+                    plan,
+                    status,
+                    endDate: new Date(endDate)
+                }
+            });
+
+            return NextResponse.json({ message: "Subscription updated successfully" });
+        }
+
+        // Handle User Status Update
+        if (body.isActive !== undefined) {
+            const user = await prisma.user.update({
+                where: { id },
+                data: { isActive: body.isActive },
+            });
+            return NextResponse.json({ message: "Parent status updated successfully", user });
+        }
+
+        return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+
     } catch (error) {
         console.error("Update Parent error:", error);
-        return NextResponse.json({ error: "Failed to update parent status" }, { status: 500 });
+        return NextResponse.json({ error: "Failed to update parent data" }, { status: 500 });
     }
 }
 

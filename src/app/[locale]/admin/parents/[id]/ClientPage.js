@@ -54,7 +54,7 @@ export default function ClientPage({ id, locale }) {
                     <ParentProfileCard parent={parent} locale={locale} />
                 </div>
                 <div className="lg:col-span-1">
-                    <SubscriptionCard subscription={parent.subscription} locale={locale} />
+                    <SubscriptionCard parentId={parent.id} subscription={parent.subscription} locale={locale} mutate={mutate} parentMutation={parentMutation} />
                 </div>
             </div>
 
