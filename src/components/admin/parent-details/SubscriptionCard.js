@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { CreditCard, Edit2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAdminPackages } from '@/hooks/useApi';
 
 export default function SubscriptionCard({ parentId, subscription, locale, mutate, parentMutation }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { packages } = useAdminPackages();
+
     const [formData, setFormData] = useState({
-        plan: subscription?.plan || 'TRIAL',
+        packageId: subscription?.packageId || (subscription?.plan === 'TRIAL' ? 'TRIAL' : ''),
         status: subscription?.status || 'ACTIVE',
         endDate: subscription?.endDate ? new Date(subscription.endDate).toISOString().split('T')[0] : ''
     });
+
+    // Determine fallback plan string for display if packageId isn't resolved
+    const currentPlanDisplay = subscription?.package?.name || subscription?.plan || 'UNKNOWN';
 
     const isExpired = subscription && new Date(subscription.endDate) < new Date();
     const displayStatus = isExpired ? 'EXPIRED' : subscription?.status;
@@ -58,7 +64,7 @@ export default function SubscriptionCard({ parentId, subscription, locale, mutat
                         <>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Plan</span>
-                                <span className="font-bold text-slate-900 dark:text-white uppercase">{subscription.plan}</span>
+                                <span className="font-bold text-slate-900 dark:text-white uppercase">{currentPlanDisplay}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</span>
@@ -102,16 +108,17 @@ export default function SubscriptionCard({ parentId, subscription, locale, mutat
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Plan Type</label>
                                 <select
-                                    name="plan"
-                                    value={formData.plan}
+                                    name="packageId"
+                                    value={formData.packageId}
                                     onChange={handleChange}
                                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
-                                    <option value="TRIAL">TRIAL</option>
-                                    <option value="BASIC">BASIC</option>
-                                    <option value="STANDARD">STANDARD</option>
-                                    <option value="PREMIUM">PREMIUM</option>
-                                    <option value="ULTIMATE">ULTIMATE</option>
+                                    <option value="TRIAL">TRIAL (Fallback)</option>
+                                    {packages && packages.map(pkg => (
+                                        <option key={pkg.id} value={pkg.id}>
+                                            {pkg.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                             <div>

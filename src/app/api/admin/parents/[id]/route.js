@@ -18,7 +18,7 @@ export async function PATCH(request, { params }) {
 
         // Handle Subscription Update
         if (body.subscriptionUpdate) {
-            const { plan, status, endDate } = body.subscriptionUpdate;
+            const { packageId, status, endDate } = body.subscriptionUpdate;
 
             const subscription = await prisma.subscription.findUnique({
                 where: { userId: id }
@@ -28,10 +28,24 @@ export async function PATCH(request, { params }) {
                 return NextResponse.json({ error: "No subscription found for this user" }, { status: 404 });
             }
 
+            let newPlanName = "TRIAL";
+            let newPackageId = null;
+
+            if (packageId !== "TRIAL" && packageId) {
+                const pkg = await prisma.subscriptionPackage.findUnique({
+                    where: { id: packageId }
+                });
+                if (pkg) {
+                    newPlanName = pkg.name;
+                    newPackageId = pkg.id;
+                }
+            }
+
             await prisma.subscription.update({
                 where: { userId: id },
                 data: {
-                    plan,
+                    packageId: newPackageId,
+                    plan: newPlanName,
                     status,
                     endDate: new Date(endDate)
                 }
@@ -101,7 +115,11 @@ export async function GET(request, { params }) {
                         }
                     }
                 },
-                subscription: true,
+                subscription: {
+                    include: {
+                        package: true
+                    }
+                },
                 transactions: {
                     orderBy: { createdAt: 'desc' },
                     take: 10
