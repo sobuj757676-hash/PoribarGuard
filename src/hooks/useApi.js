@@ -212,3 +212,13 @@ export function useAdminApkMutation() {
     return useSWRMutation('/api/admin/apk', sendRequest);
 }
 // Upload uses standard XMLHttpRequest in the UI component for progress tracking, not SWR
+
+export function useAdminPackages() {
+    const { data, error, isLoading, mutate } = useSWR('/api/admin/packages');
+    return {
+        packages: data || [],
+        isLoading,
+        isError: error,
+        mutate
+    };
+}
