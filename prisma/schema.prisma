@@ -280,6 +280,23 @@ model SupportTicket {
 }
 
 // =============================================
+// PAYMENT METHODS
+// =============================================
+
+model PaymentMethod {
+  id            String   @id @default(cuid())
+  name          String // e.g., "bKash", "Nagad", "Stripe"
+  type          String   @default("Manual") // "Manual" or "Online"
+  logoUrl       String?
+  instructions  String?  @db.Text
+  phoneNumber   String?
+  status        String   @default("Active") // "Active" or "Inactive"
+  priorityOrder Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// =============================================
 // SYSTEM CONFIGURATION (Key-Value Store)
 // =============================================
 

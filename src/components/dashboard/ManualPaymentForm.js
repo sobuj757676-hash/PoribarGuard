@@ -1,35 +1,24 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Upload, Phone, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Loader2, Upload, Phone, CheckCircle, AlertCircle, X, Copy } from 'lucide-react';
 import Image from 'next/image';
 
-export default function ManualPaymentForm({ packageId, amount, packageName, onCancel, onSuccess }) {
-    const [method, setMethod] = useState('bKash');
+export default function ManualPaymentForm({ packageId, amount, packageName, onCancel, onSuccess, paymentMethods, initialMethodId }) {
+    const defaultMethod = paymentMethods?.find(m => m.id === initialMethodId) || paymentMethods?.[0];
+    const [methodId, setMethodId] = useState(defaultMethod?.id || '');
     const [senderDigits, setSenderDigits] = useState('');
     const [screenshotBase64, setScreenshotBase64] = useState('');
     const [screenshotPreview, setScreenshotPreview] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [bKashNumber, setBKashNumber] = useState("Loading...");
-    const [nagadNumber, setNagadNumber] = useState("Loading...");
+    const selectedMethod = paymentMethods?.find(m => m.id === methodId);
 
-    React.useEffect(() => {
-        const fetchNumbers = async () => {
-            try {
-                const res = await fetch('/api/public/payment-methods');
-                if (res.ok) {
-                    const data = await res.json();
-                    setBKashNumber(data.bKash || "017XXXXXXXX");
-                    setNagadNumber(data.Nagad || "018XXXXXXXX");
-                }
-            } catch (err) {
-                console.error("Failed to fetch payment methods", err);
-            }
-        };
-        fetchNumbers();
-    }, []);
-
-    const currentNumber = method === 'bKash' ? bKashNumber : nagadNumber;
+    const handleCopy = () => {
+        if (selectedMethod?.phoneNumber) {
+            navigator.clipboard.writeText(selectedMethod.phoneNumber);
+            toast.success("Number copied to clipboard");
+        }
+    };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -81,7 +70,7 @@ export default function ManualPaymentForm({ packageId, amount, packageName, onCa
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     packageId,
-                    method,
+                    method: selectedMethod?.name || 'Manual',
                     amount,
                     senderDigits,
                     screenshotUrl: screenshotBase64
@@ -111,31 +100,42 @@ export default function ManualPaymentForm({ packageId, amount, packageName, onCa
                 </button>
             </div>
 
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-amber-800 dark:text-amber-400 font-medium mb-2">
-                    আপনার এজেন্টকে এই নাম্বারে <span className="font-bold text-lg">{amount}৳</span> পাঠাতে বলুন এবং নিচের ফর্মটি পূরণ করুন।
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                    <Phone className="w-5 h-5 text-amber-600 dark:text-amber-500" />
-                    <span className="font-black text-xl text-amber-900 dark:text-amber-300">{currentNumber}</span>
-                    <span className="text-xs uppercase bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded font-bold ml-2">Personal</span>
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-emerald-800 dark:text-emerald-400 font-medium mb-2" dangerouslySetInnerHTML={{ __html: selectedMethod?.instructions || `আপনার এজেন্টকে এই নাম্বারে <span class="font-bold text-lg">${amount}৳</span> পাঠাতে বলুন এবং নিচের ফর্মটি পূরণ করুন।` }} />
+                <div className="flex items-center justify-between mt-3 bg-white dark:bg-slate-800 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                    <div className="flex items-center gap-3">
+                        {selectedMethod?.logoUrl ? (
+                            <Image src={selectedMethod.logoUrl} alt={selectedMethod.name} width={24} height={24} className="rounded-sm" />
+                        ) : (
+                            <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
+                        )}
+                        <span className="font-black text-xl text-emerald-900 dark:text-emerald-300 tracking-wider">{selectedMethod?.phoneNumber || "N/A"}</span>
+                    </div>
+                    <button type="button" onClick={handleCopy} className="p-2 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-md transition-colors" title="Copy Number">
+                        <Copy className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label htmlFor="method" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Payment Method</label>
-                    <select
-                        id="method"
-                        aria-label="Payment Method"
-                        value={method}
-                        onChange={(e) => setMethod(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
-                    >
-                        <option value="bKash">bKash</option>
-                        <option value="Nagad">Nagad</option>
-                    </select>
-                </div>
+                {paymentMethods && paymentMethods.length > 1 && (
+                    <div>
+                        <label htmlFor="methodId" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Select Method</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {paymentMethods.map(m => (
+                                <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={() => setMethodId(m.id)}
+                                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${methodId === m.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700'}`}
+                                >
+                                    {m.logoUrl && <Image src={m.logoUrl} alt={m.name} width={32} height={32} className="mb-2" />}
+                                    <span className="font-bold text-sm text-slate-900 dark:text-white">{m.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>

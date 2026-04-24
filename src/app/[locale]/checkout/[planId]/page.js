@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import ManualPaymentForm from '@/components/dashboard/ManualPaymentForm';
 import { useManualPaymentStatus } from '@/hooks/useApi';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CheckoutPage({ params }) {
     const { planId } = params; // Extract directly since it's a client component, although Next.js 15 says it's a promise, we can unwrap with React.use() if necessary, but typical client side it works directly or through unwrapping. Let's use React.use(params) to be safe for Next.js 15.
@@ -23,19 +24,30 @@ export default function CheckoutPage({ params }) {
     });
 
     const [plan, setPlan] = useState(null);
+    const [paymentMethods, setPaymentMethods] = useState([]);
     const [loading, setLoading] = useState(true);
     const [step, setStep] = useState(1); // 1: Method, 2: Pay/Verify
     const [methodType, setMethodType] = useState(null); // 'online' | 'manual'
+    const [selectedManualMethodId, setSelectedManualMethodId] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
     const { pendingPayment, mutate: mutateManualPayment } = useManualPaymentStatus();
 
     useEffect(() => {
-        const fetchPlan = async () => {
+        const fetchData = async () => {
             try {
-                const res = await fetch('/api/subscriptions/packages');
-                if (res.ok) {
-                    const pkgs = await res.json();
+                const [planRes, methodsRes] = await Promise.all([
+                    fetch('/api/subscriptions/packages'),
+                    fetch('/api/public/payment-methods')
+                ]);
+
+                if (methodsRes.ok) {
+                    const methods = await methodsRes.json();
+                    setPaymentMethods(methods);
+                }
+
+                if (planRes.ok) {
+                    const pkgs = await planRes.json();
                     const selected = pkgs.find(p => p.id === resolvedPlanId);
                     if (selected) {
                         setPlan(selected);
@@ -45,12 +57,12 @@ export default function CheckoutPage({ params }) {
                     }
                 }
             } catch (err) {
-                toast.error("Error loading plan details");
+                toast.error("Error loading details");
             } finally {
                 setLoading(false);
             }
         };
-        fetchPlan();
+        fetchData();
     }, [resolvedPlanId, router]);
 
     const handleCheckout = async (gateway) => {
@@ -128,49 +140,46 @@ export default function CheckoutPage({ params }) {
                 <div className="flex flex-col lg:flex-row gap-8 items-start">
 
                     {/* Left/Top: Order Summary */}
-                    <div className="w-full lg:w-1/3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm sticky top-24 z-20">
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">Order Summary</h2>
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-800 mb-6">
-                            <div className="flex justify-between items-start mb-2">
+                    <div className="w-full lg:w-1/3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm sticky top-24 z-20">
+                        <h2 className="text-base font-bold mb-3 flex items-center gap-2 text-slate-800 dark:text-slate-100">Order Summary</h2>
+                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800 mb-4">
+                            <div className="flex justify-between items-start mb-1">
                                 <div>
-                                    <h3 className="font-black text-slate-900 dark:text-white uppercase">{plan.name}</h3>
-                                    <p className="text-xs text-slate-500">Subscription Plan</p>
+                                    <h3 className="font-bold text-sm text-slate-900 dark:text-white uppercase">{plan.name}</h3>
+                                    <p className="text-[10px] text-slate-500">Subscription Plan</p>
                                 </div>
                             </div>
-                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-end">
-                                <span className="text-sm font-medium text-slate-500">Total Price</span>
-                                <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">৳{plan.priceMonthly}</span>
+                            <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-end">
+                                <span className="text-xs font-medium text-slate-500">Total Price</span>
+                                <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">৳{plan.priceMonthly}</span>
                             </div>
                         </div>
 
-                        <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-3 mb-6">
-                            <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Billed Monthly</li>
-                            <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Instant Activation (Online)</li>
-                            <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Cancel anytime</li>
+                        <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-2 mb-2">
+                            <li className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Billed Monthly</li>
+                            <li className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Instant Activation (Online)</li>
+                            <li className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Cancel anytime</li>
                         </ul>
-
-                        <a href="https://wa.me/1234567890?text=Hello%20PoribarGuard%20Support,%20I%20need%20help%20with%20my%20payment%20checkout." target="_blank" rel="noopener noreferrer" className="w-full bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
-                            <PhoneCall className="w-4 h-4" /> Need Help?
-                        </a>
                     </div>
 
                     {/* Right/Bottom: Payment Flow */}
                     <div className="w-full lg:w-2/3">
-                        {pendingPayment ? (
-                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-8 text-center shadow-sm">
+                        <AnimatePresence mode="wait">
+                        {pendingPayment || step === 3 ? (
+                            <motion.div key="pending" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-8 text-center shadow-sm">
                                 <div className="w-16 h-16 bg-amber-100 dark:bg-amber-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Clock className="w-8 h-8 text-amber-600 dark:text-amber-400 animate-pulse" />
                                 </div>
-                                <h2 className="text-2xl font-black text-amber-900 dark:text-amber-300 mb-2">Verification Pending</h2>
+                                <h2 className="text-2xl font-black text-amber-900 dark:text-amber-300 mb-2">Request Received</h2>
                                 <p className="text-amber-700 dark:text-amber-500 max-w-md mx-auto">
-                                    Your manual payment of ৳{pendingPayment.amount} via {pendingPayment.method} is being verified by our team. You will be notified once activated.
+                                    Your manual payment of ৳{pendingPayment?.amount || plan.priceMonthly} via {pendingPayment?.method || "Manual"} is being verified by our team. You will be notified once activated.
                                 </p>
                                 <button onClick={() => router.push('/en/dashboard')} className="mt-6 bg-amber-600 hover:bg-amber-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors">
                                     Return to Dashboard
                                 </button>
-                            </div>
+                            </motion.div>
                         ) : step === 1 ? (
-                            <div className="space-y-6">
+                            <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
                                 <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Select Payment Method</h2>
                                 <p className="text-slate-500 mb-6">Choose how you&apos;d like to pay for your subscription.</p>
 
@@ -210,9 +219,9 @@ export default function CheckoutPage({ params }) {
                                         </button>
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
                         ) : (
-                            <div className="space-y-6">
+                            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                                 <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6">Complete Payment</h2>
 
                                 {methodType === 'online' && (
@@ -250,13 +259,30 @@ export default function CheckoutPage({ params }) {
                                             amount={plan.priceMonthly}
                                             packageName={plan.name}
                                             onCancel={() => setStep(1)}
-                                            onSuccess={() => mutateManualPayment()}
+                                            onSuccess={() => {
+                                                mutateManualPayment();
+                                                setStep(3); // success state will be handled by pendingPayment check, but let's jump there
+                                            }}
+                                            paymentMethods={paymentMethods.filter(m => m.type === 'Manual')}
                                         />
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
                         )}
+                        </AnimatePresence>
                     </div>
+
+                    {/* Floating Support Button */}
+                    <a
+                        href="https://wa.me/1234567890?text=Hello%20PoribarGuard%20Support,%20I%20need%20help%20with%20my%20payment%20checkout."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:bg-[#1EBE5A] transition-colors animate-pulse hover:animate-none flex items-center justify-center gap-2"
+                        title="Need Help?"
+                        aria-label="Contact Support on WhatsApp"
+                    >
+                        <PhoneCall className="w-6 h-6" />
+                    </a>
 
                 </div>
             </main>

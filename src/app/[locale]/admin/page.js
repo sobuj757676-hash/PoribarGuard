@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation, useAdminApks, useAdminApkMutation } from '@/hooks/useApi';
 import AdminPackagesTab from './packages/page';
 import AdminManualPaymentsTab from './payments/manual/page';
+import AdminPaymentMethodsTab from './payment-methods/page';
 import {
     LayoutDashboard, Users, CreditCard, Smartphone, LifeBuoy,
     ShieldAlert, BarChart3, UploadCloud, Search, Bell, Settings,
@@ -82,6 +83,7 @@ export default function AdminPage() {
                     <NavItem icon={<Globe />} label="Landing Page" isActive={activeTab === 'landing'} onClick={() => { setActiveTab('landing'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Database />} label="Packages" isActive={activeTab === 'packages'} onClick={() => { setActiveTab('packages'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<DollarSign />} label="Manual Payments" isActive={activeTab === 'manual-payments'} onClick={() => { setActiveTab('manual-payments'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<CreditCard />} label="Payment Methods" isActive={activeTab === 'payment-methods'} onClick={() => { setActiveTab('payment-methods'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Radio />} label="TURN Servers" isActive={activeTab === 'turn'} onClick={() => { setActiveTab('turn'); setIsSidebarOpen(false); }} />
                 </nav>
 
@@ -159,6 +161,7 @@ export default function AdminPage() {
                     {activeTab === 'landing' && <LandingConfigTab />}
                     {activeTab === 'packages' && <AdminPackagesTab />}
                     {activeTab === 'manual-payments' && <AdminManualPaymentsTab />}
+                    {activeTab === 'payment-methods' && <AdminPaymentMethodsTab />}
                     {activeTab === 'turn' && <TurnServersTab />}
                     {activeTab === 'settings' && <SettingsTab />}
                 </main>
