@@ -73,6 +73,23 @@ export default function DashboardPage() {
     // Premium Feature Modal
     const [upgradeModal, setUpgradeModal] = useState({ isOpen: false, feature: null });
 
+    // Profile Dropdown
+    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+    const profileDropdownRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+                setIsProfileDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     // Helper for feature checking
     const checkFeature = (feature, callback) => {
         if (!subscription) return;
@@ -208,9 +225,47 @@ export default function DashboardPage() {
                             <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-gray-900 rounded-full animate-pulse"></span>
                         )}
                     </div>
-                    <button onClick={() => signOut({ callbackUrl: '/login' })} className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 border-2 border-emerald-200 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                        {initials}
-                    </button>
+                    <div className="relative" ref={profileDropdownRef}>
+                        <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 border-2 border-emerald-200 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                            {initials}
+                        </button>
+                        {isProfileDropdownOpen && (
+                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg z-[100] overflow-hidden">
+                                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{userName}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session?.user?.email || ''}</p>
+                                </div>
+                                <div className="py-1">
+                                    <button
+                                        onClick={() => {
+                                            setActiveTab('settings');
+                                            setIsProfileDropdownOpen(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
+                                    >
+                                        <Settings className="w-4 h-4" /> Profile & Settings
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setActiveTab('settings');
+                                            setIsProfileDropdownOpen(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
+                                    >
+                                        <CreditCard className="w-4 h-4" /> Subscription
+                                    </button>
+                                </div>
+                                <div className="border-t border-gray-100 dark:border-gray-800 py-1">
+                                    <button
+                                        onClick={() => signOut({ callbackUrl: '/login' })}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors font-medium"
+                                    >
+                                        <LogOut className="w-4 h-4" /> Log Out
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </header>
 
