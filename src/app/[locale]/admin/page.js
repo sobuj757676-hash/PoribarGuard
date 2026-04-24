@@ -9,6 +9,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
 import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation, useAdminApks, useAdminApkMutation } from '@/hooks/useApi';
 import AdminPackagesTab from './packages/page';
+import AdminManualPaymentsTab from './payments/manual/page';
 import {
     LayoutDashboard, Users, CreditCard, Smartphone, LifeBuoy,
     ShieldAlert, BarChart3, UploadCloud, Search, Bell, Settings,
@@ -80,6 +81,7 @@ export default function AdminPage() {
                     <NavItem icon={<UploadCloud />} label={t('apk')} isActive={activeTab === 'apk'} onClick={() => { setActiveTab('apk'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Globe />} label="Landing Page" isActive={activeTab === 'landing'} onClick={() => { setActiveTab('landing'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Database />} label="Packages" isActive={activeTab === 'packages'} onClick={() => { setActiveTab('packages'); setIsSidebarOpen(false); }} />
+                    <NavItem icon={<DollarSign />} label="Manual Payments" isActive={activeTab === 'manual-payments'} onClick={() => { setActiveTab('manual-payments'); setIsSidebarOpen(false); }} />
                     <NavItem icon={<Radio />} label="TURN Servers" isActive={activeTab === 'turn'} onClick={() => { setActiveTab('turn'); setIsSidebarOpen(false); }} />
                 </nav>
 
@@ -156,6 +158,7 @@ export default function AdminPage() {
                     {activeTab === 'apk' && <ApkTab />}
                     {activeTab === 'landing' && <LandingConfigTab />}
                     {activeTab === 'packages' && <AdminPackagesTab />}
+                    {activeTab === 'manual-payments' && <AdminManualPaymentsTab />}
                     {activeTab === 'turn' && <TurnServersTab />}
                     {activeTab === 'settings' && <SettingsTab />}
                 </main>
@@ -1246,16 +1249,26 @@ function SettingsTab() {
                 {/* Payments */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
                     <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2 text-slate-800 dark:text-slate-200">
-                        <DollarSign className="w-5 h-5 text-emerald-500" /> Payment Gateways (BD)
+                        <DollarSign className="w-5 h-5 text-emerald-500" /> Payment Gateways & Manual Processing (BD)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">bKash Merchant Number</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">bKash Merchant Number (Auto)</label>
                             <input type="text" value={settings.bkash_merchant || ''} onChange={e => update('bkash_merchant', e.target.value)} className={inputCls} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">AmarPay Store ID</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">AmarPay Store ID (Auto)</label>
                             <input type="text" value={settings.amarpay_store_id || ''} onChange={e => update('amarpay_store_id', e.target.value)} className={inputCls} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Official bKash Number (Manual Agent)</label>
+                            <input type="text" value={settings.manual_bkash_number || ''} onChange={e => update('manual_bkash_number', e.target.value)} className={inputCls} placeholder="e.g. 01711XXXXXX" />
+                            <p className="text-[10px] text-slate-500 mt-1">Displayed to users for manual bKash payments.</p>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Official Nagad Number (Manual Agent)</label>
+                            <input type="text" value={settings.manual_nagad_number || ''} onChange={e => update('manual_nagad_number', e.target.value)} className={inputCls} placeholder="e.g. 01811XXXXXX" />
+                            <p className="text-[10px] text-slate-500 mt-1">Displayed to users for manual Nagad payments.</p>
                         </div>
                     </div>
                 </div>

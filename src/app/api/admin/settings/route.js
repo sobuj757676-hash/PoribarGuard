@@ -8,6 +8,8 @@ const DEFAULTS = {
     trial_days: "7",
     bkash_merchant: "",
     amarpay_store_id: "",
+    manual_bkash_number: "017XXXXXXXX",
+    manual_nagad_number: "018XXXXXXXX",
     ssl_sms_api_key: "",
     sendgrid_api_key: "",
     fcm_server_key: "",
