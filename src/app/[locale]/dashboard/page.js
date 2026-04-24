@@ -1155,84 +1155,94 @@ function SettingsTab({ dict, session }) {
 
     const selectedPackage = packages.find(p => p.id === selectedPackageId);
 
-    const handleCheckout = async (gateway) => {
+    const [activeTab, setActiveTab] = useState('profile');
+
+    const handleCheckoutRedirect = () => {
         if (!selectedPackageId) {
             toast.error("Please select a package first");
             return;
         }
-        setSaving(true);
-        try {
-            const res = await fetch('/api/subscriptions/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gateway, packageId: selectedPackageId })
-            });
-            const data = await res.json();
-            if (res.ok && data.checkoutUrl) {
-                toast.success(data.message || 'Redirecting to payment gateway...');
-                setTimeout(() => window.location.href = data.checkoutUrl, 1000);
-            } else {
-                toast.error(data.error || 'Checkout failed');
-            }
-        } catch (e) {
-            toast.error('Network error during checkout');
-        }
-        setSaving(false);
+        window.location.href = `/en/checkout/${selectedPackageId}`;
     };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl">
             <h2 className="text-xl font-bold mb-6">Account Settings</h2>
 
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold text-2xl flex items-center justify-center border-4 border-emerald-100 dark:border-emerald-900/50">
-                        {profile.name?.charAt(0) || 'P'}
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-lg">{profile.name || 'Parent Member'}</h3>
-                        <p className="text-sm text-gray-500">{session?.user?.email || 'parent@example.com'}</p>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Full Name</label>
-                        <input type="text" value={profile.name} onChange={(e) => setProfile(p => ({ ...p, name: e.target.value }))} className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Phone Number</label>
-                        <input type="tel" value={profile.phone} onChange={(e) => setProfile(p => ({ ...p, phone: e.target.value }))} placeholder="+8801700000000" className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Country</label>
-                        <select
-                            value={profile.country}
-                            onChange={(e) => setProfile(p => ({ ...p, country: e.target.value }))}
-                            className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200 appearance-none"
-                        >
-                            <option value="">Select your country</option>
-                            {COUNTRIES.map((c) => (
-                                <option key={c.value} value={c.value}>
-                                    {c.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">City</label>
-                        <input type="text" value={profile.city} onChange={(e) => setProfile(p => ({ ...p, city: e.target.value }))} placeholder="Dhaka, Dubai, London..." className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
-                    </div>
-                    <div className="pt-2 flex items-center gap-3">
-                        <button onClick={saveProfile} disabled={saving} className={`bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 ${saving ? 'opacity-50' : ''}`}>
-                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Profile
-                        </button>
-                        {saveMsg && <span className={`text-sm font-bold ${saveMsg.startsWith('✓') ? 'text-emerald-500' : 'text-red-500'}`}>{saveMsg}</span>}
-                    </div>
-                </div>
+            {/* Sub-tabs Navigation */}
+            <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 dark:border-gray-800 pb-2">
+                <button
+                    onClick={() => setActiveTab('profile')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'profile' ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                >
+                    Profile Details
+                </button>
+                <button
+                    onClick={() => setActiveTab('subscription')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'subscription' ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                >
+                    Subscription Plan
+                </button>
+                <button
+                    onClick={() => setActiveTab('danger')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'danger' ? 'bg-red-600 text-white' : 'text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400'}`}
+                >
+                    Danger Zone
+                </button>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm">
+            {activeTab === 'profile' && (
+                <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold text-2xl flex items-center justify-center border-4 border-emerald-100 dark:border-emerald-900/50">
+                            {profile.name?.charAt(0) || 'P'}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-lg">{profile.name || 'Parent Member'}</h3>
+                            <p className="text-sm text-gray-500">{session?.user?.email || 'parent@example.com'}</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Full Name</label>
+                            <input type="text" value={profile.name} onChange={(e) => setProfile(p => ({ ...p, name: e.target.value }))} className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Phone Number</label>
+                            <input type="tel" value={profile.phone} onChange={(e) => setProfile(p => ({ ...p, phone: e.target.value }))} placeholder="+8801700000000" className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Country</label>
+                            <select
+                                value={profile.country}
+                                onChange={(e) => setProfile(p => ({ ...p, country: e.target.value }))}
+                                className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200 appearance-none"
+                            >
+                                <option value="">Select your country</option>
+                                {COUNTRIES.map((c) => (
+                                    <option key={c.value} value={c.value}>
+                                        {c.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">City</label>
+                            <input type="text" value={profile.city} onChange={(e) => setProfile(p => ({ ...p, city: e.target.value }))} placeholder="Dhaka, Dubai, London..." className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
+                        </div>
+                        <div className="pt-2 flex items-center gap-3">
+                            <button onClick={saveProfile} disabled={saving} className={`bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 ${saving ? 'opacity-50' : ''}`}>
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Profile
+                            </button>
+                            {saveMsg && <span className={`text-sm font-bold ${saveMsg.startsWith('✓') ? 'text-emerald-500' : 'text-red-500'}`}>{saveMsg}</span>}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'subscription' && (
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-indigo-500" /> Subscription Plan</h3>
 
                 {/* Current Plan Info */}
@@ -1297,37 +1307,21 @@ function SettingsTab({ dict, session }) {
                     {packages.length === 0 && <p className="text-sm text-gray-500">No packages available at the moment.</p>}
                 </div>
 
-                {!showManualForm ? (
-                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                        <button onClick={() => handleCheckout('bkash')} disabled={saving || !selectedPackageId || pendingPayment} className="bg-[#E2136E] hover:bg-[#d10f63] text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-[#E2136E]/20 transition whitespace-nowrap disabled:opacity-50 flex-1">
-                            Pay with bKash
-                        </button>
-                        <button onClick={() => handleCheckout('amarpay')} disabled={saving || !selectedPackageId || pendingPayment} className="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-slate-900/20 transition whitespace-nowrap disabled:opacity-50 flex-1">
-                            Pay with AmarPay
-                        </button>
-                        <button onClick={() => setShowManualForm(true)} disabled={saving || !selectedPackageId || pendingPayment} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition whitespace-nowrap disabled:opacity-50 flex-1 flex justify-center items-center gap-2">
-                            Pay Manually (Agent)
-                        </button>
-                    </div>
-                ) : (
-                    <ManualPaymentForm
-                        packageId={selectedPackageId}
-                        amount={selectedPackage?.priceMonthly}
-                        packageName={selectedPackage?.name}
-                        onCancel={() => setShowManualForm(false)}
-                        onSuccess={(payment) => {
-                            setShowManualForm(false);
-                            mutateManualPayment();
-                        }}
-                    />
-                )}
+                <div className="flex flex-col sm:flex-row gap-2 mt-6">
+                    <button onClick={handleCheckoutRedirect} disabled={saving || !selectedPackageId || pendingPayment} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3.5 rounded-xl shadow-lg shadow-emerald-600/20 transition flex justify-center items-center gap-2 disabled:opacity-50">
+                        Continue to Checkout
+                    </button>
+                </div>
             </div>
+            )}
 
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm mt-8 border-t-red-500 border-t-4">
+            {activeTab === 'danger' && (
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm border-t-red-500 border-t-4 animate-in fade-in slide-in-from-bottom-2 mt-8">
                 <h3 className="font-bold text-red-600 dark:text-red-500 mb-2">Danger Zone</h3>
                 <p className="text-sm text-gray-500 mb-4">Deleting your account removes all data, including child devices, location history, and logs. This cannot be undone.</p>
                 <button className="bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800/50 px-5 py-2.5 rounded-lg font-bold text-sm transition">Delete Account</button>
             </div>
+            )}
         </div>
     );
 }
