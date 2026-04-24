@@ -10,8 +10,24 @@ export default function ManualPaymentForm({ packageId, amount, packageName, onCa
     const [screenshotPreview, setScreenshotPreview] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const bKashNumber = "017XXXXXXXX"; // TODO: Could fetch from SystemConfig
-    const nagadNumber = "018XXXXXXXX";
+    const [bKashNumber, setBKashNumber] = useState("Loading...");
+    const [nagadNumber, setNagadNumber] = useState("Loading...");
+
+    React.useEffect(() => {
+        const fetchNumbers = async () => {
+            try {
+                const res = await fetch('/api/public/payment-methods');
+                if (res.ok) {
+                    const data = await res.json();
+                    setBKashNumber(data.bKash || "017XXXXXXXX");
+                    setNagadNumber(data.Nagad || "018XXXXXXXX");
+                }
+            } catch (err) {
+                console.error("Failed to fetch payment methods", err);
+            }
+        };
+        fetchNumbers();
+    }, []);
 
     const currentNumber = method === 'bKash' ? bKashNumber : nagadNumber;
 

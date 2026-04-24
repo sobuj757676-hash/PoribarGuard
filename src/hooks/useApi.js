@@ -100,6 +100,20 @@ export function useAdminStats() {
     };
 }
 
+export function useAdminManualPayments() {
+    const { data, error, isLoading, mutate } = useSWR('/api/admin/payments/manual');
+    return {
+        payments: data?.payments || [],
+        isLoading,
+        isError: error,
+        mutate
+    };
+}
+
+export function useAdminManualPaymentMutation() {
+    return useSWRMutation('/api/admin/payments/manual', sendRequest);
+}
+
 
 export function useAdminParentDetails(id) {
     const { data, error, isLoading, mutate } = useSWR(id ? `/api/admin/parents/${id}` : null);
