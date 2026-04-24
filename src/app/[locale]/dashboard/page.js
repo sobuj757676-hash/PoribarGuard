@@ -16,13 +16,14 @@ import InstallPrompt from '@/components/InstallPrompt';
 import LiveCameraModal from '@/components/LiveCameraModal';
 import AmbientMicModal from '@/components/AmbientMicModal';
 import LiveScreenModal from '@/components/LiveScreenModal';
+import ManualPaymentForm from '@/components/dashboard/ManualPaymentForm';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ThemeToggle from '@/components/ThemeToggle';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useSocket } from '@/context/SocketContext';
-import { useChildren, useMarkAlertsRead, useProfile, useUpdateProfile, useSubscription, useTogglePrayerLock, useToggleAppControl } from '@/hooks/useApi';
+import { useChildren, useMarkAlertsRead, useProfile, useUpdateProfile, useSubscription, useTogglePrayerLock, useToggleAppControl, useManualPaymentStatus } from '@/hooks/useApi';
 
 // Dynamically import LeafletMap (Leaflet requires `window` — can't SSR)
 const LeafletMap = dynamic(() => import('@/components/LeafletMap'), { ssr: false });
@@ -1080,6 +1081,7 @@ function ReportsTab({ dict, child }) {
 function SettingsTab({ dict, session }) {
     const { user } = useProfile();
     const { subscription } = useSubscription();
+    const { pendingPayment, mutate: mutateManualPayment } = useManualPaymentStatus();
     const { trigger: updateProfile } = useUpdateProfile();
 
     const [profile, setProfile] = useState({ name: session?.user?.name || '', phone: '', country: '', city: '' });
@@ -1087,6 +1089,7 @@ function SettingsTab({ dict, session }) {
     const [saveMsg, setSaveMsg] = useState('');
     const [packages, setPackages] = useState([]);
     const [selectedPackageId, setSelectedPackageId] = useState(null);
+    const [showManualForm, setShowManualForm] = useState(false);
 
     useEffect(() => {
         const fetchPackages = async () => {
@@ -1149,6 +1152,8 @@ function SettingsTab({ dict, session }) {
     const planLabel = subscription ? (subscription.isTrial ? 'Free Trial' : `${subscription.planName} Plan`) : 'No Plan';
     const statusLabel = subscription?.active ? 'ACTIVE' : (subscription?.isExpired ? 'EXPIRED' : 'INACTIVE');
     const endDate = subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+    const selectedPackage = packages.find(p => p.id === selectedPackageId);
 
     const handleCheckout = async (gateway) => {
         if (!selectedPackageId) {
@@ -1239,8 +1244,29 @@ function SettingsTab({ dict, session }) {
                     </div>
                 </div>
 
+                {/* Pending Verification State */}
+                {pendingPayment && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                <Clock className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-amber-900 dark:text-amber-300">Verification Pending</h4>
+                                <p className="text-sm text-amber-700 dark:text-amber-500">Your manual payment for {pendingPayment.package?.name || 'subscription'} via {pendingPayment.method} is currently being verified.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Available Packages */}
-                <h4 className="font-bold text-md mb-3 text-gray-800 dark:text-gray-200">Upgrade / Renew</h4>
+                <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-bold text-md text-gray-800 dark:text-gray-200">Upgrade / Renew</h4>
+                    <a href="https://wa.me/1234567890?text=Hello%20PoribarGuard%20Support,%20I%20need%20help%20with%20my%20manual%20payment." target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-3 py-1.5 rounded-full text-xs font-bold transition-colors" title="পেমেন্ট নিয়ে সমস্যায় কথা বলুন">
+                        <PhoneCall className="w-3.5 h-3.5" />
+                        <span>Support</span>
+                    </a>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     {packages.map(pkg => (
                         <div
@@ -1271,14 +1297,30 @@ function SettingsTab({ dict, session }) {
                     {packages.length === 0 && <p className="text-sm text-gray-500">No packages available at the moment.</p>}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                    <button onClick={() => handleCheckout('bkash')} disabled={saving || !selectedPackageId} className="bg-[#E2136E] hover:bg-[#d10f63] text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-[#E2136E]/20 transition whitespace-nowrap disabled:opacity-50 flex-1">
-                        Pay with bKash
-                    </button>
-                    <button onClick={() => handleCheckout('amarpay')} disabled={saving || !selectedPackageId} className="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-slate-900/20 transition whitespace-nowrap disabled:opacity-50 flex-1">
-                        Pay with AmarPay
-                    </button>
-                </div>
+                {!showManualForm ? (
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                        <button onClick={() => handleCheckout('bkash')} disabled={saving || !selectedPackageId || pendingPayment} className="bg-[#E2136E] hover:bg-[#d10f63] text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-[#E2136E]/20 transition whitespace-nowrap disabled:opacity-50 flex-1">
+                            Pay with bKash
+                        </button>
+                        <button onClick={() => handleCheckout('amarpay')} disabled={saving || !selectedPackageId || pendingPayment} className="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-slate-900/20 transition whitespace-nowrap disabled:opacity-50 flex-1">
+                            Pay with AmarPay
+                        </button>
+                        <button onClick={() => setShowManualForm(true)} disabled={saving || !selectedPackageId || pendingPayment} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition whitespace-nowrap disabled:opacity-50 flex-1 flex justify-center items-center gap-2">
+                            Pay Manually (Agent)
+                        </button>
+                    </div>
+                ) : (
+                    <ManualPaymentForm
+                        packageId={selectedPackageId}
+                        amount={selectedPackage?.priceMonthly}
+                        packageName={selectedPackage?.name}
+                        onCancel={() => setShowManualForm(false)}
+                        onSuccess={(payment) => {
+                            setShowManualForm(false);
+                            mutateManualPayment();
+                        }}
+                    />
+                )}
             </div>
 
             <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm mt-8 border-t-red-500 border-t-4">
