@@ -128,7 +128,7 @@ export default function CheckoutPage({ params }) {
                 <div className="flex flex-col lg:flex-row gap-8 items-start">
 
                     {/* Left/Top: Order Summary */}
-                    <div className="w-full lg:w-1/3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm sticky top-24">
+                    <div className="w-full lg:w-1/3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm sticky top-24 z-20">
                         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">Order Summary</h2>
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-800 mb-6">
                             <div className="flex justify-between items-start mb-2">
