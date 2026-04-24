@@ -2,59 +2,15 @@
 > fsafe.com@0.1.0 dev
 > node server.js
 
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
 > Ready on http://0.0.0.0:3000
 > Socket.IO available on path /api/socketio
-[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:513:16)
-    at Auth (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:5331:210)
-[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:513:16)
-    at Auth (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_544da84f._.js:5331:210)
-[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
-    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
- GET /api/admin/settings 401 in 839ms (compile: 780ms, render: 60ms)
-⚠ Unsupported metadata themeColor is configured in metadata export in /[locale]/login. Please move it to viewport export instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
-Layout DB check failed Error [PrismaClientInitializationError]:
-Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$prisma$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].systemConfig.findUnique()` invocation in
-/app/.next/dev/server/chunks/ssr/[root-of-the-server]__479ac9ea._.js:332:171
-
-  329 // Actually, we can check if it's the maintenance page using the pathname from headers or just handle it directly. Let's do a simple DB check first.
-  330 let maintenanceEnabled = false;
-  331 try {
-→ 332     const config = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$prisma$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].systemConfig.findUnique(
-error: Environment variable not found: DATABASE_URL.
-  -->  schema.prisma:10
-   |
- 9 |   provider  = "postgresql"
-10 |   url       = env("DATABASE_URL")
-   |
-
-Validation Error Count: 1
-    at <unknown> (file:/app/src/app/%5Blocale%5D/layout.js:56:46)
-    at <unknown> (-->  schema.prisma:10)
-    at async RootLayout (file:/app/src/app/%5Blocale%5D/layout.js:56:20)
-  54 |   let maintenanceEnabled = false;
-  55 |   try {
-> 56 |     const config = await prisma.systemConfig.findUnique({ where: { key: "maintenance_mode" } });
-     |                                              ^
-  57 |     maintenanceEnabled = config?.value === "true";
-  58 |   } catch (e) {
-  59 |     console.error("Layout DB check failed", e); {
-  clientVersion: '6.4.1',
-  errorCode: undefined
-}
- GET /en/login 200 in 3.8s (compile: 2.1s, proxy.ts: 914ms, render: 808ms)
-[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
-    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
- GET /api/auth/session 500 in 983ms (compile: 972ms, render: 11ms)
-[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:513:16)
-    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_36df0127._.js:5330:204)
-    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
- GET /api/auth/session 500 in 59ms (compile: 51ms, render: 8ms)
+⨯ Error [TypeError]: Invalid URL
+    at async Server.<anonymous> (server.js:18:13)
+ GET /login 404 in 2.5s (compile: -182963µs, proxy.ts: 2.5s, render: 200ms)
+○ Compiling /_not-found/page ...

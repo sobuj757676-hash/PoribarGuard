@@ -38,6 +38,16 @@ export function useChildren() {
     };
 }
 
+export function useManualPaymentStatus() {
+    const { data, error, isLoading, mutate } = useSWR('/api/user/subscription/manual');
+    return {
+        pendingPayment: data?.pending || null,
+        isLoading,
+        isError: error,
+        mutate
+    };
+}
+
 export function useProfile() {
     const { data, error, isLoading, mutate } = useSWR('/api/profile');
     return {

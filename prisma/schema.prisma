@@ -16,23 +16,24 @@ datasource db {
 // =============================================
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String
-  role          String    @default("PARENT") // PARENT | ADMIN
-  name          String
-  phone         String?
-  country       String?   // e.g., "UAE", "KSA", "UK", "USA", "Malaysia"
-  city          String?   // e.g., "Dubai", "Riyadh", "London"
-  avatarUrl     String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("PARENT") // PARENT | ADMIN
+  name         String
+  phone        String?
+  country      String? // e.g., "UAE", "KSA", "UK", "USA", "Malaysia"
+  city         String? // e.g., "Dubai", "Riyadh", "London"
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
   children       Child[]
   subscription   Subscription?
   transactions   Transaction[]
+  manualPayments ManualPayment[]
   supportTickets SupportTicket[]
 }
 
@@ -41,28 +42,28 @@ model User {
 // =============================================
 
 model Child {
-  id          String   @id @default(cuid())
-  name        String
-  age         Int
-  phone       String?  // BD phone number
-  avatarUrl   String?
-  
+  id        String  @id @default(cuid())
+  name      String
+  age       Int
+  phone     String? // BD phone number
+  avatarUrl String?
+
   // Pairing & Onboarding Fields
   pairingCode      String?   @unique
   pairingExpiresAt DateTime?
   isPaired         Boolean   @default(false)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  parentId    String
-  parent      User     @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  device      Device?
-  alerts      Alert[]
-  geofences   GeofenceZone[]
-  appControls AppControl[]
-  prayerLocks PrayerTimeLock[]
+  parentId      String
+  parent        User                  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  device        Device?
+  alerts        Alert[]
+  geofences     GeofenceZone[]
+  appControls   AppControl[]
+  prayerLocks   PrayerTimeLock[]
   notifications MessageNotification[]
 }
 
@@ -71,30 +72,30 @@ model Child {
 // =============================================
 
 model Device {
-  id            String   @id @default(cuid())
-  deviceId      String   @unique  // Unique device identifier from Android app
-  deviceToken   String?  // Secure authorization token for device API requests
-  model         String?  // e.g., "Xiaomi Redmi Note 12"
-  osVersion     String?  // e.g., "Android 14"
-  batteryLevel  Int      @default(0)  // 0-100
-  networkType   String?  // "WiFi", "4G", "3G", "Offline"
-  isOnline      Boolean  @default(false)
-  lastSeenAt    DateTime @default(now())
+  id           String   @id @default(cuid())
+  deviceId     String   @unique // Unique device identifier from Android app
+  deviceToken  String? // Secure authorization token for device API requests
+  model        String? // e.g., "Xiaomi Redmi Note 12"
+  osVersion    String? // e.g., "Android 14"
+  batteryLevel Int      @default(0) // 0-100
+  networkType  String? // "WiFi", "4G", "3G", "Offline"
+  isOnline     Boolean  @default(false)
+  lastSeenAt   DateTime @default(now())
 
   // Current location
-  latitude      Float?
-  longitude     Float?
-  locationAccuracy Float?  // meters
-  speed         Float?     // km/h
-  locationName  String?    // Reverse geocoded name, e.g., "Jashore Zilla School Area"
+  latitude          Float?
+  longitude         Float?
+  locationAccuracy  Float? // meters
+  speed             Float? // km/h
+  locationName      String? // Reverse geocoded name, e.g., "Jashore Zilla School Area"
   locationUpdatedAt DateTime?
 
   // Relations
-  childId       String   @unique
-  child         Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  childId String @unique
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // =============================================
@@ -103,17 +104,17 @@ model Device {
 
 model Alert {
   id          String   @id @default(cuid())
-  type        String   // SOS | GEOFENCE_EXIT | GEOFENCE_ENTER | APP_INSTALL | APP_UNINSTALL | KEYWORD | LOW_BATTERY | TAMPER
+  type        String // SOS | GEOFENCE_EXIT | GEOFENCE_ENTER | APP_INSTALL | APP_UNINSTALL | KEYWORD | LOW_BATTERY | TAMPER
   title       String
   description String?
   severity    String   @default("MEDIUM") // LOW | MEDIUM | HIGH | CRITICAL
   isRead      Boolean  @default(false)
-  metadata    String?  // JSON string for extra data (app name, location coords, etc.)
+  metadata    String? // JSON string for extra data (app name, location coords, etc.)
   createdAt   DateTime @default(now())
 
   // Relations
-  childId     String
-  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  childId String
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
 
 // =============================================
@@ -122,16 +123,16 @@ model Alert {
 
 model GeofenceZone {
   id        String   @id @default(cuid())
-  name      String   // e.g., "Home", "School", "Mosque", "Tuition"
+  name      String // e.g., "Home", "School", "Mosque", "Tuition"
   latitude  Float
   longitude Float
-  radius    Float    // meters
+  radius    Float // meters
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
   // Relations
-  childId   String
-  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  childId String
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
 
 // =============================================
@@ -140,19 +141,19 @@ model GeofenceZone {
 
 model AppControl {
   id          String   @id @default(cuid())
-  packageName String   // e.g., "com.zhiliaoapp.musically" (TikTok)
-  appName     String   // Display name, e.g., "TikTok"
+  packageName String // e.g., "com.zhiliaoapp.musically" (TikTok)
+  appName     String // Display name, e.g., "TikTok"
   isBlocked   Boolean  @default(false)
-  dailyLimit  Int?     // Minutes allowed per day (null = unlimited)
+  dailyLimit  Int? // Minutes allowed per day (null = unlimited)
   usageToday  Int      @default(0) // Minutes used today
-  iconColor   String?  // UI color for the app icon
-  iconUrl     String?  // Path to locally cached icon
+  iconColor   String? // UI color for the app icon
+  iconUrl     String? // Path to locally cached icon
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  childId     String
-  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  childId String
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
 
 // =============================================
@@ -161,15 +162,15 @@ model AppControl {
 
 model PrayerTimeLock {
   id        String   @id @default(cuid())
-  name      String   // "Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Study Time"
-  startTime String   // "05:00" (24h format)
-  endTime   String   // "05:30" (24h format)
+  name      String // "Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Study Time"
+  startTime String // "05:00" (24h format)
+  endTime   String // "05:30" (24h format)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
   // Relations
-  childId   String
-  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  childId String
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
 
 // =============================================
@@ -177,54 +178,73 @@ model PrayerTimeLock {
 // =============================================
 
 model SubscriptionPackage {
-  id               String   @id @default(cuid())
-  name             String   // e.g., "Standard", "Premium", "Ultimate"
-  description      String?
-  priceMonthly     Float    // in BDT
-  priceYearly      Float?   // in BDT
-  features         String   // JSON string of allowed system features (e.g., "['geofencing', 'app_blocking']")
-  displayFeatures  String   @default("[]") // JSON string of custom UI features for landing page
-  isActive         Boolean  @default(true)
-  isPopular        Boolean  @default(false)
-  btnText          String   @default("Start Free Trial")
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String // e.g., "Standard", "Premium", "Ultimate"
+  description     String?
+  priceMonthly    Float // in BDT
+  priceYearly     Float? // in BDT
+  features        String // JSON string of allowed system features (e.g., "['geofencing', 'app_blocking']")
+  displayFeatures String   @default("[]") // JSON string of custom UI features for landing page
+  isActive        Boolean  @default(true)
+  isPopular       Boolean  @default(false)
+  btnText         String   @default("Start Free Trial")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
-  subscriptions Subscription[]
+  subscriptions  Subscription[]
+  manualPayments ManualPayment[]
 }
 
 model Subscription {
-  id            String   @id @default(cuid())
+  id            String               @id @default(cuid())
   packageId     String?
   package       SubscriptionPackage? @relation(fields: [packageId], references: [id])
-  plan          String   // This is kept for backward compatibility (e.g. STANDARD, PREMIUM, TRIAL)
-  status        String   @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED
-  billingCycle  String   @default("MONTHLY") // MONTHLY | SEMI_ANNUAL | YEARLY
-  amount        Float    // in BDT (Taka)
-  startDate     DateTime @default(now())
+  plan          String // This is kept for backward compatibility (e.g. STANDARD, PREMIUM, TRIAL)
+  status        String               @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED
+  billingCycle  String               @default("MONTHLY") // MONTHLY | SEMI_ANNUAL | YEARLY
+  amount        Float // in BDT (Taka)
+  startDate     DateTime             @default(now())
   endDate       DateTime
-  autoRenew     Boolean  @default(true)
-  paymentMethod String?  // "bKash", "Nagad", "Rocket", "Card"
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  autoRenew     Boolean              @default(true)
+  paymentMethod String? // "bKash", "Nagad", "Rocket", "Card"
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   // Relations
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Transaction {
   id        String   @id @default(cuid())
-  trxId     String   @unique  // Gateway transaction ID
-  gateway   String   // "bKash" | "Nagad" | "Rocket" | "Card"
-  amount    Float    // BDT
+  trxId     String   @unique // Gateway transaction ID
+  gateway   String // "bKash" | "Nagad" | "Rocket" | "Card"
+  amount    Float // BDT
   status    String   @default("SUCCESS") // SUCCESS | FAILED | PENDING | REFUNDED
   createdAt DateTime @default(now())
 
   // Relations
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ManualPayment {
+  id              String   @id @default(cuid())
+  packageId       String
+  method          String // "bKash", "Nagad"
+  amount          Float
+  senderDigits    String
+  screenshotUrl   String
+  status          String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  userId  String
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package SubscriptionPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }
 
 // =============================================
@@ -233,9 +253,9 @@ model Transaction {
 
 model ContentFilter {
   id        String   @id @default(cuid())
-  pattern   String   // e.g., "*.bet365.com", "*.pornhub.com"
-  type      String   // DOMAIN | KEYWORD
-  category  String?  // "Gambling", "Adult", "Violence", "Drugs"
+  pattern   String // e.g., "*.bet365.com", "*.pornhub.com"
+  type      String // DOMAIN | KEYWORD
+  category  String? // "Gambling", "Adult", "Violence", "Drugs"
   isGlobal  Boolean  @default(true) // If true, pushed to ALL devices
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -255,8 +275,8 @@ model SupportTicket {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // =============================================
@@ -275,16 +295,16 @@ model SystemConfig {
 
 model MessageNotification {
   id          String   @id @default(cuid())
-  appName     String   // e.g., "WhatsApp", "Messenger"
-  packageName String   // e.g., "com.whatsapp"
-  senderName  String   // e.g., "John Doe"
-  text        String   // The actual message content
+  appName     String // e.g., "WhatsApp", "Messenger"
+  packageName String // e.g., "com.whatsapp"
+  senderName  String // e.g., "John Doe"
+  text        String // The actual message content
   timestamp   DateTime @default(now())
   isRead      Boolean  @default(false)
 
   // Relations
-  childId     String
-  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  childId String
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
 
 // =============================================
@@ -293,16 +313,16 @@ model MessageNotification {
 
 model ApkRelease {
   id               String   @id @default(cuid())
-  appType          String   @default("CHILD")      // "CHILD" or "WIZARD"
-  version          String   // e.g. "v2.1.5"
-  buildNumber      Int      // e.g. 43
-  targetSdk        Int      // e.g. 34
-  fileSize         String   // e.g. "14.5 MB"
-  filePath         String   // local path to the file
+  appType          String   @default("CHILD") // "CHILD" or "WIZARD"
+  version          String // e.g. "v2.1.5"
+  buildNumber      Int // e.g. 43
+  targetSdk        Int // e.g. 34
+  fileSize         String // e.g. "14.5 MB"
+  filePath         String // local path to the file
   status           String   @default("ARCHIVED") // "LIVE" or "ARCHIVED"
-  isCriticalUpdate Boolean  @default(false)      // Force the child app to update immediately
-  releaseNotes     String?  @db.Text             // Markdown support for changelog
-  gitCommitHash    String?                       // For developer tracking
-  uploadedBy       String                        // Admin email
+  isCriticalUpdate Boolean  @default(false) // Force the child app to update immediately
+  releaseNotes     String?  @db.Text // Markdown support for changelog
+  gitCommitHash    String? // For developer tracking
+  uploadedBy       String // Admin email
   createdAt        DateTime @default(now())
 }
