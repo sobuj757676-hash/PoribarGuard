@@ -32,7 +32,7 @@ export default function MaintenancePage() {
                 </h1>
                 
                 <p className="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
-                    PoribarGuard BD is currently undergoing scheduled maintenance to improve system stability and deploy new security features. We'll be back online shortly.
+                    PoribarGuard BD is currently undergoing scheduled maintenance to improve system stability and deploy new security features. We&apos;ll be back online shortly.
                 </p>
 
                 <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 flex items-center gap-4 text-left border border-slate-100 dark:border-slate-700 mb-8">

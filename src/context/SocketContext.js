@@ -25,7 +25,9 @@ export const SocketProvider = ({ children }) => {
             socketInstance.emit("join_dashboard", { parentId: session.user.id });
         });
 
-        setSocket(socketInstance);
+        setTimeout(() => {
+            setSocket(socketInstance);
+        }, 0);
 
         return () => {
             if (socketInstance) {

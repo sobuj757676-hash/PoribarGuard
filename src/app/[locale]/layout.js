@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Toaster } from 'sonner';
@@ -76,9 +77,9 @@ export default async function RootLayout({ children, params }) {
               <p className="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
                 PoribarGuard BD is currently undergoing scheduled maintenance. We will be back online shortly.
               </p>
-              <a href="/login" className="w-full inline-block bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3.5 px-6 rounded-xl transition text-sm">
+              <Link href="/login" className="w-full inline-block bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3.5 px-6 rounded-xl transition text-sm">
                 Admin Access
-              </a>
+              </Link>
             </div>
           </body>
         </html>

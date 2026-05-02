@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Mic, Smartphone, ShieldCheck, PlayCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export default function LiveDemo() {
     return (
@@ -134,6 +134,17 @@ function CameraDemoCard() {
 function MicDemoCard() {
     const [step, setStep] = useState(0);
 
+    const [randomAudioBars, setRandomAudioBars] = useState([]);
+
+    useEffect(() => {
+        setTimeout(() => {
+            setRandomAudioBars([...Array(12)].map(() => ({
+                heights: [`${Math.random() * 40 + 20}%`, `${Math.random() * 80 + 20}%`, `${Math.random() * 40 + 20}%`],
+                duration: Math.random() * 0.5 + 0.3
+            })));
+        }, 0);
+    }, []);
+
     useEffect(() => {
         const timer = setInterval(() => {
             setStep((prev) => (prev + 1) % 3);
@@ -201,11 +212,11 @@ function MicDemoCard() {
 
                             {/* Simulated Audio Waveform (Active) */}
                             <div className="flex gap-1.5 items-center justify-center h-20 w-full px-8">
-                                {[...Array(12)].map((_, i) => (
+                                {randomAudioBars.map((bar, i) => (
                                     <motion.div
                                         key={i}
-                                        animate={{ height: [`${Math.random() * 40 + 20}%`, `${Math.random() * 80 + 20}%`, `${Math.random() * 40 + 20}%`] }}
-                                        transition={{ repeat: Infinity, duration: Math.random() * 0.5 + 0.3 }}
+                                        animate={{ height: bar.heights }}
+                                        transition={{ repeat: Infinity, duration: bar.duration }}
                                         className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-full"
                                     ></motion.div>
                                 ))}

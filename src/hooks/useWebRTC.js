@@ -69,6 +69,10 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
     const retryCountRef = useRef(0);
     const iceServersRef = useRef(null); // Cached ICE servers for this session
 
+    // Use refs to break circular dependencies between callbacks
+    const attemptRetryRef = useRef(null);
+    const initiateCallRef = useRef(null);
+
     /**
      * Clean up an existing PeerConnection
      */
@@ -147,14 +151,14 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
                         reconnectTimeoutRef.current = setTimeout(() => {
                             if (!isMountedRef.current) return;
                             console.warn("[WebRTC] ICE disconnected for 10s — attempting full renegotiation");
-                            attemptRetry();
+                            if (attemptRetryRef.current) attemptRetryRef.current();
                         }, 10000);
                     }
                     break;
 
                 case 'failed':
                     console.error("[WebRTC] ICE failed decisively");
-                    attemptRetry();
+                    if (attemptRetryRef.current) attemptRetryRef.current();
                     break;
 
                 case 'closed':
@@ -173,6 +177,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
         pcRef.current = pc;
         return pc;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket, childId]);
 
     /**
@@ -204,9 +209,13 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
         retryTimeoutRef.current = setTimeout(() => {
             if (!isMountedRef.current) return;
-            initiateCall();
+            if (initiateCallRef.current) initiateCallRef.current();
         }, delay);
-    }, [socket, cleanupPC, status]);
+    }, [socket, cleanupPC]);
+
+    useEffect(() => {
+        attemptRetryRef.current = attemptRetry;
+    }, [attemptRetry]);
 
     /**
      * Initiate the call: ping child, then create offer.
@@ -229,7 +238,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
                     console.log(`[WebRTC] Retrying ping in ${delay}ms...`);
                     retryTimeoutRef.current = setTimeout(() => {
                         if (isMountedRef.current) {
-                            initiateCall(pingRetry + 1);
+                            if (initiateCallRef.current) initiateCallRef.current(pingRetry + 1);
                         }
                     }, delay);
                 } else {
@@ -258,13 +267,17 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
                 socket.emit(eventName, { childId, sdp: offer.sdp });
             } catch (err) {
                 console.error("[WebRTC] Failed to create offer", err);
-                attemptRetry();
+                if (attemptRetryRef.current) attemptRetryRef.current();
             }
         };
 
         socket.on("ping_result", handlePingResult);
         socket.emit("ping_child", { childId, timestamp: startTime });
-    }, [socket, childId, createPeerConnection, attemptRetry]);
+    }, [socket, childId, createPeerConnection, isAudioOnly]);
+
+    useEffect(() => {
+        initiateCallRef.current = initiateCall;
+    }, [initiateCall]);
 
     /**
      * Manual retry — called by the UI "Retry" button
@@ -277,8 +290,8 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         setConnectionType('unknown');
         iceServersRef.current = null; // Force re-fetch on manual retry
         cleanupPC();
-        initiateCall();
-    }, [cleanupPC, initiateCall]);
+        if (initiateCallRef.current) initiateCallRef.current();
+    }, [cleanupPC]);
 
     /**
      * Main effect — sets up socket listeners and initiates the first call
@@ -291,8 +304,10 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
         isMountedRef.current = true;
         retryCountRef.current = 0;
-        setRetryCount(0);
-        setIsRetryExhausted(false);
+        setTimeout(() => {
+            setRetryCount(0);
+            setIsRetryExhausted(false);
+        }, 0);
         iceServersRef.current = null;
 
         const handleSignal = async (data) => {
@@ -336,7 +351,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
 
             toast.error(data.message || "Failed to negotiate stream with the device.");
             if (isMountedRef.current) {
-                attemptRetry();
+                if (attemptRetryRef.current) attemptRetryRef.current();
             }
         };
 
@@ -346,7 +361,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
                 if (isMountedRef.current && status === 'connected') {
                     toast.warning("Connection to child device lost. Attempting to reconnect...");
                     setStatus('reconnecting');
-                    attemptRetry();
+                    if (attemptRetryRef.current) attemptRetryRef.current();
                 } else if (isMountedRef.current) {
                     setStatus('disconnected');
                 }
@@ -357,7 +372,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
         socket.on('webrtc_error', handleError);
         socket.on('child_status_update', handleChildStatus);
 
-        initiateCall();
+        if (initiateCallRef.current) initiateCallRef.current();
 
         return () => {
             isMountedRef.current = false;
@@ -371,6 +386,7 @@ export function useWebRTC(socket, childId, isAudioOnly = false) {
             cleanupPC();
             socket.emit('stop_stream', { childId });
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [childId, socket]);
 
     const switchCamera = useCallback(() => {

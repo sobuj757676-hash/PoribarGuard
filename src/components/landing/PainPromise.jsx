@@ -96,7 +96,7 @@ export default function PainPromise() {
                                 PoribarGuard BD দিয়ে এই চিন্তা শেষ করুন।
                             </h3>
                             <p className="text-emerald-100/80 text-sm">
-                                We handle the technology so you can focus on earning for your family's future.
+                                We handle the technology so you can focus on earning for your family&apos;s future.
                             </p>
                         </div>
                     </motion.div>
