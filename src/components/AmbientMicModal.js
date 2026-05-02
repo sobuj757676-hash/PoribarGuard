@@ -251,7 +251,7 @@ function ActiveMicStream({ t, childId, childName, duration, timeLeft, setTimeLef
 
             {/* Status Information */}
             <div className="text-center max-w-sm w-full bg-slate-800/50 p-6 rounded-3xl border border-slate-700/50 shadow-xl backdrop-blur-sm">
-                <h3 className="text-2xl font-bold text-white mb-2">{childName}'s Mic</h3>
+                <h3 className="text-2xl font-bold text-white mb-2">{childName}&apos;s Mic</h3>
 
                 <p className={`text-sm font-medium mb-6 flex items-center justify-center gap-2
                     ${status === 'connected' ? 'text-emerald-400' : 'text-amber-400'}`}>

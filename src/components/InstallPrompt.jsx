@@ -12,24 +12,27 @@ export default function InstallPrompt() {
     const [showIosPrompt, setShowIosPrompt] = useState(false);
 
     useEffect(() => {
-        // Check if user already dismissed
-        if (localStorage.getItem('pwa_prompt_dismissed') === 'true') {
-            setIsDismissed(true);
-            return;
-        }
+        // Wrap initial state updates in a timeout to avoid cascading renders warning
+        setTimeout(() => {
+            // Check if user already dismissed
+            if (localStorage.getItem('pwa_prompt_dismissed') === 'true') {
+                setIsDismissed(true);
+                return;
+            }
 
-        // Check if device is iOS
-        const userAgent = window.navigator.userAgent.toLowerCase();
-        const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+            // Check if device is iOS
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
 
-        // Check if already installed (standalone mode)
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            // Check if already installed (standalone mode)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-        if (isIosDevice && !isStandalone) {
-            setIsIos(true);
-            // On iOS, we can't trigger a programmatic install, so we just show a guide
-            setIsInstallable(true);
-        }
+            if (isIosDevice && !isStandalone) {
+                setIsIos(true);
+                // On iOS, we can't trigger a programmatic install, so we just show a guide
+                setIsInstallable(true);
+            }
+        }, 0);
 
         const handleBeforeInstallPrompt = (e) => {
             // Prevent the mini-infobar from appearing on mobile

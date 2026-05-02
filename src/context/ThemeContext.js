@@ -18,15 +18,17 @@ export function ThemeProvider({ children }) {
 
     // On mount, read from localStorage or system preference
     useEffect(() => {
-        const stored = localStorage.getItem("pg-theme");
-        if (stored === "light" || stored === "dark") {
-            setTheme(stored);
-        } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-            setTheme("light");
-        } else {
-            setTheme("dark");
-        }
-        setMounted(true);
+        setTimeout(() => {
+            const stored = localStorage.getItem("pg-theme");
+            if (stored === "light" || stored === "dark") {
+                setTheme(stored);
+            } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+                setTheme("light");
+            } else {
+                setTheme("dark");
+            }
+            setMounted(true);
+        }, 0);
     }, []);
 
     // Apply the class to <html> whenever theme changes
