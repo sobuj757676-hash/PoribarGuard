@@ -282,51 +282,81 @@ export default function DashboardPage() {
 
             {/* --- Mobile Sidebar Overlay --- */}
             <div 
-                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden transition-all duration-300 ease-in-out ${isMobileSidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                className={`fixed inset-0 bg-black/60 backdrop-blur-md z-[100] md:hidden transition-all duration-500 ease-in-out ${isMobileSidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
                 onClick={() => setIsMobileSidebarOpen(false)}
             />
 
             {/* --- SIDEBAR --- */}
             <aside className={`
-                fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-gray-900 shadow-2xl z-[101] pt-6 flex flex-col transition-transform duration-300 ease-in-out
+                fixed top-0 left-0 bottom-0 w-72 bg-white/95 dark:bg-[#0b1120]/95 backdrop-blur-2xl shadow-[10px_0_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[10px_0_40px_-15px_rgba(0,0,0,0.5)] z-[101] pt-6 flex flex-col transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) border-r border-gray-200/50 dark:border-white/[0.05]
                 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0 md:z-50
             `}>
-                <div className="flex items-center justify-between px-6 mb-8">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-emerald-600 p-2 rounded-xl shadow-emerald-500/30 shadow-lg">
-                            <Shield className="w-7 h-7 text-white" />
+                {/* Decorative Glowing Orbs in Background */}
+                <div className="absolute top-0 left-0 w-full h-48 bg-gradient-to-br from-emerald-400/10 to-teal-500/10 dark:from-emerald-500/5 dark:to-cyan-500/5 blur-3xl pointer-events-none -z-10" />
+                <div className="absolute bottom-0 right-0 w-full h-64 bg-gradient-to-tl from-emerald-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
+
+                <div className="flex items-center justify-between px-6 mb-10 relative">
+                    <div className="flex items-center gap-3.5 group cursor-pointer">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-emerald-500 blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500 rounded-xl"></div>
+                            <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.3)] group-hover:scale-105 transition-transform duration-300">
+                                <Shield className="w-6 h-6 text-white" />
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">PoribarGuard</h1>
-                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tracking-wider">BD EDITION</span>
+                        <div className="flex flex-col">
+                            <h1 className="text-[22px] leading-tight font-black bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 tracking-tight group-hover:from-emerald-600 group-hover:to-teal-500 dark:group-hover:from-emerald-400 dark:group-hover:to-teal-300 transition-all duration-300">
+                                PoribarGuard
+                            </h1>
+                            <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 tracking-[0.2em] uppercase bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full w-fit mt-0.5 border border-emerald-100 dark:border-emerald-500/20">
+                                BD EDITION
+                            </span>
                         </div>
                     </div>
                     {/* Close button for mobile */}
-                    <button className="md:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" onClick={() => setIsMobileSidebarOpen(false)}>
-                        <X className="w-6 h-6" />
+                    <button className="md:hidden p-2 bg-gray-50 dark:bg-white/5 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all duration-300" onClick={() => setIsMobileSidebarOpen(false)}>
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
+                <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto scrollbar-hide">
+                    <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">Dashboard</div>
                     <SidebarItem icon={<Home />} label={dict('home')} isActive={activeTab === 'home'} onClick={() => { setActiveTab('home'); setIsMobileSidebarOpen(false); }} />
                     <SidebarItem icon={<Map />} label={dict('map')} isActive={activeTab === 'map'} onClick={() => { setActiveTab('map'); setIsMobileSidebarOpen(false); }} />
+
+                    <div className="px-3 pt-4 pb-2 text-[11px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">Management</div>
                     <SidebarItem icon={<Lock />} label={dict('controls')} isActive={activeTab === 'controls'} onClick={() => { setActiveTab('controls'); setIsMobileSidebarOpen(false); }} />
                     <SidebarItem icon={<Video />} label={dict('tools')} isActive={activeTab === 'tools'} onClick={() => { setActiveTab('tools'); setIsMobileSidebarOpen(false); }} />
                     <SidebarItem icon={<MessageSquare />} label={dict('messages') || 'Messages'} isActive={activeTab === 'messages'} onClick={() => { setActiveTab('messages'); setIsMobileSidebarOpen(false); }} />
+
+                    <div className="px-3 pt-4 pb-2 text-[11px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">Insights</div>
                     <SidebarItem icon={<Activity />} label={dict('feed')} isActive={activeTab === 'feed'} onClick={() => { setActiveTab('feed'); setIsMobileSidebarOpen(false); }} />
                     <SidebarItem icon={<FileText />} label={dict('reports')} isActive={activeTab === 'reports'} onClick={() => { setActiveTab('reports'); setIsMobileSidebarOpen(false); }} />
+
+                    <div className="px-3 pt-4 pb-2 text-[11px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">System</div>
                     <SidebarItem icon={<Settings />} label={dict('settings')} isActive={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setIsMobileSidebarOpen(false); }} />
                     <SidebarItem icon={<LifeBuoy />} label={dict('support') || 'Support'} isActive={activeTab === 'support'} onClick={() => { window.location.href = '/dashboard/support'; }} />
                 </nav>
 
-                <div className="p-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
-                    <button onClick={() => setAddChildModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 p-3 rounded-xl font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
-                        <Plus className="w-5 h-5" /> {dict('addChild')}
-                    </button>
-                    <button onClick={() => signOut({ callbackUrl: '/login' })} className="w-full flex items-center justify-center gap-2 text-red-500 p-2 rounded-xl font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm">
-                        <LogOut className="w-4 h-4" /> Log Out
-                    </button>
+                <div className="p-5 mt-auto relative z-10 backdrop-blur-md bg-white/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-white/[0.05]">
+                    <div className="space-y-3">
+                        <button
+                            onClick={() => setAddChildModalOpen(true)}
+                            className="group relative w-full flex items-center justify-center gap-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-3.5 px-4 rounded-xl font-bold overflow-hidden transition-all duration-300 hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_8px_20px_rgba(255,255,255,0.15)] hover:-translate-y-0.5"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <Plus className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:rotate-90 group-hover:text-white" />
+                            <span className="relative z-10 group-hover:text-white transition-colors duration-300">{dict('addChild')}</span>
+                        </button>
+
+                        <button
+                            onClick={() => signOut({ callbackUrl: '/login' })}
+                            className="group w-full flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 py-2.5 px-4 rounded-xl font-semibold hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300"
+                        >
+                            <LogOut className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1" />
+                            Log Out
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -1780,9 +1810,50 @@ function AppControlRow({ id, childId, name, time, isBlocked, iconColor, iconUrl,
 
 function SidebarItem({ icon, label, isActive, onClick }) {
     return (
-        <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-bold' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium'}`}>
-            <span className={isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}>{React.cloneElement(icon, { className: 'w-5 h-5' })}</span>
-            {label}
+        <button
+            onClick={onClick}
+            className={`
+                group relative w-full flex items-center gap-3.5 px-3 py-3 rounded-2xl transition-all duration-300 ease-out overflow-hidden outline-none
+                ${isActive
+                    ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-500/10 dark:to-teal-500/5 border-transparent shadow-sm'
+                    : 'hover:bg-gray-50/80 dark:hover:bg-white/[0.02] border-transparent'
+                }
+            `}
+        >
+            {/* Active Border/Glow Indicator */}
+            {isActive && (
+                <>
+                    <div className="absolute inset-0 rounded-2xl border border-emerald-200 dark:border-emerald-500/20 pointer-events-none" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-emerald-500 rounded-r-full shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
+                </>
+            )}
+
+            {/* Hover Shimmer Effect */}
+            {!isActive && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200/50 dark:via-white/5 to-transparent -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out pointer-events-none" />
+            )}
+
+            {/* Icon Container with Glassmorphism */}
+            <div className={`
+                relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300
+                ${isActive
+                    ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-md shadow-emerald-500/30 scale-100'
+                    : 'bg-white dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 group-hover:scale-110 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 shadow-sm border border-gray-100 dark:border-gray-700/50'
+                }
+            `}>
+                {React.cloneElement(icon, { className: `w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}` })}
+            </div>
+
+            {/* Label */}
+            <span className={`
+                text-[15px] font-semibold tracking-wide transition-all duration-300 z-10
+                ${isActive
+                    ? 'text-emerald-800 dark:text-emerald-300 translate-x-1'
+                    : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 group-hover:translate-x-1'
+                }
+            `}>
+                {label}
+            </span>
         </button>
     );
 }
