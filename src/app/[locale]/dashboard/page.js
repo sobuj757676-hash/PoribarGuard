@@ -8,11 +8,12 @@ import {
     Clock, MapPin, Activity, CheckCircle, ShieldAlert, FileText,
     Lock, Unlock, LogOut, Globe, Camera, Loader2,
     Download, Trash2, CreditCard, Save, Edit3, Calendar, Mail, MessageSquare,
-    Navigation, RefreshCw, MapPinOff, Moon,
-    Zap, Compass, MicOff, LockKeyhole, SmartphoneNfc, LayoutGrid, Check, ExternalLink, Filter, Type
+    Navigation, RefreshCw, MapPinOff, Moon, LifeBuoy,
+    Zap, Compass, MicOff, LockKeyhole, SmartphoneNfc, LayoutGrid, Check, ExternalLink, Filter, Type, ChevronRight, MoreVertical, Menu
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import InstallPrompt from '@/components/InstallPrompt';
+import LiveGuidePanel from '@/components/LiveGuidePanel';
 import LiveCameraModal from '@/components/LiveCameraModal';
 import AmbientMicModal from '@/components/AmbientMicModal';
 import LiveScreenModal from '@/components/LiveScreenModal';
@@ -77,6 +78,9 @@ export default function DashboardPage() {
     // Profile Dropdown
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const profileDropdownRef = useRef(null);
+
+    // Mobile Sidebar Drawer
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -199,18 +203,21 @@ export default function DashboardPage() {
 
             {/* --- TOP BAR --- */}
             <header className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-900 shadow-sm z-50 flex items-center justify-between px-4 md:pl-72">
-                <div className="flex items-center gap-3">
-                    <div className="md:hidden bg-emerald-600 p-2 rounded-lg">
+                <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setIsMobileSidebarOpen(true)}>
+                    <div className="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 p-1 -ml-1 transition-colors">
+                        <Menu className="w-6 h-6" />
+                    </div>
+                    <div className="md:hidden bg-emerald-600 p-1.5 rounded-lg shadow-sm group-active:scale-95 transition-transform">
                         <Shield className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                        <h1 className="text-sm font-semibold text-gray-500 dark:text-gray-400">{dict.greeting},</h1>
-                        <h2 className="text-lg font-bold leading-tight">{userName}</h2>
-                    </div>
+                    {/* Brand Name on Mobile instead of greeting */}
+                    <span className="font-black text-xl text-emerald-600 dark:text-emerald-400 md:hidden tracking-tight group-active:opacity-70 transition-opacity">PoribarGuard</span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <LanguageSwitcher />
-                    <ThemeToggle />
+                    <div className="hidden sm:flex items-center gap-4">
+                        <LanguageSwitcher />
+                        <ThemeToggle />
+                    </div>
                     <div className="relative cursor-pointer" onClick={async () => {
                         if (child?.id && child.alerts?.some(a => !a.isRead)) {
                             try {
@@ -227,39 +234,42 @@ export default function DashboardPage() {
                         )}
                     </div>
                     <div className="relative" ref={profileDropdownRef}>
-                        <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 border-2 border-emerald-200 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                            {initials}
+                        <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="p-2 -mr-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus:outline-none rounded-full">
+                            <MoreVertical className="w-6 h-6" />
                         </button>
                         {isProfileDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg z-[100] overflow-hidden">
-                                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{userName}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session?.user?.email || ''}</p>
+                            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg z-[100] overflow-hidden">
+                                <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold text-lg flex items-center justify-center shrink-0 shadow-sm border border-emerald-200 dark:border-emerald-700">
+                                        {initials}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{userName}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session?.user?.email || ''}</p>
+                                    </div>
                                 </div>
-                                <div className="py-1">
+                                <div className="py-2">
                                     <button
                                         onClick={() => {
                                             setActiveTab('settings');
                                             setIsProfileDropdownOpen(false);
                                         }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
+                                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3 transition-colors"
                                     >
                                         <Settings className="w-4 h-4" /> Profile & Settings
                                     </button>
-                                    <button
-                                        onClick={() => {
-                                            setActiveTab('settings');
-                                            setIsProfileDropdownOpen(false);
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
-                                    >
-                                        <CreditCard className="w-4 h-4" /> Subscription
-                                    </button>
                                 </div>
-                                <div className="border-t border-gray-100 dark:border-gray-800 py-1">
+                                <div className="sm:hidden border-t border-gray-100 dark:border-gray-800 py-3 px-4 flex items-center justify-between">
+                                    <span className="text-xs font-bold text-gray-500">Preferences</span>
+                                    <div className="flex gap-3">
+                                        <LanguageSwitcher />
+                                        <ThemeToggle />
+                                    </div>
+                                </div>
+                                <div className="border-t border-gray-100 dark:border-gray-800 py-2">
                                     <button
                                         onClick={() => signOut({ callbackUrl: '/login' })}
-                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors font-medium"
+                                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 transition-colors font-medium"
                                     >
                                         <LogOut className="w-4 h-4" /> Log Out
                                     </button>
@@ -270,27 +280,44 @@ export default function DashboardPage() {
                 </div>
             </header>
 
-            {/* --- SIDEBAR (Desktop) --- */}
-            <aside className="hidden md:flex flex-col w-64 fixed top-0 left-0 bottom-0 bg-white dark:bg-gray-900 shadow-lg z-50 pt-6">
-                <div className="flex items-center gap-3 px-6 mb-8">
-                    <div className="bg-emerald-600 p-2 rounded-xl shadow-emerald-500/30 shadow-lg">
-                        <Shield className="w-7 h-7 text-white" />
+            {/* --- Mobile Sidebar Overlay --- */}
+            <div 
+                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden transition-all duration-300 ease-in-out ${isMobileSidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                onClick={() => setIsMobileSidebarOpen(false)}
+            />
+
+            {/* --- SIDEBAR --- */}
+            <aside className={`
+                fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-gray-900 shadow-2xl z-[101] pt-6 flex flex-col transition-transform duration-300 ease-in-out
+                ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                md:translate-x-0 md:z-50
+            `}>
+                <div className="flex items-center justify-between px-6 mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-emerald-600 p-2 rounded-xl shadow-emerald-500/30 shadow-lg">
+                            <Shield className="w-7 h-7 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">PoribarGuard</h1>
+                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tracking-wider">BD EDITION</span>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">PoribarGuard</h1>
-                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tracking-wider">BD EDITION</span>
-                    </div>
+                    {/* Close button for mobile */}
+                    <button className="md:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" onClick={() => setIsMobileSidebarOpen(false)}>
+                        <X className="w-6 h-6" />
+                    </button>
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-                    <SidebarItem icon={<Home />} label={dict('home')} isActive={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                    <SidebarItem icon={<Map />} label={dict('map')} isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
-                    <SidebarItem icon={<Lock />} label={dict('controls')} isActive={activeTab === 'controls'} onClick={() => setActiveTab('controls')} />
-                    <SidebarItem icon={<Video />} label={dict('tools')} isActive={activeTab === 'tools'} onClick={() => setActiveTab('tools')} />
-                    <SidebarItem icon={<MessageSquare />} label={dict('messages') || 'Messages'} isActive={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
-                    <SidebarItem icon={<Activity />} label={dict('feed')} isActive={activeTab === 'feed'} onClick={() => setActiveTab('feed')} />
-                    <SidebarItem icon={<FileText />} label={dict('reports')} isActive={activeTab === 'reports'} onClick={() => setActiveTab('reports')} />
-                    <SidebarItem icon={<Settings />} label={dict('settings')} isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                    <SidebarItem icon={<Home />} label={dict('home')} isActive={activeTab === 'home'} onClick={() => { setActiveTab('home'); setIsMobileSidebarOpen(false); }} />
+                    <SidebarItem icon={<Map />} label={dict('map')} isActive={activeTab === 'map'} onClick={() => { setActiveTab('map'); setIsMobileSidebarOpen(false); }} />
+                    <SidebarItem icon={<Lock />} label={dict('controls')} isActive={activeTab === 'controls'} onClick={() => { setActiveTab('controls'); setIsMobileSidebarOpen(false); }} />
+                    <SidebarItem icon={<Video />} label={dict('tools')} isActive={activeTab === 'tools'} onClick={() => { setActiveTab('tools'); setIsMobileSidebarOpen(false); }} />
+                    <SidebarItem icon={<MessageSquare />} label={dict('messages') || 'Messages'} isActive={activeTab === 'messages'} onClick={() => { setActiveTab('messages'); setIsMobileSidebarOpen(false); }} />
+                    <SidebarItem icon={<Activity />} label={dict('feed')} isActive={activeTab === 'feed'} onClick={() => { setActiveTab('feed'); setIsMobileSidebarOpen(false); }} />
+                    <SidebarItem icon={<FileText />} label={dict('reports')} isActive={activeTab === 'reports'} onClick={() => { setActiveTab('reports'); setIsMobileSidebarOpen(false); }} />
+                    <SidebarItem icon={<Settings />} label={dict('settings')} isActive={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setIsMobileSidebarOpen(false); }} />
+                    <SidebarItem icon={<LifeBuoy />} label={dict('support') || 'Support'} isActive={activeTab === 'support'} onClick={() => { window.location.href = '/dashboard/support'; }} />
                 </nav>
 
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
@@ -358,79 +385,97 @@ export default function DashboardPage() {
                                 </div>
                             )}
 
-                            {/* Subscription Status Header */}
-                            {subscription && (
-                                <div className="bg-gradient-to-r from-emerald-600 to-teal-500 rounded-xl p-3 shadow-md mb-6 flex justify-between items-center text-white">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-white/20 rounded-lg">
-                                            <Shield className="w-5 h-5 text-white" />
+                            {/* Subscription Status Header — hide on settings tab (Only show big red banner if expired/no plan) */}
+                            {activeTab !== 'settings' && subscription && (subscription.isExpired || !subscription.active) && (
+                                <div className="bg-gradient-to-r from-red-600 to-rose-500 rounded-xl p-4 shadow-lg shadow-red-500/20 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center text-white gap-4 border border-red-400">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2.5 bg-white/20 rounded-lg mt-0.5 shrink-0">
+                                            <AlertTriangle className="w-6 h-6 text-white" />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-emerald-100 font-medium">Active Plan</p>
-                                            <p className="font-bold">{planLabel}</p>
+                                            <p className="text-sm text-red-100 font-bold uppercase tracking-wider mb-0.5">
+                                                {subscription.isExpired ? 'Subscription Expired' : 'No Active Plan'}
+                                            </p>
+                                            <p className="text-sm font-medium">
+                                                {subscription.isExpired 
+                                                    ? `Your ${subscription.isTrial ? 'Free Trial' : 'Premium Plan'} has ended. Please renew to keep your family protected.`
+                                                    : 'You currently do not have an active plan. Upgrade to unlock all features.'}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs text-emerald-100 font-medium">Expires</p>
-                                        <p className="font-bold">{endDate}</p>
-                                    </div>
+                                    <button 
+                                        onClick={() => setActiveTab('settings')}
+                                        className="w-full sm:w-auto px-6 py-2.5 bg-white text-red-600 font-black rounded-xl shadow-sm hover:shadow-md hover:bg-gray-50 active:scale-95 transition whitespace-nowrap shrink-0"
+                                    >
+                                        {subscription.isExpired ? 'Renew Now' : 'Upgrade Plan'}
+                                    </button>
                                 </div>
                             )}
 
-                            {/* Child ribbon with selector */}
-                            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between bg-white dark:bg-gray-900 rounded-[2rem] p-2.5 shadow-md mb-6 border border-gray-200 dark:border-gray-800/60 overflow-hidden">
-                                <div className="flex items-center gap-4 pl-1 min-w-0">
-                                    <div className="relative shrink-0">
-                                        <div className="w-14 h-14 rounded-full bg-[#10b981] flex items-center justify-center text-white font-black text-2xl shadow-inner">
-                                            {child?.name?.charAt(0) || '?'}
+                            {/* Child ribbon with selector — hide on settings tab */}
+                            {activeTab !== 'settings' && (
+                                <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 dark:border-emerald-500/10 rounded-2xl p-4 sm:p-5 shadow-sm mb-5">
+                                    <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                                    <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-32 h-32 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                                    
+                                    <div className="relative z-10 flex items-center gap-4 min-w-0">
+                                        <div className="relative shrink-0">
+                                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-black text-xl sm:text-2xl flex items-center justify-center shadow-lg border-2 border-white/20 shrink-0 transform hover:scale-105 transition-transform duration-300">
+                                                {child?.name?.charAt(0) || '?'}
+                                            </div>
+                                            <div className={`absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 ${device?.isOnline ? 'bg-emerald-500' : 'bg-gray-500'} border-[3px] border-white dark:border-gray-900 rounded-full shadow-sm`}></div>
                                         </div>
-                                        <div className={`absolute bottom-0 right-0 w-4 h-4 ${device?.isOnline ? 'bg-[#10b981]' : 'bg-gray-500'} border-[3px] border-white dark:border-gray-900 rounded-full`}></div>
-                                    </div>
-                                    <div className="flex flex-col truncate pr-2">
-                                        {children.length > 1 ? (
-                                            <select value={selectedChildIdx} onChange={(e) => setSelectedChildIdx(Number(e.target.value))} className="font-bold text-xl text-gray-900 dark:text-white bg-transparent outline-none cursor-pointer tracking-tight">
-                                                {children.map((c, i) => (
-                                                    <option key={c.id} value={i} className="text-gray-900 dark:text-white bg-white dark:bg-gray-900">{c.name} ({c.age})</option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <h3 className="font-bold text-xl text-gray-900 dark:text-white tracking-tight truncate flex items-baseline gap-1.5">
-                                                {child?.name} <span className="text-gray-500 dark:text-gray-400 text-base font-medium">({child?.age})</span>
-                                            </h3>
-                                        )}
-                                        <p className={`text-sm font-bold flex items-center gap-1.5 mt-0.5 tracking-wide ${device?.isOnline ? 'text-[#10b981]' : 'text-gray-400'}`}>
-                                            <CheckCircle className="w-4 h-4 stroke-[2.5]" />
-                                            {device?.isOnline ? 'LIVE' : 'OFFLINE'}
-                                        </p>
-                                        {!device?.isOnline && child?.id && (
-                                            <button
-                                                onClick={() => { setReconnectChildId(child.id); setAddChildModalOpen(true); }}
-                                                className="mt-1 text-xs text-blue-400 hover:text-blue-300 font-bold hover:underline text-left">
-                                                {dict('reconnect')}
-                                            </button>
-                                        )}
+                                        <div className="flex flex-col truncate pr-2">
+                                            {children.length > 1 ? (
+                                                <select value={selectedChildIdx} onChange={(e) => setSelectedChildIdx(Number(e.target.value))} className="font-black text-xl sm:text-2xl text-gray-900 dark:text-white bg-transparent outline-none cursor-pointer tracking-tight leading-none mb-1.5 appearance-none">
+                                                    {children.map((c, i) => (
+                                                        <option key={c.id} value={i} className="text-gray-900 dark:text-white bg-transparent">{c.name} ({c.age})</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <h3 className="font-black text-xl sm:text-2xl text-gray-900 dark:text-white tracking-tight truncate leading-none mb-1.5">
+                                                    {child?.name} <span className="text-gray-500 dark:text-gray-400 text-lg font-bold">({child?.age})</span>
+                                                </h3>
+                                            )}
+                                            
+                                            <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                                                <p className={`text-[10px] sm:text-xs font-bold inline-flex items-center px-2 py-0.5 rounded-md ${device?.isOnline ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10' : 'text-gray-600 dark:text-gray-400 bg-gray-500/10'}`}>
+                                                    <CheckCircle className={`w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 ${device?.isOnline ? 'text-emerald-500' : 'text-gray-400'}`} />
+                                                    {device?.isOnline ? 'LIVE' : 'OFFLINE'}
+                                                </p>
+                                                {!device?.isOnline && child?.id && (
+                                                    <button
+                                                        onClick={() => { setReconnectChildId(child.id); setAddChildModalOpen(true); }}
+                                                        className="text-[10px] sm:text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-bold bg-blue-500/10 px-2 py-0.5 rounded-md transition-colors">
+                                                        {dict('reconnect')}
+                                                    </button>
+                                                )}
+                                                
+                                                {/* Ultra-compact Device Indicators */}
+                                                <div className="flex items-center gap-2.5 bg-gray-900/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
+                                                    <div className="flex items-center gap-0.5" title="Battery Level">
+                                                        <Battery className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${(battery || 0) > 20 ? 'text-emerald-500' : (battery || 0) > 10 ? 'text-amber-500' : 'text-red-500'}`} />
+                                                        <span className={`text-[10px] sm:text-xs font-black ${(battery || 0) > 20 ? 'text-emerald-600 dark:text-emerald-400' : (battery || 0) > 10 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500'}`}>{battery ?? '—'}%</span>
+                                                    </div>
+                                                    <Wifi className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${device?.isOnline ? 'text-blue-500' : 'text-gray-400'}`} />
+                                                    <div className="flex items-center gap-0.5" title="Location Accuracy">
+                                                        <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500" />
+                                                        <span className="text-[10px] sm:text-xs font-black text-amber-600 dark:text-amber-400">±{Math.round(acc)}m</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* In-card Active Subscription Badge */}
+                                                {subscription && subscription.active && !subscription.isExpired && (
+                                                    <span className="text-[10px] sm:text-xs font-bold text-teal-700 dark:text-teal-400 bg-teal-500/10 inline-flex items-center px-2 py-0.5 rounded-md">
+                                                        <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 text-teal-500" />
+                                                        {planLabel}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-
-                                {/* Global Device Status Indicator Pill */}
-                                <div className="flex items-center gap-3.5 bg-gray-100 dark:bg-gray-950/80 rounded-[1.5rem] px-5 py-2.5 border border-gray-200 dark:border-gray-800 shrink-0 mt-3 sm:mt-0 mr-1 w-full sm:w-auto justify-center sm:justify-start">
-                                    <div className="flex items-center gap-2">
-                                        <Battery className={`w-5 h-5 ${(battery || 0) > 20 ? 'text-emerald-500' : (battery || 0) > 10 ? 'text-amber-500' : 'text-[#f43f5e]'}`} />
-                                        <span className={`text-base font-bold ${(battery || 0) > 20 ? 'text-emerald-600 dark:text-emerald-400' : (battery || 0) > 10 ? 'text-amber-600 dark:text-amber-400' : 'text-[#f43f5e]'}`}>{battery ?? '—'}%</span>
-                                    </div>
-
-                                    <span className="text-gray-300 dark:text-gray-700 font-light">|</span>
-
-                                    <Wifi className="w-5 h-5 text-blue-500" />
-
-                                    <span className="text-gray-300 dark:text-gray-700 font-light">|</span>
-
-                                    <div className="flex items-center gap-1.5">
-                                        <MapPin className="w-5 h-5 text-amber-400 fill-amber-400/20" />
-                                        <span className="text-base font-bold text-gray-900 dark:text-white">±{Math.round(acc)}m</span>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
 
                             {/* Tabs */}
                             {activeTab === 'home' && <HomeTab dict={dict} child={child} device={device} fetchChildren={fetchChildren} onOpenCamera={() => checkFeature('live_camera', () => setCameraModalOpen(true))} onOpenScreen={() => checkFeature('live_screen', () => setScreenModalOpen(true))} checkFeature={checkFeature} />}
@@ -447,19 +492,31 @@ export default function DashboardPage() {
             </main>
 
             {/* --- BOTTOM NAV (Mobile) --- */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-gray-100 dark:border-gray-800 z-50 px-2 py-2 pb-safe flex justify-between items-center">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.08)] border-t border-gray-200/50 dark:border-gray-800/50 z-50 px-2 py-2 pb-safe flex justify-between items-center">
                 <BottomNavItem icon={<Home />} label={dict('home')} isActive={activeTab === 'home'} onClick={() => setActiveTab('home')} />
                 <BottomNavItem icon={<MessageSquare />} label={dict('messages') || 'Messages'} isActive={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
-                <div className="relative -top-5 px-1 flex justify-center">
+                
+                {/* Floating Action Button */}
+                <div className="relative -top-6 px-1.5 flex justify-center">
                     {child?.id && (
-                        <button onClick={() => setActiveTab('tools')} className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl shadow-red-500/30 transition-transform active:scale-95 ${activeTab === 'tools' ? 'bg-red-600' : 'bg-red-500'} border-4 border-white dark:border-gray-900`}>
-                            <Video className="w-6 h-6 text-white" />
+                        <button onClick={() => setActiveTab('tools')} className={`w-[56px] h-[56px] rounded-full flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(239,68,68,0.5)] transition-transform duration-300 hover:scale-105 active:scale-95 ${activeTab === 'tools' ? 'bg-gradient-to-tr from-red-600 to-rose-500 scale-110' : 'bg-gradient-to-tr from-red-500 to-rose-400'} border-[5px] border-white dark:border-gray-950`}>
+                            <Video className="w-6 h-6 text-white" fill="currentColor" />
                         </button>
                     )}
                 </div>
+                
                 <BottomNavItem icon={<Lock />} label={dict('controls')} isActive={activeTab === 'controls'} onClick={() => setActiveTab('controls')} />
-                <BottomNavItem icon={<Activity />} label={dict('feed')} isActive={activeTab === 'feed'} onClick={() => setActiveTab('feed')} />
+                <BottomNavItem icon={<User />} label={dict('settings') || 'Profile'} isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
             </nav>
+
+            {/* --- FLOATING SUPPORT BUTTON --- */}
+            <button 
+                onClick={() => window.location.href = '/dashboard/support'}
+                className="fixed bottom-24 md:bottom-8 right-4 md:right-8 w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50"
+                aria-label="Support"
+            >
+                <LifeBuoy className="w-6 h-6" />
+            </button>
 
             {/* --- ADD CHILD/RECONNECT MODAL --- */}
             {isAddChildModalOpen && (
@@ -511,13 +568,14 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
     const comingSoon = () => toast.info('⏳ This feature requires the child&apos;s Android app to be connected.');
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Quick Actions — Visible 4-Column Grid */}
             <div>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">{dict('quickActions')}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <ActionButton icon={<Smartphone className="w-7 h-7" />} label={dict('reqScreen')} color="bg-blue-500" shadow="shadow-blue-500/20" onClick={onOpenScreen} />
-                    <ActionButton icon={<Camera className="w-7 h-7" />} label={dict('reqCamera')} color="bg-emerald-500" shadow="shadow-emerald-500/20" onClick={onOpenCamera} />
-                    <ActionButton icon={<Mic className="w-7 h-7" />} label={dict('reqMic')} color="bg-purple-500" shadow="shadow-purple-500/20" onClick={comingSoon} />
-                    <ActionButton icon={<Bell className="w-7 h-7" />} label={dict('sendAlarm')} color="bg-red-500" shadow="shadow-red-500/30" pulse onClick={sendAlarm} />
+                <h3 className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em] mb-2.5 px-1">{dict('quickActions')}</h3>
+                <div className="grid grid-cols-4 gap-2">
+                    <ActionButton icon={<Smartphone />} label={dict('reqScreen')} gradient="from-blue-500 to-indigo-500" onClick={onOpenScreen} />
+                    <ActionButton icon={<Camera />} label={dict('reqCamera')} gradient="from-emerald-500 to-teal-500" onClick={onOpenCamera} />
+                    <ActionButton icon={<Mic />} label={dict('reqMic')} gradient="from-violet-500 to-purple-500" onClick={comingSoon} />
+                    <ActionButton icon={<Bell />} label={dict('sendAlarm')} gradient="from-red-500 to-rose-500" pulse onClick={sendAlarm} />
                 </div>
             </div>
 
@@ -742,28 +800,119 @@ function ControlsTab({ dict, child }) {
 
 
 // ==========================================
-// LIVE TOOLS TAB (Unchanged)
+// LIVE TOOLS TAB (Redesigned — Premium Command Center)
 // ==========================================
 function LiveToolsTab({ dict, onOpenCamera, onOpenMic, onOpenScreen }) {
+    const tools = [
+        {
+            id: 'screen',
+            icon: Video,
+            title: 'Live Screen',
+            desc: 'Real-time screen mirroring in HD',
+            gradient: 'from-red-500 to-rose-500',
+            glow: 'bg-red-500/20',
+            ring: 'ring-red-500/30',
+            textAccent: 'text-red-500',
+            bgAccent: 'bg-red-500/10',
+            onClick: onOpenScreen,
+        },
+        {
+            id: 'camera',
+            icon: Camera,
+            title: 'Remote Camera',
+            desc: 'Front & rear camera access',
+            gradient: 'from-amber-500 to-orange-500',
+            glow: 'bg-amber-500/20',
+            ring: 'ring-amber-500/30',
+            textAccent: 'text-amber-500',
+            bgAccent: 'bg-amber-500/10',
+            onClick: onOpenCamera,
+        },
+        {
+            id: 'mic',
+            icon: Mic,
+            title: 'Ambient Listen',
+            desc: 'Surroundings audio stream',
+            gradient: 'from-violet-500 to-purple-500',
+            glow: 'bg-violet-500/20',
+            ring: 'ring-violet-500/30',
+            textAccent: 'text-violet-500',
+            bgAccent: 'bg-violet-500/10',
+            onClick: onOpenMic,
+        },
+    ];
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg shadow-red-500/20">
-                <h2 className="text-2xl font-black mb-2 flex items-center gap-2"><ShieldAlert className="w-8 h-8" /> Live Operations</h2>
-                <p className="text-red-100 opacity-90 text-sm mb-6">{dict('liveToolsDesc')}</p>
-                <div className="grid grid-cols-1 gap-4">
-                    <button onClick={onOpenScreen} className="flex items-center justify-between bg-white/20 hover:bg-white/30 backdrop-blur-sm p-4 rounded-xl transition-all group">
-                        <div className="flex items-center gap-4"><div className="bg-white p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform"><Video className="w-6 h-6" /></div><div className="text-left"><h4 className="font-bold text-lg">Live Screen View</h4><p className="text-xs text-red-100">Watch child&apos;s screen in 1080p</p></div></div>
-                        <span className="bg-red-700 px-3 py-1 rounded-full text-xs font-bold">START</span>
-                    </button>
-                    <button onClick={onOpenCamera} className="flex items-center justify-between bg-white/20 hover:bg-white/30 backdrop-blur-sm p-4 rounded-xl transition-all group">
-                        <div className="flex items-center gap-4"><div className="bg-white p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform"><Camera className="w-6 h-6" /></div><div className="text-left"><h4 className="font-bold text-lg">Remote Camera</h4><p className="text-xs text-red-100">Front/Back camera access</p></div></div>
-                        <span className="bg-red-700 px-3 py-1 rounded-full text-xs font-bold">START</span>
-                    </button>
-                    <button onClick={onOpenMic} className="flex items-center justify-between bg-white/20 hover:bg-white/30 backdrop-blur-sm p-4 rounded-xl transition-all group">
-                        <div className="flex items-center gap-4"><div className="bg-white p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform"><Mic className="w-6 h-6" /></div><div className="text-left"><h4 className="font-bold text-lg">Ambient Mic Listen</h4><p className="text-xs text-red-100">Listen to surroundings</p></div></div>
-                        <span className="bg-red-700 px-3 py-1 rounded-full text-xs font-bold">START</span>
-                    </button>
+        <div className="animate-in fade-in duration-300 space-y-5">
+            {/* Header */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 dark:from-gray-950 dark:to-black rounded-2xl p-5 border border-gray-800/50">
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-red-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-500 to-rose-400 flex items-center justify-center text-white shadow-lg">
+                                <ShieldAlert className="w-5 h-5" />
+                            </div>
+                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-gray-900 animate-pulse"></div>
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-white tracking-tight leading-none mb-0.5">Live Operations</h2>
+                            <p className="text-[11px] text-gray-400 font-medium">{dict('liveToolsDesc')}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Secure</span>
+                    </div>
                 </div>
+            </div>
+
+            {/* Tool Cards */}
+            <div className="grid grid-cols-1 gap-3">
+                {tools.map((tool) => {
+                    const Icon = tool.icon;
+                    return (
+                        <button
+                            key={tool.id}
+                            onClick={tool.onClick}
+                            className="group relative overflow-hidden bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all duration-300 text-left active:scale-[0.98]"
+                        >
+                            {/* Ambient glow on hover */}
+                            <div className={`absolute top-0 right-0 -mt-12 -mr-12 w-32 h-32 ${tool.glow} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`}></div>
+                            
+                            <div className="relative z-10 flex items-center gap-4">
+                                {/* Icon container with pulse ring */}
+                                <div className="relative shrink-0">
+                                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-tr ${tool.gradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                    </div>
+                                    {/* Animated pulse ring */}
+                                    <div className={`absolute inset-0 rounded-xl ring-2 ${tool.ring} animate-ping opacity-20 pointer-events-none`}></div>
+                                </div>
+                                
+                                {/* Text content */}
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-black text-base sm:text-lg text-gray-900 dark:text-white tracking-tight leading-tight mb-0.5 group-hover:translate-x-0.5 transition-transform duration-300">{tool.title}</h4>
+                                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">{tool.desc}</p>
+                                </div>
+
+                                {/* Action indicator */}
+                                <div className={`shrink-0 flex items-center gap-2 ${tool.bgAccent} px-3 py-1.5 rounded-xl group-hover:px-4 transition-all duration-300`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-r ${tool.gradient}`}></div>
+                                    <span className={`text-[11px] font-black uppercase tracking-wider ${tool.textAccent}`}>Go</span>
+                                    <ChevronRight className={`w-3.5 h-3.5 ${tool.textAccent} opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300`} />
+                                </div>
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Trust footer */}
+            <div className="flex items-center justify-center gap-2 py-1">
+                <Lock className="w-3 h-3 text-gray-400 dark:text-gray-600" />
+                <span className="text-[10px] text-gray-400 dark:text-gray-600 font-bold tracking-wider uppercase">End-to-End Encrypted • Parental Access Only</span>
             </div>
         </div>
     );
@@ -905,9 +1054,15 @@ function AddChildWorkflow({ dict, step, setStep, onClose, onChildAdded, reconnec
                                 Send Magic Link via WhatsApp
                             </button>
 
-                            <div className="flex items-center justify-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span className="font-medium">Waiting for child to connect...</span>
+                            {/* Live Remote Hands Panel */}
+                            <div className="mt-4 text-left">
+                                <LiveGuidePanel
+                                    pairingCode={pairingCode}
+                                    onComplete={(completedChildId) => {
+                                        setStep(3);
+                                        onChildAdded?.();
+                                    }}
+                                />
                             </div>
                         </div>
                     )}
@@ -1076,7 +1231,7 @@ function ReportsTab({ dict, child }) {
 }
 
 // ==========================================
-// SETTINGS TAB (Live API)
+// SETTINGS TAB (Redesigned — Persistent Pill Nav)
 // ==========================================
 function SettingsTab({ dict, session }) {
     const { user } = useProfile();
@@ -1090,6 +1245,12 @@ function SettingsTab({ dict, session }) {
     const [packages, setPackages] = useState([]);
     const [selectedPackageId, setSelectedPackageId] = useState(null);
     const [showManualForm, setShowManualForm] = useState(false);
+    // Password change state
+    const [passwordForm, setPasswordForm] = useState({ current: '', newPwd: '', confirm: '' });
+    const [savingPassword, setSavingPassword] = useState(false);
+    // Delete account state
+    const [deleteConfirm, setDeleteConfirm] = useState('');
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     useEffect(() => {
         const fetchPackages = async () => {
@@ -1162,169 +1323,237 @@ function SettingsTab({ dict, session }) {
             toast.error("Please select a package first");
             return;
         }
-        window.location.href = `/en/checkout/${selectedPackageId}`;
+        window.location.href = `/checkout/${selectedPackageId}`;
     };
 
-    return (
-        <div className="space-y-6 animate-in fade-in duration-300 max-w-3xl">
-            <h2 className="text-xl font-bold mb-6">Account Settings</h2>
+    const handlePasswordChange = async () => {
+        if (!passwordForm.current || !passwordForm.newPwd) { toast.error('Please fill all password fields'); return; }
+        if (passwordForm.newPwd.length < 6) { toast.error('New password must be at least 6 characters'); return; }
+        if (passwordForm.newPwd !== passwordForm.confirm) { toast.error('Passwords do not match'); return; }
+        setSavingPassword(true);
+        try {
+            const res = await fetch('/api/profile/password', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword: passwordForm.current, newPassword: passwordForm.newPwd }) });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            toast.success('Password updated successfully');
+            setPasswordForm({ current: '', newPwd: '', confirm: '' });
+        } catch (e) { toast.error(e.message || 'Failed to change password'); }
+        setSavingPassword(false);
+    };
 
-            {/* Sub-tabs Navigation */}
-            <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 dark:border-gray-800 pb-2">
-                <button
-                    onClick={() => setActiveTab('profile')}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'profile' ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                >
-                    Profile Details
-                </button>
-                <button
-                    onClick={() => setActiveTab('subscription')}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'subscription' ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                >
-                    Subscription Plan
-                </button>
-                <button
-                    onClick={() => setActiveTab('danger')}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'danger' ? 'bg-red-600 text-white' : 'text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400'}`}
-                >
-                    Danger Zone
-                </button>
+    const [notifPrefs, setNotifPrefs] = useState({ sos: true, geofence: true, appInstall: true, daily: false, subscription: true });
+
+    const TABS = [
+        { id: 'profile', label: 'Profile', icon: User },
+        { id: 'subscription', label: 'Billing', icon: CreditCard },
+        { id: 'notifications', label: 'Alerts', icon: Bell },
+        { id: 'danger', label: 'Account', icon: AlertTriangle },
+    ];
+
+    return (
+        <div className="animate-in fade-in duration-300 max-w-3xl mx-auto">
+            {/* Profile Header (Compact Premium Glassmorphic) */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 dark:border-emerald-500/10 p-5 mb-5 shadow-sm">
+                <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-32 h-32 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-black text-xl sm:text-2xl flex items-center justify-center shadow-lg border-2 border-white/20 shrink-0 transform hover:scale-105 transition-transform duration-300">
+                        {profile.name?.charAt(0) || 'P'}
+                    </div>
+                    <div className="min-w-0">
+                        <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white truncate tracking-tight leading-none mb-1.5">{profile.name || 'Parent'}</h2>
+                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate bg-emerald-500/10 inline-flex items-center px-2 py-0.5 rounded-md">{session?.user?.email}</p>
+                    </div>
+                </div>
             </div>
 
+            {/* Persistent Pill Navigation (Compact Segmented Control) */}
+            <div className="flex p-1 mb-5 bg-gray-100/80 dark:bg-gray-900/60 backdrop-blur-md rounded-xl overflow-x-auto scrollbar-hide border border-gray-200/50 dark:border-gray-800/50 shadow-inner">
+                {TABS.map(t => (
+                    <button key={t.id} onClick={() => setActiveTab(t.id)}
+                        className={`flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs font-black tracking-wide whitespace-nowrap transition-all duration-300 flex-1 min-w-[90px] ${activeTab === t.id
+                            ? t.id === 'danger' ? 'bg-red-500 text-white shadow-sm' : 'bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 shadow-sm dark:shadow-none'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'}`}>
+                        <t.icon className={`w-3.5 h-3.5 ${activeTab === t.id ? (t.id === 'danger' ? 'text-white' : 'text-emerald-500 dark:text-emerald-400') : 'opacity-70'}`} />
+                        {t.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* ===== PROFILE SECTION ===== */}
             {activeTab === 'profile' && (
-                <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold text-2xl flex items-center justify-center border-4 border-emerald-100 dark:border-emerald-900/50">
-                            {profile.name?.charAt(0) || 'P'}
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-lg">{profile.name || 'Parent Member'}</h3>
-                            <p className="text-sm text-gray-500">{session?.user?.email || 'parent@example.com'}</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Full Name</label>
-                            <input type="text" value={profile.name} onChange={(e) => setProfile(p => ({ ...p, name: e.target.value }))} className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Phone Number</label>
-                            <input type="tel" value={profile.phone} onChange={(e) => setProfile(p => ({ ...p, phone: e.target.value }))} placeholder="+8801700000000" className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Country</label>
-                            <select
-                                value={profile.country}
-                                onChange={(e) => setProfile(p => ({ ...p, country: e.target.value }))}
-                                className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200 appearance-none"
-                            >
-                                <option value="">Select your country</option>
-                                {COUNTRIES.map((c) => (
-                                    <option key={c.value} value={c.value}>
-                                        {c.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">City</label>
-                            <input type="text" value={profile.city} onChange={(e) => setProfile(p => ({ ...p, city: e.target.value }))} placeholder="Dhaka, Dubai, London..." className="w-full sm:w-2/3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50 transition text-gray-800 dark:text-gray-200" />
-                        </div>
-                        <div className="pt-2 flex items-center gap-3">
-                            <button onClick={saveProfile} disabled={saving} className={`bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center gap-2 ${saving ? 'opacity-50' : ''}`}>
-                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Profile
-                            </button>
-                            {saveMsg && <span className={`text-sm font-bold ${saveMsg.startsWith('✓') ? 'text-emerald-500' : 'text-red-500'}`}>{saveMsg}</span>}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {activeTab === 'subscription' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-indigo-500" /> Subscription Plan</h3>
-
-                {/* Current Plan Info */}
-                <div className="p-4 border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/10 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                    <div>
-                        <p className="font-bold text-indigo-900 dark:text-indigo-400">{planLabel}</p>
-                        <p className="text-sm text-indigo-700 dark:text-indigo-500 mt-1">Status: <span className={`font-bold px-2 py-0.5 rounded ml-1 text-[10px] tracking-wider ${statusLabel === 'ACTIVE' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30' : 'text-red-600 bg-red-100'}`}>{statusLabel}</span></p>
-                        <p className="text-xs text-indigo-600 dark:text-indigo-500 mt-1.5 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Expires: {endDate}</p>
-                    </div>
-                </div>
-
-                {/* Pending Verification State */}
-                {pendingPayment && (
-                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                                <Clock className="w-5 h-5" />
+                <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-5 shadow-lg shadow-gray-200/20 dark:shadow-black/20">
+                        <h3 className="font-black text-base text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"><User className="w-5 h-5 text-emerald-500" /> Personal Information</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em] mb-1.5 pl-1">Full Name</label>
+                                <input type="text" value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} className="w-full bg-white dark:bg-gray-950/50 border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-gray-100 shadow-sm" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-amber-900 dark:text-amber-300">Verification Pending</h4>
-                                <p className="text-sm text-amber-700 dark:text-amber-500">Your manual payment for {pendingPayment.package?.name || 'subscription'} via {pendingPayment.method} is currently being verified.</p>
+                                <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em] mb-1.5 pl-1">Phone Number</label>
+                                <input type="tel" value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} placeholder="+8801700000000" className="w-full bg-white dark:bg-gray-950/50 border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-gray-100 shadow-sm" />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em] mb-1.5 pl-1">Country</label>
+                                    <select value={profile.country} onChange={e => setProfile(p => ({ ...p, country: e.target.value }))} className="w-full bg-white dark:bg-gray-950/50 border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all text-gray-900 dark:text-gray-100 appearance-none shadow-sm cursor-pointer">
+                                        <option value="">Select Country</option>
+                                        {COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em] mb-1.5 pl-1">City</label>
+                                    <input type="text" value={profile.city} onChange={e => setProfile(p => ({ ...p, city: e.target.value }))} placeholder="Dhaka, Dubai..." className="w-full bg-white dark:bg-gray-950/50 border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all text-gray-900 dark:text-gray-100 shadow-sm" />
+                                </div>
+                            </div>
+                            <div className="pt-2">
+                                <button onClick={saveProfile} disabled={saving} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-6 py-2.5 rounded-xl font-black text-sm shadow-[0_8px_20px_-6px_rgba(16,185,129,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.6)] transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px] w-full sm:w-auto">
+                                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} SAVE PROFILE
+                                </button>
                             </div>
                         </div>
                     </div>
-                )}
 
-                {/* Available Packages */}
-                <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-bold text-md text-gray-800 dark:text-gray-200">Upgrade / Renew</h4>
-                    <a href="https://wa.me/1234567890?text=Hello%20PoribarGuard%20Support,%20I%20need%20help%20with%20my%20manual%20payment." target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-3 py-1.5 rounded-full text-xs font-bold transition-colors" title="পেমেন্ট নিয়ে সমস্যায় কথা বলুন">
-                        <PhoneCall className="w-3.5 h-3.5" />
-                        <span>Support</span>
-                    </a>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                    {packages.map(pkg => (
-                        <div
-                            key={pkg.id}
-                            onClick={() => setSelectedPackageId(pkg.id)}
-                            className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${selectedPackageId === pkg.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-md' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'}`}
-                        >
-                            <div className="flex justify-between items-start mb-2">
-                                <h5 className="font-bold text-lg text-gray-900 dark:text-white">{pkg.name}</h5>
-                                {pkg.isPopular && <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase">Popular</span>}
+                    {/* Password */}
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-5 shadow-lg shadow-gray-200/20 dark:shadow-black/20">
+                        <h3 className="font-black text-base text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"><LockKeyhole className="w-5 h-5 text-amber-500" /> Security Settings</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em] mb-1.5 pl-1">Current Password</label>
+                                <input type="password" placeholder="••••••••" value={passwordForm.current} onChange={e => setPasswordForm(p => ({...p, current: e.target.value}))} className="w-full bg-white dark:bg-gray-950/50 border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-4 focus:ring-amber-500/20 transition-all text-gray-900 dark:text-gray-100 shadow-sm" />
                             </div>
-                            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mb-1">৳{pkg.priceMonthly}<span className="text-sm text-gray-500 font-medium">/mo</span></p>
-                            <p className="text-xs text-gray-500 mb-2">{pkg.description}</p>
-                            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                                {(()=>{
-                                    let list = [];
-                                    try {
-                                        list = JSON.parse(pkg.displayFeatures || '[]');
-                                        if (!list || list.length === 0) list = JSON.parse(pkg.features || '[]').map(f => f.replace('_', ' '));
-                                    } catch(e) {}
-                                    return list.slice(0, 3).map((f, i) => (
-                                        <li key={i} className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-500 shrink-0" /> <span className="truncate">{f}</span></li>
-                                    ));
-                                })()}
-                            </ul>
+                            <div>
+                                <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em] mb-1.5 pl-1">New Password</label>
+                                <input type="password" placeholder="Minimum 6 characters" value={passwordForm.newPwd} onChange={e => setPasswordForm(p => ({...p, newPwd: e.target.value}))} className="w-full bg-white dark:bg-gray-950/50 border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-4 focus:ring-amber-500/20 transition-all text-gray-900 dark:text-gray-100 shadow-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.15em] mb-1.5 pl-1">Confirm New Password</label>
+                                <input type="password" placeholder="Minimum 6 characters" value={passwordForm.confirm} onChange={e => setPasswordForm(p => ({...p, confirm: e.target.value}))} className="w-full bg-white dark:bg-gray-950/50 border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-4 focus:ring-amber-500/20 transition-all text-gray-900 dark:text-gray-100 shadow-sm" />
+                            </div>
+                            <div className="pt-2">
+                                <button onClick={handlePasswordChange} disabled={savingPassword} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white px-6 py-2.5 rounded-xl font-black text-sm shadow-[0_8px_20px_-6px_rgba(245,158,11,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(245,158,11,0.6)] transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px] w-full sm:w-auto">
+                                    {savingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <LockKeyhole className="w-4 h-4" />} UPDATE PASSWORD
+                                </button>
+                            </div>
                         </div>
-                    ))}
-                    {packages.length === 0 && <p className="text-sm text-gray-500">No packages available at the moment.</p>}
+                    </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-2 mt-6">
-                    <button onClick={handleCheckoutRedirect} disabled={saving || !selectedPackageId || pendingPayment} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3.5 rounded-xl shadow-lg shadow-emerald-600/20 transition flex justify-center items-center gap-2 disabled:opacity-50">
-                        Continue to Checkout
-                    </button>
-                </div>
-            </div>
             )}
 
+            {/* ===== SUBSCRIPTION SECTION ===== */}
+            {activeTab === 'subscription' && (
+                <div className="space-y-5 animate-in slide-in-from-bottom-2 duration-300">
+                    {/* Current Plan */}
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-5 shadow-lg shadow-gray-200/20 dark:shadow-black/20 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none"><CreditCard className="w-32 h-32 text-indigo-500" /></div>
+                        <h3 className="font-black text-base text-gray-800 dark:text-gray-200 mb-5 flex items-center gap-2"><CreditCard className="w-5 h-5 text-indigo-500" /> Current Plan</h3>
+                        <div className="p-6 border-2 border-indigo-200/50 dark:border-indigo-900/30 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/10 dark:to-gray-900 rounded-[1.25rem] shadow-sm relative z-10">
+                            <p className="font-black text-xl text-indigo-900 dark:text-indigo-400 tracking-tight">{planLabel}</p>
+                            <div className="mt-3 flex items-center gap-2">
+                                <span className={`font-black px-3 py-1 rounded-md text-[10px] tracking-widest ${statusLabel === 'ACTIVE' ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'text-red-700 bg-red-100'}`}>{statusLabel}</span>
+                                <p className="text-xs font-bold text-indigo-600 dark:text-indigo-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Expires: {endDate}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Pending Payment */}
+                    {pendingPayment && (
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-5 flex items-start sm:items-center gap-4 shadow-sm">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-400 flex items-center justify-center text-white shrink-0 shadow-lg shadow-amber-500/30"><Clock className="w-6 h-6 animate-pulse" /></div>
+                            <div>
+                                <h4 className="font-black text-base text-amber-900 dark:text-amber-300 mb-1 tracking-tight">Verification Pending</h4>
+                                <p className="text-sm font-medium text-amber-700 dark:text-amber-500">Your manual payment for <strong className="text-amber-900 dark:text-amber-200">{pendingPayment.package?.name || 'subscription'}</strong> via {pendingPayment.method} is being verified by our team.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Upgrade / Renew */}
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-5 shadow-lg shadow-gray-200/20 dark:shadow-black/20">
+                        <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                            <h3 className="font-black text-base text-gray-800 dark:text-gray-200">Upgrade / Renew</h3>
+                            <a href="https://wa.me/1234567890?text=Hello%20PoribarGuard%20Support,%20I%20need%20help%20with%20my%20manual%20payment." target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-4 py-2 rounded-xl text-xs font-black tracking-wide transition-colors">
+                                <PhoneCall className="w-4 h-4" /> Whatsapp Support
+                            </a>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            {packages.map(pkg => (
+                                <div key={pkg.id} onClick={() => setSelectedPackageId(pkg.id)} className={`cursor-pointer rounded-[1.25rem] border-2 p-5 transition-all duration-300 ${selectedPackageId === pkg.id ? 'border-emerald-500 bg-gradient-to-b from-emerald-50/50 to-white dark:from-emerald-900/10 dark:to-gray-900 shadow-[0_8px_20px_-6px_rgba(16,185,129,0.2)] transform -translate-y-1' : 'border-gray-200/80 dark:border-gray-800/80 hover:border-emerald-300/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'}`}>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h5 className="font-black text-base text-gray-900 dark:text-white tracking-tight">{pkg.name}</h5>
+                                        {pkg.isPopular && <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-black px-2.5 py-1 rounded-md tracking-wider shadow-sm">POPULAR</span>}
+                                    </div>
+                                    <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter mb-2">৳{pkg.priceMonthly}<span className="text-sm text-gray-500 font-semibold tracking-normal">/mo</span></p>
+                                    <p className="text-xs font-medium text-gray-500 leading-relaxed">{pkg.description}</p>
+                                </div>
+                            ))}
+                            {packages.length === 0 && <p className="text-sm font-medium text-gray-500 col-span-2 text-center py-8">No packages available right now.</p>}
+                        </div>
+                        <button onClick={handleCheckoutRedirect} disabled={saving || !selectedPackageId || pendingPayment} className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black tracking-wide px-6 py-4 rounded-2xl shadow-[0_8px_20px_-6px_rgba(16,185,129,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.6)] transition-all flex justify-center items-center gap-2 disabled:opacity-50 min-h-[56px] text-sm">
+                            CONTINUE TO SECURE CHECKOUT <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== NOTIFICATIONS SECTION ===== */}
+            {activeTab === 'notifications' && (
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-5 shadow-lg shadow-gray-200/20 dark:shadow-black/20 animate-in slide-in-from-bottom-2 duration-300">
+                    <h3 className="font-black text-base text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2"><Bell className="w-5 h-5 text-amber-500" /> Notification Preferences</h3>
+                    <div className="space-y-3">
+                        {[
+                            { key: 'sos', label: 'SOS Alerts', desc: 'Critical emergency alerts', critical: true },
+                            { key: 'geofence', label: 'Geofence Exits', desc: 'When child leaves safe zone' },
+                            { key: 'appInstall', label: 'App Installs', desc: 'New app installation alerts' },
+                            { key: 'daily', label: 'Daily Summary', desc: 'Daily activity digest email' },
+                            { key: 'subscription', label: 'Subscription Reminders', desc: 'Billing and renewal alerts' },
+                        ].map(item => (
+                            <div key={item.key} className="flex items-center justify-between p-4 bg-white dark:bg-gray-950/50 border border-gray-100 dark:border-gray-800/80 rounded-[1.25rem] shadow-sm hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
+                                <div>
+                                    <span className="font-black text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2 tracking-tight">{item.label} {item.critical && <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-2 py-0.5 rounded-md font-black tracking-wider">CRITICAL</span>}</span>
+                                    <p className="text-xs font-medium text-gray-500 mt-1">{item.desc}</p>
+                                </div>
+                                <button onClick={() => !item.critical && setNotifPrefs(p => ({...p, [item.key]: !p[item.key]}))} className={`relative w-14 h-7 rounded-full p-1 transition-all duration-300 ${notifPrefs[item.key] ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-inner' : 'bg-gray-200 dark:bg-gray-700 shadow-inner'} ${item.critical ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`}>
+                                    <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300 ${notifPrefs[item.key] ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="text-[11px] font-bold text-gray-400 mt-5 text-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-800">🔒 SOS alerts cannot be disabled for the safety of the child.</p>
+                </div>
+            )}
+
+            {/* ===== DANGER ZONE SECTION ===== */}
             {activeTab === 'danger' && (
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-6 shadow-sm border-t-red-500 border-t-4 animate-in fade-in slide-in-from-bottom-2 mt-8">
-                <h3 className="font-bold text-red-600 dark:text-red-500 mb-2">Danger Zone</h3>
-                <p className="text-sm text-gray-500 mb-4">Deleting your account removes all data, including child devices, location history, and logs. This cannot be undone.</p>
-                <button className="bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800/50 px-5 py-2.5 rounded-lg font-bold text-sm transition">Delete Account</button>
-            </div>
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-5 shadow-lg shadow-red-500/5 border-t-red-500 border-t-4 animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-start gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 shrink-0"><AlertTriangle className="w-6 h-6" /></div>
+                        <div>
+                            <h3 className="font-black text-lg text-red-600 dark:text-red-500 tracking-tight">Danger Zone</h3>
+                            <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">Deleting your account permanently removes all data, including child devices, location history, alerts, and subscriptions. This action is irreversible.</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setShowDeleteModal(true)} className="bg-red-50 dark:bg-red-900/10 text-red-600 hover:bg-red-600 hover:text-white border-2 border-red-200 dark:border-red-800/50 px-6 py-2.5 rounded-xl font-black text-sm tracking-wide transition-all min-h-[44px] w-full sm:w-auto text-center">DELETE MY ACCOUNT</button>
+                    {showDeleteModal && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in">
+                            <div className="bg-white dark:bg-gray-900 rounded-[1.5rem] p-6 sm:p-8 w-full max-w-sm shadow-2xl border border-red-500/20 scale-in-center">
+                                <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 mb-5 mx-auto"><AlertTriangle className="w-7 h-7" /></div>
+                                <h3 className="text-lg font-black text-red-600 text-center tracking-tight mb-2">Final Confirmation</h3>
+                                <p className="text-xs font-medium text-gray-500 text-center mb-5 leading-relaxed">This will permanently delete all your data. Type <strong className="text-gray-900 dark:text-gray-200 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">DELETE</strong> below to confirm.</p>
+                                <input type="text" value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} placeholder='Type "DELETE" to confirm' className="w-full bg-white dark:bg-gray-950 border-2 border-red-200 dark:border-red-900/50 rounded-xl px-4 py-2.5 text-sm font-mono outline-none mb-5 text-red-600 focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition-all text-center placeholder-gray-400 shadow-sm" />
+                                <div className="flex flex-col gap-3">
+                                    <button disabled={deleteConfirm !== 'DELETE'} className="w-full px-5 py-2.5 rounded-xl font-black tracking-wide text-sm bg-red-600 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-700 shadow-lg shadow-red-600/30 transition-all min-h-[44px]">PERMANENTLY DELETE</button>
+                                    <button onClick={() => { setShowDeleteModal(false); setDeleteConfirm(''); }} className="w-full px-5 py-2.5 rounded-xl font-bold text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors min-h-[44px]">Cancel & Go Back</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );
 }
+
 
 // ==========================================
 // MESSAGES TAB (Live Messaging Sync)
@@ -1404,11 +1633,16 @@ function MessagesTab({ dict, child, socket }) {
 // ==========================================
 // SMALL UI COMPONENTS
 // ==========================================
-function ActionButton({ icon, label, color, shadow, pulse, onClick }) {
+function ActionButton({ icon, label, gradient, pulse, onClick }) {
     return (
-        <button onClick={onClick} className="flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:-translate-y-1 transition-transform group">
-            <div className={`w-14 h-14 rounded-full ${color} text-white flex items-center justify-center mb-3 shadow-lg ${shadow} ${pulse ? 'animate-pulse' : ''} group-hover:scale-110 transition-transform`}>{icon}</div>
-            <span className="text-xs font-bold text-center leading-tight">{label}</span>
+        <button onClick={onClick} className="group flex flex-col items-center gap-1.5 bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-xl py-3 px-1 shadow-sm hover:shadow-md transition-all duration-300 active:scale-[0.95]">
+            <div className="relative">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${gradient} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                    {React.cloneElement(icon, { className: 'w-[18px] h-[18px]' })}
+                </div>
+                {pulse && <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></div>}
+            </div>
+            <span className="text-[10px] font-black text-gray-600 dark:text-gray-300 text-center leading-tight line-clamp-1 w-full px-0.5">{label}</span>
         </button>
     );
 }
@@ -1555,11 +1789,11 @@ function SidebarItem({ icon, label, isActive, onClick }) {
 
 function BottomNavItem({ icon, label, isActive, onClick }) {
     return (
-        <button onClick={onClick} className="flex flex-col items-center justify-center w-16 h-14">
-            <div className={`mb-1 transition-colors ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                {React.cloneElement(icon, { className: 'w-6 h-6' })}
+        <button onClick={onClick} className="flex flex-col items-center justify-center flex-1 h-14 outline-none group relative">
+            <div className={`flex items-center justify-center px-4 py-1.5 rounded-full transition-all duration-300 ${isActive ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 group-active:scale-95'}`}>
+                {React.cloneElement(icon, { className: `w-[22px] h-[22px] transition-all duration-300 ${isActive ? 'stroke-[2.5px] scale-110' : 'stroke-2'}` })}
             </div>
-            <span className={`text-[10px] font-bold transition-colors ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>{label}</span>
+            <span className={`text-[10px] font-black mt-1 tracking-wide transition-colors duration-300 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>{label}</span>
         </button>
     );
 }

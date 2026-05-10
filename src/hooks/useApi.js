@@ -85,6 +85,42 @@ export function useTogglePrayerLock(childId) {
     return useSWRMutation(`/api/children/${childId}/prayer-locks`, sendRequest);
 }
 
+export function useSupportTickets(status = 'OPEN', q = '') {
+    const params = new URLSearchParams({ status, page: '1', limit: '20' });
+    if (q) params.append('q', q);
+    const { data, error, isLoading, mutate } = useSWR(`/api/support/tickets?${params.toString()}`);
+    return {
+        tickets: data?.tickets || [],
+        pagination: data?.pagination || { total: 0, totalPages: 1 },
+        isLoading,
+        isError: error,
+        mutate,
+    };
+}
+
+export function useSupportTicket(ticketId) {
+    const { data, error, isLoading, mutate } = useSWR(ticketId ? `/api/support/tickets/${ticketId}` : null, {
+        refreshInterval: ticketId ? 8000 : 0,
+    });
+    return {
+        ticket: data?.ticket || null,
+        isLoading,
+        isError: error,
+        mutate,
+    };
+}
+
+export function useCreateSupportTicket() {
+    return useSWRMutation('/api/support/tickets', sendRequest);
+}
+
+export function useReplyToSupportTicket(ticketId) {
+    return useSWRMutation(
+        ticketId ? `/api/support/tickets/${ticketId}/messages` : null,
+        sendRequest
+    );
+}
+
 
 /**
  * ADMIN DASHBOARD HOOKS
@@ -191,6 +227,25 @@ export function useAdminAnalytics() {
         isLoading,
         isError: error
     };
+}
+
+export function useAdminTicket(ticketId) {
+    const { data, error, isLoading, mutate } = useSWR(ticketId ? `/api/admin/tickets/${ticketId}` : null, {
+        refreshInterval: ticketId ? 8000 : 0,
+    });
+    return {
+        ticket: data?.ticket || null,
+        isLoading,
+        isError: error,
+        mutate,
+    };
+}
+
+export function useAdminReplyToTicket(ticketId) {
+    return useSWRMutation(
+        ticketId ? `/api/admin/tickets/${ticketId}/messages` : null,
+        sendRequest
+    );
 }
 
 export function useAdminSettings() {

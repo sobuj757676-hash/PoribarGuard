@@ -6,8 +6,9 @@ import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useSocket } from '@/context/SocketContext';
 import { toast } from 'sonner';
-import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation, useAdminApks, useAdminApkMutation } from '@/hooks/useApi';
+import { useAdminStats, useAdminParents, useAdminTransactions, useAdminFilters, useAdminDevices, useAdminTickets, useAdminAnalytics, useAdminSettings, useAdminSettingsMutation, useAdminLandingConfig, useAdminLandingConfigMutation, useAdminApks, useAdminApkMutation, useAdminTicket, useAdminReplyToTicket } from '@/hooks/useApi';
 import AdminPackagesTab from './packages/page';
 import AdminManualPaymentsTab from './payments/manual/page';
 import AdminPaymentMethodsTab from './payment-methods/page';
@@ -17,10 +18,10 @@ import {
     MoreVertical, ArrowUpRight, ArrowDownRight, MapPin, CheckCircle,
     XCircle, Clock, Download, Plus, Terminal, AlertTriangle,
     Filter, UserPlus, LogOut, Loader2,
-    Map, RefreshCcw, FileText, Send, HardDrive, DollarSign, Mail, Database, SmartphoneCharging, Play, Pause, Server, Globe, Trash2, GripVertical, Eye, Type, Star, MessageSquare, Zap, Radio, Wifi, WifiOff, Copy, ChevronDown, ChevronUp, Activity, Shield, Menu
+    Map, RefreshCcw, FileText, Send, HardDrive, DollarSign, Mail, Database, SmartphoneCharging, Play, Pause, Server, Globe, Trash2, GripVertical, Eye, Type, Star, MessageSquare, Zap, Radio, Wifi, WifiOff, Copy, ChevronDown, ChevronUp, Activity, Shield, Menu, Paperclip, X
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
-
+import SetupGuidesManager from '@/components/admin/SetupGuidesManager';
 export default function AdminPage() {
     const t = useTranslations('Admin');
     const { data: session } = useSession();
@@ -695,17 +696,77 @@ function DevicesTab() {
 // ==========================================
 function SupportTab() {
     const [filter, setFilter] = useState('OPEN');
-    const [selected, setSelected] = useState(null);
-    const { tickets, isLoading: loading, mutate: fetchTickets } = useAdminTickets(filter);
+    const [selectedId, setSelectedId] = useState(null);
+    const { tickets, isLoading: loading, mutate: refetchTickets } = useAdminTickets(filter);
+    const { ticket, isLoading: loadingTicket, mutate: refetchTicket } = useAdminTicket(selectedId);
+    const { trigger: replyTrigger } = useAdminReplyToTicket(selectedId);
+    const [reply, setReply] = useState('');
+    const [files, setFiles] = useState([]);
+    const fileInputRef = useRef(null);
+    const [isInternal, setIsInternal] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const socket = useSocket();
 
-    const updateStatus = async (ticketId, newStatus) => {
+    useEffect(() => {
+        if (!socket) return;
+        const handlerList = () => refetchTickets();
+        const handlerTicket = (data) => {
+            refetchTickets();
+            if (selectedId && (data?.ticketId === selectedId || data?.id === selectedId)) {
+                refetchTicket();
+            }
+        };
+        
+        socket.on('ticket_created', handlerList);
+        socket.on('ticket_updated', handlerTicket);
+        socket.on('ticket_message_created', handlerTicket);
+
+        return () => {
+            socket.off('ticket_created', handlerList);
+            socket.off('ticket_updated', handlerTicket);
+            socket.off('ticket_message_created', handlerTicket);
+        };
+    }, [socket, selectedId, refetchTickets, refetchTicket]);
+
+    const updateTicket = async (ticketId, data) => {
+        setUpdating(true);
         await fetch('/api/admin/tickets', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ticketId, status: newStatus }),
+            body: JSON.stringify({ ticketId, ...data }),
         });
-        fetchTickets(filter);
-        if (selected?.id === ticketId) setSelected(prev => ({ ...prev, status: newStatus }));
+        await Promise.all([refetchTickets(), refetchTicket()]);
+        setUpdating(false);
+    };
+
+    const sendReply = async () => {
+        if (!reply.trim() && files.length === 0 && !selectedId) return;
+        const clientMessageId = `admin-${Date.now()}`;
+        try {
+            const attachedIds = [];
+            if (files.length > 0) {
+                for (const file of files) {
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    const fileRes = await fetch(`/api/support/tickets/${selectedId}/attachments`, {
+                        method: "POST",
+                        body: formData
+                    });
+                    const fileData = await fileRes.json();
+                    if (fileData.attachment?.id) attachedIds.push(fileData.attachment.id);
+                }
+            }
+
+            await replyTrigger({
+                method: 'POST',
+                body: { body: reply, isInternal, clientMessageId, attachmentIds: attachedIds },
+            });
+            setReply('');
+            setFiles([]);
+            await refetchTicket();
+        } catch (e) {
+            toast.error(e.message || 'Failed to send reply');
+        }
     };
 
     const priorityColor = (p) => {
@@ -723,54 +784,175 @@ function SupportTab() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 border-r border-slate-200 dark:border-slate-800 pr-6 space-y-3">
                     <div className="flex gap-2 mb-4">
-                        {['OPEN', 'IN_PROGRESS', 'RESOLVED'].map(s => (
+                        {['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map(s => (
                             <button key={s} onClick={() => setFilter(s)} className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${filter === s ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200'}`}>{s.replace('_', ' ')}</button>
                         ))}
                     </div>
                     {loading ? <div className="py-4 text-center text-slate-400">Loading...</div> :
                         tickets.length === 0 ? <div className="py-4 text-center text-slate-400">No {filter.toLowerCase()} tickets</div> :
                             tickets.map(t => (
-                                <div key={t.id} onClick={() => setSelected(t)} className={`p-4 border rounded-xl cursor-pointer transition ${selected?.id === t.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                                <div key={t.id} onClick={() => setSelectedId(t.id)} className={`p-4 border rounded-xl cursor-pointer transition ${selectedId === t.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                                     <div className="flex justify-between items-start mb-2">
                                         <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase border ${priorityColor(t.priority)}`}>{t.priority}</span>
                                         <span className="text-xs text-slate-500">{new Date(t.createdAt).toLocaleDateString()}</span>
                                     </div>
-                                    <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white">{t.title}</h4>
-                                    <p className="text-xs text-slate-600 dark:text-slate-400">{t.userName} • {t.userEmail}</p>
+                                    <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white">#{t.ticketNumber} {t.title}</h4>
+                                    <p className="text-xs text-slate-600 dark:text-slate-400">{t.requester?.name} • {t.requester?.email}</p>
                                 </div>
                             ))}
                 </div>
 
                 <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm flex flex-col min-h-[500px]">
-                    {selected ? (
-                        <>
-                            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
-                                <div className="flex justify-between items-start mb-4">
+                    {selectedId ? (
+                        loadingTicket || !ticket ? (
+                            <div className="flex-1 flex items-center justify-center text-slate-400">
+                                <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading thread...
+                            </div>
+                        ) : (
+                            <>
+                                <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-start gap-4">
                                     <div>
-                                        <h3 className="text-xl font-bold">{selected.title}</h3>
-                                        <p className="text-sm text-slate-500 mt-1">By <span className="font-medium text-indigo-500">{selected.userEmail}</span> • {new Date(selected.createdAt).toLocaleDateString()}</p>
+                                        <h3 className="text-xl font-bold">#{ticket.ticketNumber} {ticket.title}</h3>
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            By <span className="font-medium text-indigo-500">{ticket.requester?.email}</span> • {new Date(ticket.createdAt).toLocaleDateString()}
+                                        </p>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            Status: {ticket.status} • Priority: {ticket.priority}
+                                        </p>
                                     </div>
-                                    <div className="flex gap-2">
-                                        {selected.status !== 'RESOLVED' && <button onClick={() => updateStatus(selected.id, 'RESOLVED')} className="text-xs border border-emerald-300 text-emerald-600 px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition">Resolve</button>}
-                                        {selected.status !== 'CLOSED' && <button onClick={() => updateStatus(selected.id, 'CLOSED')} className="text-xs border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition">Close</button>}
+                                    <div className="flex flex-col items-end gap-2">
+                                        <select
+                                            value={ticket.status}
+                                            onChange={e => updateTicket(ticket.id, { status: e.target.value })}
+                                            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-slate-50 dark:bg-slate-800"
+                                        >
+                                            {['OPEN', 'IN_PROGRESS', 'WAITING_ON_PARENT', 'RESOLVED', 'CLOSED'].map(s => (
+                                                <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={ticket.priority}
+                                            onChange={e => updateTicket(ticket.id, { priority: e.target.value })}
+                                            className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-slate-50 dark:bg-slate-800"
+                                        >
+                                            {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map(p => (
+                                                <option key={p} value={p}>{p}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="flex-1 p-6 space-y-6 bg-slate-50 dark:bg-slate-900/50">
-                                <div className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300">{selected.userName?.slice(0, 2).toUpperCase()}</div>
-                                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl rounded-tl-none border border-slate-200 dark:border-slate-700 shadow-sm">
-                                        <p className="text-sm text-slate-700 dark:text-slate-300">{selected.description || 'No description provided.'}</p>
+                                <div className="flex-1 p-6 space-y-4 bg-slate-50 dark:bg-slate-900/50 overflow-y-auto">
+                                    {ticket.messages?.map(m => {
+                                        const isAgent = m.authorRole === 'AGENT';
+                                        const isInternal = m.isInternal;
+                                        return (
+                                            <div key={m.id} className={`flex ${isAgent ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${isAgent ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 rounded-bl-sm'}`}>
+                                                    {isInternal && <span className="text-[10px] uppercase font-bold opacity-70 block mb-1">Internal Note</span>}
+                                                    <p>{m.body}</p>
+                                                    <p className="text-[10px] mt-1 opacity-70">
+                                                        {new Date(m.createdAt).toLocaleString()}
+                                                    </p>
+                                                    {m.attachments?.length > 0 && (
+                                                        <div className="mt-2 space-y-1">
+                                                            {m.attachments.map(att => (
+                                                                <a
+                                                                    key={att.id}
+                                                                    href={`/api/support/attachments/${att.id}`}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className={`flex items-center gap-1.5 px-2 py-1.5 text-xs rounded bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 transition backdrop-blur-sm ${
+                                                                        isAgent ? "text-white" : "text-gray-700 dark:text-gray-200"
+                                                                    }`}
+                                                                >
+                                                                    <Paperclip className="w-3 h-3" />
+                                                                    <span className="truncate max-w-[150px]">{att.originalName}</span>
+                                                                    <Download className="w-3 h-3 ml-auto opacity-70" />
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {ticket.messages?.length === 0 && (
+                                        <p className="text-xs text-slate-400">No messages yet.</p>
+                                    )}
+                                </div>
+                                <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-b-xl space-y-2">
+                                    <div className="flex items-center justify-between text-xs text-slate-500">
+                                        <label className="inline-flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={isInternal}
+                                                onChange={e => setIsInternal(e.target.checked)}
+                                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            Internal note (not visible to parent)
+                                        </label>
+                                        {updating && <span className="text-[11px] flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Saving…</span>}
+                                    </div>
+                                    
+                                    {files.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 py-1">
+                                            {files.map((f, i) => (
+                                                <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs rounded border border-slate-200 dark:border-slate-700">
+                                                    {f.name}
+                                                    <button onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-red-500">
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="file"
+                                            multiple
+                                            className="hidden"
+                                            ref={fileInputRef}
+                                            onChange={(e) => {
+                                                if (e.target.files) {
+                                                    const newFiles = Array.from(e.target.files);
+                                                    const validFiles = newFiles.filter(f => f.size <= 10 * 1024 * 1024);
+                                                    if (validFiles.length < newFiles.length) toast.error("Some files exceed the 10MB limit.");
+                                                    setFiles(prev => [...prev, ...validFiles]);
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition ml-1"
+                                            title="Attach files"
+                                        >
+                                            <Paperclip className="w-5 h-5" />
+                                        </button>
+                                        <textarea
+                                            placeholder="Type your reply here..."
+                                            className="w-full flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm min-h-[44px] max-h-[120px] outline-none focus:ring-2 focus:ring-indigo-500"
+                                            value={reply}
+                                            rows={1}
+                                            onChange={e => setReply(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    sendReply();
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            onClick={sendReply}
+                                            disabled={(!reply.trim() && files.length === 0) || updating}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 h-11 rounded-xl font-bold flex items-center gap-2 shadow-sm disabled:opacity-60 shrink-0"
+                                        >
+                                            <Send className="w-4 h-4" /> <span className="hidden sm:inline">Send</span>
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-b-xl">
-                                <textarea placeholder="Type your reply here..." className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm min-h-[100px] outline-none focus:ring-2 focus:ring-indigo-500" />
-                                <div className="flex justify-end mt-3">
-                                    <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 shadow-sm"><Send className="w-4 h-4" /> Send Reply</button>
-                                </div>
-                            </div>
-                        </>
+                            </>
+                        )
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
                             <FileText className="w-12 h-12 mb-3 opacity-50" />
@@ -1254,6 +1436,22 @@ function SettingsTab() {
                     <h3 className="font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2 text-slate-800 dark:text-slate-200">
                         <DollarSign className="w-5 h-5 text-emerald-500" /> Payment Gateways & Manual Processing (BD)
                     </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Enable Online Payments</label>
+                            <select value={settings.payment_online_enabled || 'true'} onChange={e => update('payment_online_enabled', e.target.value)} className={inputCls}>
+                                <option value="true">Enabled</option>
+                                <option value="false">Disabled</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Enable Manual Payments</label>
+                            <select value={settings.payment_manual_enabled || 'true'} onChange={e => update('payment_manual_enabled', e.target.value)} className={inputCls}>
+                                <option value="true">Enabled</option>
+                                <option value="false">Disabled</option>
+                            </select>
+                        </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">bKash Merchant Number (Auto)</label>
@@ -1312,7 +1510,13 @@ function SettingsTab() {
                 </div>
             </div>
 
-            <div className="flex justify-between items-center pt-4 pb-8">
+            {/* Setup Guides Manager */}
+            <hr className="border-slate-200 dark:border-slate-800 my-8" />
+            <div className="max-w-none">
+                <SetupGuidesManager />
+            </div>
+
+            <div className="flex justify-between items-center pt-4 pb-8 mt-8 border-t border-slate-200 dark:border-slate-800">
                 {msg && <span className={`text-sm font-bold ${msg.includes('✅') ? 'text-emerald-600' : 'text-red-500'}`}>{msg}</span>}
                 <div className="ml-auto">
                     <button onClick={save} disabled={saving} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-3 rounded-xl font-bold shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 dark:shadow-white/10 dark:hover:shadow-white/20 transition transform hover:-translate-y-0.5 disabled:opacity-50 flex items-center gap-2">

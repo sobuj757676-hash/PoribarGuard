@@ -21,8 +21,12 @@ export const SocketProvider = ({ children }) => {
 
         socketInstance.on("connect", () => {
             console.log("[SocketContext] Connected to signaling server with ID:", socketInstance.id);
-            // Notify server this is a parent dashboard connection
-            socketInstance.emit("join_dashboard", { parentId: session.user.id });
+            if (session.user.role === "ADMIN") {
+                socketInstance.emit("join_admin", { adminId: session.user.id });
+            } else {
+                // Notify server this is a parent dashboard connection
+                socketInstance.emit("join_dashboard", { parentId: session.user.id });
+            }
         });
 
         setSocket(socketInstance);

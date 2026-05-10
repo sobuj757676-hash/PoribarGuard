@@ -92,65 +92,67 @@ export default function ManualPaymentForm({ packageId, amount, packageName, onCa
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-6 w-full max-w-lg mt-6">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Manual Payment</h3>
-                <button onClick={onCancel} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                    <X className="w-5 h-5" />
-                </button>
+        <div className="w-full">
+            {/* Title */}
+            <div className="mb-4">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Manual Payment</h2>
+                <p className="text-sm text-slate-500">Send money to our number and submit proof below.</p>
             </div>
 
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-emerald-800 dark:text-emerald-400 font-medium mb-2" dangerouslySetInnerHTML={{ __html: selectedMethod?.instructions || `আপনার এজেন্টকে এই নাম্বারে <span class="font-bold text-lg">${amount}৳</span> পাঠাতে বলুন এবং নিচের ফর্মটি পূরণ করুন।` }} />
-                <div className="flex items-center justify-between mt-3 bg-white dark:bg-slate-800 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800">
-                    <div className="flex items-center gap-3">
+            {/* Merchant Number Card */}
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 mb-5">
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium mb-2" dangerouslySetInnerHTML={{ __html: selectedMethod?.instructions || `Send <span class="font-bold">৳${amount}</span> to our merchant number:` }} />
+                <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                    <div className="flex items-center gap-3 min-w-0">
                         {selectedMethod?.logoUrl ? (
-                            <Image src={selectedMethod.logoUrl} alt={selectedMethod.name} width={24} height={24} className="rounded-sm" />
+                            <Image src={selectedMethod.logoUrl} alt={selectedMethod.name} width={24} height={24} className="rounded-sm flex-shrink-0" />
                         ) : (
-                            <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
+                            <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-500 flex-shrink-0" />
                         )}
-                        <span className="font-black text-xl text-emerald-900 dark:text-emerald-300 tracking-wider">{selectedMethod?.phoneNumber || "N/A"}</span>
+                        <span className="font-black text-lg md:text-xl text-emerald-900 dark:text-emerald-300 tracking-wider truncate">{selectedMethod?.phoneNumber || "N/A"}</span>
                     </div>
-                    <button type="button" onClick={handleCopy} className="p-2 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-md transition-colors" title="Copy Number">
-                        <Copy className="w-5 h-5" />
+                    <button type="button" onClick={handleCopy} className="p-2 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-md transition-colors flex-shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center" title="Copy Number">
+                        <Copy className="w-4 h-4" />
                     </button>
                 </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Method Selector */}
                 {paymentMethods && paymentMethods.length > 1 && (
                     <div>
-                        <label htmlFor="methodId" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Select Method</label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Select Method</label>
+                        <div className="grid grid-cols-2 gap-2">
                             {paymentMethods.map(m => (
                                 <button
                                     key={m.id}
                                     type="button"
                                     onClick={() => setMethodId(m.id)}
-                                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${methodId === m.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700'}`}
+                                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all text-sm font-bold min-h-[48px] ${methodId === m.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 shadow-sm' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-300 dark:hover:border-emerald-700'}`}
                                 >
-                                    {m.logoUrl && <Image src={m.logoUrl} alt={m.name} width={32} height={32} className="mb-2" />}
-                                    <span className="font-bold text-sm text-slate-900 dark:text-white">{m.name}</span>
+                                    {m.logoUrl && <Image src={m.logoUrl} alt={m.name} width={20} height={20} className="rounded-sm" />}
+                                    {m.name}
                                 </button>
                             ))}
                         </div>
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Amount & Sender Digits */}
+                <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <label htmlFor="amount" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Amount (৳)</label>
+                        <label htmlFor="amount" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Amount (৳)</label>
                         <input
                             type="text"
                             id="amount"
                             aria-label="Amount sent"
                             value={amount}
                             disabled
-                            className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                            className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed font-semibold"
                         />
                     </div>
                     <div>
-                        <label htmlFor="senderDigits" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sender Last 3/4 Digits</label>
+                        <label htmlFor="senderDigits" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Last 3-4 Digits</label>
                         <input
                             type="text"
                             id="senderDigits"
@@ -159,56 +161,56 @@ export default function ManualPaymentForm({ packageId, amount, packageName, onCa
                             onChange={(e) => setSenderDigits(e.target.value.replace(/\D/g, '').slice(0, 4))}
                             placeholder="e.g. 567"
                             required
-                            className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-shadow font-semibold"
                         />
                     </div>
                 </div>
 
+                {/* Screenshot Upload */}
                 <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Screenshot Upload</label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 dark:border-slate-700 border-dashed rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors bg-slate-50 dark:bg-slate-800/50">
-                        <div className="space-y-1 text-center">
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Payment Screenshot</label>
+                    <div className="flex justify-center px-4 py-5 border-2 border-slate-200 dark:border-slate-700 border-dashed rounded-xl hover:border-emerald-400 dark:hover:border-emerald-600 transition-colors bg-slate-50 dark:bg-slate-800/30">
+                        <div className="space-y-2 text-center">
                             {screenshotPreview ? (
-                                <div className="relative w-32 h-40 mx-auto mb-4 rounded overflow-hidden border border-slate-200 dark:border-slate-700">
+                                <div className="relative w-28 h-36 mx-auto rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
                                     <Image src={screenshotPreview} alt="Screenshot Preview" layout="fill" objectFit="cover" />
                                     <button
                                         type="button"
                                         onClick={() => { setScreenshotPreview(null); setScreenshotBase64(''); }}
-                                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black"
+                                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black min-h-[28px] min-w-[28px] flex items-center justify-center"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
                                 </div>
                             ) : (
-                                <Upload className="mx-auto h-12 w-12 text-slate-400" />
+                                <Upload className="mx-auto h-8 w-8 text-slate-400" />
                             )}
-                            <div className="flex text-sm text-slate-600 dark:text-slate-400 justify-center">
+                            <div className="flex text-sm justify-center">
                                 <label
                                     htmlFor="screenshot-upload"
-                                    className="relative cursor-pointer bg-white dark:bg-slate-900 rounded-md font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-emerald-500 px-2 py-1"
+                                    className="relative cursor-pointer rounded-md font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 px-2 py-1 min-h-[36px] flex items-center"
                                 >
-                                    <span>Upload a file</span>
+                                    <span>{screenshotPreview ? 'Change file' : 'Upload a file'}</span>
                                     <input id="screenshot-upload" name="screenshot-upload" type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
                                 </label>
                             </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-500">PNG, JPG, WEBP up to 5MB</p>
+                            <p className="text-[10px] text-slate-400">PNG, JPG, WEBP up to 5MB</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-                    <button
-                        type="submit"
-                        disabled={isSubmitting || !screenshotBase64 || senderDigits.length < 3}
-                        className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors"
-                    >
-                        {isSubmitting ? (
-                            <><Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" /> Processing...</>
-                        ) : (
-                            <><CheckCircle className="-ml-1 mr-2 h-5 w-5" /> Submit Request</>
-                        )}
-                    </button>
-                </div>
+                {/* Submit */}
+                <button
+                    type="submit"
+                    disabled={isSubmitting || !screenshotBase64 || senderDigits.length < 3}
+                    className="w-full flex justify-center items-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-all shadow-lg shadow-emerald-600/20 min-h-[52px] active:scale-[0.98]"
+                >
+                    {isSubmitting ? (
+                        <><Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" /> Processing...</>
+                    ) : (
+                        <><CheckCircle className="-ml-1 mr-2 h-5 w-5" /> Submit Payment Request</>
+                    )}
+                </button>
             </form>
         </div>
     );

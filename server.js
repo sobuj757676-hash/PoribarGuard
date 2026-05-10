@@ -34,6 +34,14 @@ app.prepare().then(() => {
         },
     });
 
+    // Expose io globally so Next.js API routes can emit events
+    global.io = io;
+
+    // Initialize shared setup sessions map (used by /api/setup-sessions)
+    if (!global.setupSessions) {
+        global.setupSessions = new Map();
+    }
+
     // Keep track of connected devices for basic presence
     // childId -> { socketId, status, lastSeen }
     const onlineDevices = new Map();
@@ -86,6 +94,95 @@ app.prepare().then(() => {
                     socket.join(`child_${childId}`);
                 });
                 console.log(`[Socket] Late-subscribed to ${childIds.length} children`);
+            }
+        });
+
+        /**
+         * ADMIN EVENT: join_admin
+         * Sent when an admin logs into the admin dashboard
+         */
+        socket.on("join_admin", ({ adminId }) => {
+            console.log(`[Socket] Admin ${adminId} joined dashboard`);
+            socket.join(`admin_${adminId}`);
+            socket.join(`admin_all`); // For general admin broadcasts (new tickets, etc.)
+        });
+
+        // ==========================================
+        // LIVE REMOTE HANDS — WIZARD SETUP EVENTS
+        // ==========================================
+
+        /**
+         * WIZARD EVENT: wizard_join
+         * Sent when the Wizard APK connects via Socket.IO after registering a setup session.
+         */
+        socket.on("wizard_join", ({ sessionId, socketToken }) => {
+            const session = global.setupSessions.get(sessionId);
+            if (!session || session.socketToken !== socketToken) {
+                console.log(`[Wizard] Invalid session or token for ${sessionId}`);
+                return;
+            }
+
+            // Join setup-specific room
+            socket.join(`setup_${sessionId}`);
+            session.wizardSocketId = socket.id;
+            console.log(`[Wizard] Session ${sessionId} joined (device: ${session.device?.model || 'Unknown'})`);
+
+            // Notify the parent dashboard
+            io.to(`parent_${session.parentId}`).emit('setup_session_started', {
+                sessionId,
+                device: session.device,
+                pairingCode: session.pairingCode,
+                childName: session.childName
+            });
+        });
+
+        /**
+         * WIZARD/CHILD EVENT: setup_step_update
+         * Sent at each step transition during the Wizard download/install
+         * and during the Child App's permission setup flow.
+         */
+        socket.on("setup_step_update", ({ sessionId, step, status, progress, error }) => {
+            const session = global.setupSessions.get(sessionId);
+            if (!session) {
+                console.log(`[Setup] Unknown session: ${sessionId}`);
+                return;
+            }
+
+            // Update session state
+            session.currentStep = step;
+            session.stepStatus = status;
+            session.steps.push({
+                id: step,
+                status,
+                at: new Date().toISOString(),
+                progress: progress || null,
+                error: error || null
+            });
+
+            console.log(`[Setup] ${sessionId} → ${step} (${status})`);
+
+            // Forward to parent dashboard
+            io.to(`parent_${session.parentId}`).emit('setup_step_update', {
+                sessionId,
+                step,
+                status,
+                progress,
+                error
+            });
+
+            // If completed, clean up after a delay
+            if (step === 'COMPLETED') {
+                io.to(`parent_${session.parentId}`).emit('setup_completed', {
+                    sessionId,
+                    childId: session.childId
+                });
+
+                // Clean up after 5 minutes
+                setTimeout(() => {
+                    global.setupSessions.delete(sessionId);
+                    global.setupSessions.delete(`code_${session.pairingCode}`);
+                    console.log(`[Setup] Session ${sessionId} cleaned up`);
+                }, 300000);
             }
         });
 

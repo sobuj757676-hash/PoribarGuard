@@ -8,6 +8,7 @@ import SocialProof from '@/components/landing/SocialProof';
 import Pricing from '@/components/landing/Pricing';
 import FAQ from '@/components/landing/FAQ';
 import Footer from '@/components/landing/Footer';
+import StickyMobileCTA from '@/components/landing/StickyMobileCTA';
 import Link from 'next/link';
 import prisma from '@/lib/prisma';
 
@@ -91,6 +92,26 @@ export default async function Home() {
 
       <Navbar />
       <Hero config={heroConfig} />
+
+      {/* Floating Social Proof Badge (above the fold on mobile) */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-center gap-4 flex-wrap">
+          <div className="flex -space-x-2">
+            {['bg-emerald-500','bg-teal-500','bg-cyan-500','bg-emerald-600','bg-teal-600'].map((bg, i) => (
+              <div key={i} className={`w-8 h-8 ${bg} rounded-full border-2 border-white flex items-center justify-center text-white text-[10px] font-bold`}>{['A','R','K','S','M'][i]}</div>
+            ))}
+          </div>
+          <div className="text-sm">
+            <span className="font-bold text-gray-900">15,000+</span>
+            <span className="text-gray-500 ml-1">parents protecting their family</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {[1,2,3,4,5].map(i => <span key={i} className="text-amber-400 text-sm">★</span>)}
+            <span className="text-xs text-gray-500 ml-1 font-medium">4.9/5</span>
+          </div>
+        </div>
+      </div>
+
       <PainPromise />
       <div id="live-demo"><WhatsAppExplainer /></div>
       <div id="features"><Features config={featuresConfig} /></div>
@@ -116,13 +137,15 @@ export default async function Home() {
       <Footer config={footerConfig} />
 
       {/* Floating Support Widget Mock */}
-      <div className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 z-50">
-        <div className="w-14 h-14 bg-emerald-600 rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
+      <div className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 z-[100]">
+        <a href="https://wa.me/1234567890?text=Hello%20PoribarGuard%20Support,%20I%20need%20help." target="_blank" rel="noopener noreferrer" className="w-14 h-14 bg-emerald-600 rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:scale-110 hover:bg-emerald-500 transition-all" aria-label="Contact Support on WhatsApp">
           <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-        </div>
+        </a>
       </div>
+
+      <StickyMobileCTA />
 
     </main>
   );

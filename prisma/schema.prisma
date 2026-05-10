@@ -30,11 +30,14 @@ model User {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  children       Child[]
-  subscription   Subscription?
-  transactions   Transaction[]
-  manualPayments ManualPayment[]
-  supportTickets SupportTicket[]
+  children        Child[]
+  subscription    Subscription?
+  transactions    Transaction[]
+  manualPayments  ManualPayment[]
+  supportTickets  SupportTicket[]        @relation("TicketRequester")
+  assignedTickets SupportTicket[]        @relation("TicketAssignee")
+  ticketMessages  SupportTicketMessage[]
+  ticketAuditLogs TicketAuditLog[]
 }
 
 // =============================================
@@ -200,16 +203,16 @@ model Subscription {
   id            String               @id @default(cuid())
   packageId     String?
   package       SubscriptionPackage? @relation(fields: [packageId], references: [id])
-  plan          String // This is kept for backward compatibility (e.g. STANDARD, PREMIUM, TRIAL)
-  status        String               @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED
-  billingCycle  String               @default("MONTHLY") // MONTHLY | SEMI_ANNUAL | YEARLY
-  amount        Float // in BDT (Taka)
-  startDate     DateTime             @default(now())
+  plan          String   // This is kept for backward compatibility (e.g. STANDARD, PREMIUM, ULTIMATE, TRIAL)
+  status        String   @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED
+  billingCycle  String   @default("MONTHLY") // MONTHLY | SEMI_ANNUAL | YEARLY
+  amount        Float    // in BDT (Taka)
+  startDate     DateTime @default(now())
   endDate       DateTime
-  autoRenew     Boolean              @default(true)
-  paymentMethod String? // "bKash", "Nagad", "Rocket", "Card"
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  autoRenew     Boolean  @default(true)
+  paymentMethod String?  // "bKash", "Nagad", "Rocket", "Card"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   userId String @unique
@@ -266,17 +269,46 @@ model ContentFilter {
 // =============================================
 
 model SupportTicket {
-  id          String   @id @default(cuid())
+  id           String @id @default(cuid())
+  ticketNumber Int    @unique @default(autoincrement())
+
   title       String
   description String?
-  status      String   @default("OPEN") // OPEN | IN_PROGRESS | RESOLVED | CLOSED
-  priority    String   @default("MEDIUM") // LOW | MEDIUM | HIGH | URGENT
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category    String?
+  tags        String[] @default([])
+
+  status   String @default("OPEN") // OPEN | IN_PROGRESS | WAITING_ON_PARENT | RESOLVED | CLOSED
+  priority String @default("MEDIUM") // LOW | MEDIUM | HIGH | URGENT
+
+  // SLA & workflow timestamps
+  firstResponseAt        DateTime?
+  resolvedAt             DateTime?
+  closedAt               DateTime?
+  lastMessageAt          DateTime  @default(now())
+  lastRequesterMessageAt DateTime?
+  lastAgentMessageAt     DateTime?
+
+  // Denormalized counters
+  messageCount      Int @default(0)
+  unreadByRequester Int @default(0)
+  unreadByAgent     Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requesterId String @map("userId")
+  requester   User   @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  assignedToId String?
+  assignedTo   User?   @relation("TicketAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  messages    SupportTicketMessage[]
+  attachments SupportTicketAttachment[]
+  auditLogs   TicketAuditLog[]
+
+  @@index([status, priority, lastMessageAt])
+  @@index([assignedToId, status])
 }
 
 // =============================================
@@ -294,6 +326,56 @@ model PaymentMethod {
   priorityOrder Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model SupportTicketMessage {
+  id              String   @id @default(cuid())
+  ticketId        String
+  authorUserId    String?
+  authorRole      String // REQUESTER | AGENT | SYSTEM
+  type            String   @default("MESSAGE") // MESSAGE | STATUS_CHANGE | ASSIGNMENT_CHANGE | NOTE
+  body            String   @db.Text
+  isInternal      Boolean  @default(false)
+  clientMessageId String?  @unique
+  createdAt       DateTime @default(now())
+
+  ticket      SupportTicket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      User?                     @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+  attachments SupportTicketAttachment[]
+
+  @@index([ticketId, createdAt])
+}
+
+model SupportTicketAttachment {
+  id           String   @id @default(cuid())
+  ticketId     String
+  messageId    String?
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  sha256       String?
+  storageKey   String
+  createdAt    DateTime @default(now())
+
+  ticket  SupportTicket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  message SupportTicketMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+}
+
+model TicketAuditLog {
+  id          String   @id @default(cuid())
+  ticketId    String
+  actorUserId String?
+  actorRole   String // REQUESTER | AGENT | SYSTEM
+  action      String // TICKET_CREATED | MESSAGE_POSTED | STATUS_CHANGED | PRIORITY_CHANGED | ASSIGNED | TAGS_UPDATED | ATTACHMENT_ADDED
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actor  User?         @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
 }
 
 // =============================================
@@ -342,4 +424,25 @@ model ApkRelease {
   gitCommitHash    String? // For developer tracking
   uploadedBy       String // Admin email
   createdAt        DateTime @default(now())
+}
+
+// =============================================
+// LIVE REMOTE HANDS — SETUP GUIDES OVERRIDES
+// =============================================
+
+model SetupGuide {
+  id            String   @id @default(cuid())
+  stepId        String
+  oem           String
+  skinName      String?
+  titleEn       String
+  titleBn       String
+  instructionEn String   @db.Text
+  instructionBn String   @db.Text
+  screenshotUrl String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([stepId, oem, skinName])
+  @@index([oem, stepId])
 }

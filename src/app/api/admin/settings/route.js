@@ -23,6 +23,9 @@ const DEFAULTS = {
     turn_metered_api_key: "",
     turn_bandwidth_used_mb: "0",
     turn_bandwidth_limit_mb: "20480",
+    // Payment Options
+    payment_online_enabled: "true",
+    payment_manual_enabled: "true",
 };
 
 // GET — Read all system settings (admin only)

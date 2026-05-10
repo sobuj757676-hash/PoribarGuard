@@ -40,7 +40,7 @@ export async function GET() {
         prisma.supportTicket.findMany({
             take: 5,
             orderBy: { createdAt: "desc" },
-            include: { user: { select: { name: true, country: true } } },
+            include: { requester: { select: { name: true, country: true } } },
         }),
     ]);
 
@@ -61,8 +61,8 @@ export async function GET() {
             priority: t.priority,
             status: t.status,
             createdAt: t.createdAt,
-            userName: t.user.name,
-            userCountry: t.user.country,
+            userName: t.requester?.name || "Unknown",
+            userCountry: t.requester?.country || "BD",
         })),
     });
 }
