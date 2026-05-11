@@ -136,8 +136,9 @@ export default function LandingDemo() {
     setCurrentStepIndex(0);
     setIsAutoPlaying(true);
     setShowConversion(false);
-    // Lock body scroll
+    // Lock body scroll and suppress global UI
     document.body.style.overflow = "hidden";
+    document.documentElement.classList.add('demo-active');
   }, []);
 
   const closeDemo = useCallback(() => {
@@ -145,7 +146,9 @@ export default function LandingDemo() {
     setCurrentStepIndex(0);
     setShowConversion(false);
     VoiceEngine.stop();
+    // Restore scroll and global UI
     document.body.style.overflow = "";
+    document.documentElement.classList.remove('demo-active');
   }, []);
 
   // Persist demo seen state
@@ -157,6 +160,7 @@ export default function LandingDemo() {
   useEffect(() => {
     return () => {
       document.body.style.overflow = "";
+      document.documentElement.classList.remove('demo-active');
       clearTimeout(autoPlayTimer.current);
       VoiceEngine.stop();
     };
@@ -234,7 +238,7 @@ export default function LandingDemo() {
             </motion.button>
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 px-6 py-8 overflow-y-auto">
+            <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 px-4 py-6 md:py-8 overflow-y-auto md:overflow-visible">
 
               {/* Left Side: Feature Info + Navigation */}
               <motion.div
@@ -242,8 +246,8 @@ export default function LandingDemo() {
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 30 }}
-                transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                className="w-full md:w-[380px] flex flex-col items-center md:items-start text-center md:text-left"
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="w-full md:w-[380px] flex flex-col items-center md:items-start text-center md:text-left shrink-0"
               >
                 {!showConversion ? (
                   <>
@@ -252,32 +256,35 @@ export default function LandingDemo() {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.1 }}
-                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${currentStep.gradient} flex items-center justify-center text-white shadow-lg mb-5`}
+                      className={`hidden md:flex w-14 h-14 rounded-2xl bg-gradient-to-br ${currentStep.gradient} items-center justify-center text-white shadow-lg mb-5`}
                     >
                       {currentStep.icon}
                     </motion.div>
 
                     {/* Step Counter */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[11px] font-bold text-emerald-500 uppercase tracking-widest">
+                    <div className="flex items-center gap-2 mb-2 md:mb-3">
+                      <span className="text-[10px] md:text-[11px] font-bold text-emerald-500 uppercase tracking-widest">
                         Step {currentStepIndex + 1} of {DEMO_STEPS.length}
                       </span>
                     </div>
 
                     {/* Bengali Title */}
                     <h2
-                      className="text-2xl md:text-3xl font-black text-white mb-2"
+                      className="text-xl md:text-3xl font-black text-white mb-1 md:mb-2 flex items-center gap-2 justify-center md:justify-start"
                       style={{ fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}
                     >
+                      <span className={`md:hidden p-1.5 rounded-lg bg-gradient-to-br ${currentStep.gradient} shadow-lg`}>
+                         {currentStep.icon}
+                      </span>
                       {currentStep.title}
                     </h2>
-                    <p className="text-sm text-gray-400 font-semibold mb-4">
+                    <p className="text-xs md:text-sm text-gray-400 font-semibold mb-3 md:mb-4">
                       {currentStep.titleEn}
                     </p>
 
                     {/* Bengali Description */}
                     <p
-                      className="text-[15px] text-gray-300 leading-relaxed mb-8 max-w-sm"
+                      className="hidden md:block text-[15px] text-gray-300 leading-relaxed mb-8 max-w-sm"
                       style={{
                         fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif",
                         lineHeight: 1.9,
@@ -286,8 +293,8 @@ export default function LandingDemo() {
                       {currentStep.descriptionBn}
                     </p>
 
-                    {/* Feature Nav Pills */}
-                    <div className="flex flex-wrap gap-2 mb-6">
+                    {/* Feature Nav Pills - Hidden on mobile to save space */}
+                    <div className="hidden md:flex flex-wrap gap-2 mb-6">
                       {DEMO_STEPS.map((step, i) => (
                         <button
                           key={step.id}
@@ -309,7 +316,7 @@ export default function LandingDemo() {
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={goNext}
-                      className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20"
+                      className="hidden md:flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20"
                     >
                       {currentStepIndex === DEMO_STEPS.length - 1 ? (
                         <span style={{ fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}>

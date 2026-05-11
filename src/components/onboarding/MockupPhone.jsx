@@ -58,8 +58,8 @@ export default function MockupPhone({ activeFeature, onFeatureClick }) {
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.3 }}
-      className="relative flex-shrink-0"
+      transition={{ duration: 0.8, delay: 0.3, type: "spring", stiffness: 100, damping: 20 }}
+      className="relative flex-shrink-0 origin-top lg:origin-center scale-90 sm:scale-100"
     >
       {/* Glow behind phone */}
       <motion.div
@@ -73,7 +73,7 @@ export default function MockupPhone({ activeFeature, onFeatureClick }) {
       />
 
       {/* Phone Frame */}
-      <div className="relative w-[260px] h-[520px] md:w-[280px] md:h-[560px] bg-gray-900 rounded-[2.5rem] border-[6px] border-gray-800 shadow-2xl overflow-hidden">
+      <div className="relative w-[250px] h-[500px] md:w-[280px] md:h-[560px] bg-gray-900 rounded-[2.5rem] border-[6px] border-gray-800 shadow-2xl overflow-hidden">
         {/* Notch */}
         <div className="absolute top-0 inset-x-0 h-6 flex justify-center z-50">
           <div className="w-28 h-6 bg-gray-800 rounded-b-2xl" />
