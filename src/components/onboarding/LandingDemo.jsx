@@ -263,22 +263,22 @@ export default function LandingDemo() {
 
                     {/* Step Counter */}
                     <div className="flex items-center gap-2 mb-2 md:mb-3">
-                      <span className="text-[10px] md:text-[11px] font-bold text-emerald-500 uppercase tracking-widest">
+                      <span className="text-xs md:text-[13px] font-bold text-emerald-500 uppercase tracking-widest">
                         Step {currentStepIndex + 1} of {DEMO_STEPS.length}
                       </span>
                     </div>
 
                     {/* Bengali Title */}
                     <h2
-                      className="text-xl md:text-3xl font-black text-white mb-1 md:mb-2 flex items-center gap-2 justify-center md:justify-start"
+                      className="text-2xl md:text-3xl font-black text-white mb-1 md:mb-2 flex items-center gap-3 justify-center md:justify-start"
                       style={{ fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif" }}
                     >
-                      <span className={`md:hidden p-1.5 rounded-lg bg-gradient-to-br ${currentStep.gradient} shadow-lg`}>
+                      <span className={`md:hidden p-2 rounded-xl bg-gradient-to-br ${currentStep.gradient} shadow-lg scale-110`}>
                          {currentStep.icon}
                       </span>
                       {currentStep.title}
                     </h2>
-                    <p className="text-xs md:text-sm text-gray-400 font-semibold mb-3 md:mb-4">
+                    <p className="text-sm md:text-base text-gray-400 font-semibold mb-3 md:mb-4">
                       {currentStep.titleEn}
                     </p>
 
@@ -336,10 +336,18 @@ export default function LandingDemo() {
               </motion.div>
 
               {/* Right Side: Mockup Phone */}
-              <MockupPhone
-                activeFeature={showConversion ? "idle" : currentStep.feature}
-                onFeatureClick={handleFeatureClick}
-              />
+              {!showConversion && (
+                <motion.div
+                  key="mockup-phone"
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  transition={{ duration: 0.5, ease: "easeIn" }}
+                >
+                  <MockupPhone
+                    activeFeature={currentStep.feature}
+                    onFeatureClick={handleFeatureClick}
+                  />
+                </motion.div>
+              )}
             </div>
 
             {/* Bottom Subtitle (Bengali) */}
