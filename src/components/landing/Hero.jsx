@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PlayCircle } from "lucide-react";
 import { Link } from '@/i18n/routing';
 import { useTranslations } from "next-intl";
+import LandingDemo from "../onboarding/LandingDemo";
 
 const defaultLocations = [
     { host: "Dubai", home: "Jessore" },
@@ -143,10 +144,7 @@ export default function Hero({ config }) {
                         <Link href={ctaLink} className="w-full sm:w-auto px-8 py-4 rounded-xl font-black text-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_30px_rgba(5,150,105,0.4)] hover:shadow-[0_0_40px_rgba(5,150,105,0.6)] transition-all transform hover:-translate-y-1 text-center">
                             {ctaText}
                         </Link>
-                        <button className={`w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-lg backdrop-blur-md transition-all flex items-center justify-center gap-2 ${isLight ? 'bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-sm' : 'text-white bg-white/10 hover:bg-white/20 border border-white/20'}`}>
-                            <PlayCircle className={`w-6 h-6 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
-                            {videoBtnText}
-                        </button>
+                        <LandingDemo />
                     </div>
 
                     <div className={`mt-8 flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs md:text-sm font-medium ${isLight ? 'text-gray-500' : 'text-gray-400'}`}>

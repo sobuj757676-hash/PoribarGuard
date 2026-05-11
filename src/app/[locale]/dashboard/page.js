@@ -15,6 +15,9 @@ import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, B
 import InstallPrompt from '@/components/InstallPrompt';
 import LiveGuidePanel from '@/components/LiveGuidePanel';
 import LiveCameraModal from '@/components/LiveCameraModal';
+import GhostGuide from '@/components/onboarding/GhostGuide';
+import HelpBubble from '@/components/onboarding/HelpBubble';
+import { DASHBOARD_GUIDE_STEPS } from '@/data/onboarding-steps';
 import AmbientMicModal from '@/components/AmbientMicModal';
 import LiveScreenModal from '@/components/LiveScreenModal';
 import ManualPaymentForm from '@/components/dashboard/ManualPaymentForm';
@@ -197,9 +200,44 @@ export default function DashboardPage() {
         socket.emit('subscribe_children', { childIds });
     }, [socket, childCount]);
 
+    // Ghost Guide onboarding state
+    const [showHelpBubble, setShowHelpBubble] = useState(false);
+    const [guideKey, setGuideKey] = useState(0);
+
+    // Check if guide was completed (for showing help bubble)
+    useEffect(() => {
+        const completed = localStorage.getItem('poribar_guide_completed');
+        if (completed === 'true') {
+            setShowHelpBubble(true);
+        }
+    }, []);
+
+    const handleGuideComplete = () => {
+        setShowHelpBubble(true);
+    };
+
+    const handleRestartGuide = () => {
+        if (typeof window.__poribarGuideRestart === 'function') {
+            setShowHelpBubble(false);
+            window.__poribarGuideRestart();
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
             <InstallPrompt />
+
+            {/* Ghost Guide Onboarding */}
+            <GhostGuide
+                key={guideKey}
+                steps={DASHBOARD_GUIDE_STEPS}
+                onComplete={handleGuideComplete}
+            />
+
+            {/* Help Bubble (shown after guide completion) */}
+            {showHelpBubble && (
+                <HelpBubble onClick={handleRestartGuide} />
+            )}
 
             {/* --- TOP BAR --- */}
             <header className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-900 shadow-sm z-50 flex items-center justify-between px-4 md:pl-72">
@@ -602,16 +640,16 @@ function HomeTab({ dict, child, device, fetchChildren, onOpenCamera, onOpenScree
             <div>
                 <h3 className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.15em] mb-2.5 px-1">{dict('quickActions')}</h3>
                 <div className="grid grid-cols-4 gap-2">
-                    <ActionButton icon={<Smartphone />} label={dict('reqScreen')} gradient="from-blue-500 to-indigo-500" onClick={onOpenScreen} />
-                    <ActionButton icon={<Camera />} label={dict('reqCamera')} gradient="from-emerald-500 to-teal-500" onClick={onOpenCamera} />
-                    <ActionButton icon={<Mic />} label={dict('reqMic')} gradient="from-violet-500 to-purple-500" onClick={comingSoon} />
-                    <ActionButton icon={<Bell />} label={dict('sendAlarm')} gradient="from-red-500 to-rose-500" pulse onClick={sendAlarm} />
+                    <ActionButton icon={<Smartphone />} label={dict('reqScreen')} gradient="from-blue-500 to-indigo-500" onClick={onOpenScreen} guideId="action-screen" />
+                    <ActionButton icon={<Camera />} label={dict('reqCamera')} gradient="from-emerald-500 to-teal-500" onClick={onOpenCamera} guideId="action-camera" />
+                    <ActionButton icon={<Mic />} label={dict('reqMic')} gradient="from-violet-500 to-purple-500" onClick={comingSoon} guideId="action-mic" />
+                    <ActionButton icon={<Bell />} label={dict('sendAlarm')} gradient="from-red-500 to-rose-500" pulse onClick={sendAlarm} guideId="action-alarm" />
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Live Location */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
+                <div data-guide-id="live-location" className="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-500" /> {dict('liveLocation')}</h3>
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${device?.isOnline ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>{device?.isOnline ? dict('live') : dict('lastKnown')}</span>
@@ -1663,9 +1701,9 @@ function MessagesTab({ dict, child, socket }) {
 // ==========================================
 // SMALL UI COMPONENTS
 // ==========================================
-function ActionButton({ icon, label, gradient, pulse, onClick }) {
+function ActionButton({ icon, label, gradient, pulse, onClick, guideId }) {
     return (
-        <button onClick={onClick} className="group flex flex-col items-center gap-1.5 bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-xl py-3 px-1 shadow-sm hover:shadow-md transition-all duration-300 active:scale-[0.95]">
+        <button onClick={onClick} data-guide-id={guideId} className="group flex flex-col items-center gap-1.5 bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-xl py-3 px-1 shadow-sm hover:shadow-md transition-all duration-300 active:scale-[0.95]">
             <div className="relative">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${gradient} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
                     {React.cloneElement(icon, { className: 'w-[18px] h-[18px]' })}
