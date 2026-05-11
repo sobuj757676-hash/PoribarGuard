@@ -54,7 +54,7 @@ export default function SubtitleDisplay({ text, stepId }) {
           }}
         >
           <p
-            className="m-0 text-sm md:text-[15px] leading-relaxed text-white text-center min-h-[27px] font-medium"
+            className="m-0 text-base md:text-lg leading-relaxed text-white text-center min-h-[27px] font-medium"
             style={{
               fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif",
             }}
