@@ -40,16 +40,7 @@ export default function SubtitleDisplay({ text, stepId }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 10 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{
-          position: "fixed",
-          bottom: "100px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 10003,
-          maxWidth: "90vw",
-          width: "auto",
-          minWidth: "280px",
-        }}
+        className="fixed bottom-6 md:bottom-24 left-1/2 -translate-x-1/2 z-[10003] max-w-[95vw] md:max-w-[90vw] w-auto min-w-[280px]"
       >
         <div
           style={{
@@ -63,15 +54,9 @@ export default function SubtitleDisplay({ text, stepId }) {
           }}
         >
           <p
+            className="m-0 text-sm md:text-[15px] leading-relaxed text-white text-center min-h-[27px] font-medium"
             style={{
-              margin: 0,
-              fontSize: "15px",
-              lineHeight: 1.8,
-              color: "#ffffff",
               fontFamily: "'Hind Siliguri', 'Noto Sans Bengali', sans-serif",
-              fontWeight: 500,
-              textAlign: "center",
-              minHeight: "27px",
             }}
           >
             {displayedWords.map((word, i) => (

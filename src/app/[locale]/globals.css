@@ -87,3 +87,18 @@ body {
 .duration-300 {
   animation-duration: 300ms;
 }
+
+/* Immersive Theater Mode for Interactive Guided Onboarding */
+html.demo-active {
+  /* Suppress global scroll on html layer just to be safe */
+  overflow: hidden !important;
+}
+
+/* Hide Navigation and Floating Elements when Demo is Active */
+html.demo-active nav,
+html.demo-active .fixed.bottom-6.right-6,
+html.demo-active .fixed.bottom-0.w-full {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.5s ease-out;
+}
