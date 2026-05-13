@@ -29,20 +29,20 @@ export default function Navbar() {
     return (
         <nav
             className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${isScrolled
-                ? "bg-gray-900/95 backdrop-blur-md shadow-lg py-3 border-b border-gray-800"
+                ? "bg-gray-900/80 backdrop-blur-lg shadow-lg py-3 border-b border-gray-800"
                 : "bg-transparent py-5"
                 }`}
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-8">
                 <div className="flex items-center justify-between">
 
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="bg-emerald-600 p-1.5 rounded-lg group-hover:bg-emerald-500 transition-colors">
-                            <Shield className="w-6 h-6 text-white" />
+                    <Link href="/" className="flex items-center gap-2 group shrink-0 whitespace-nowrap">
+                        <div className="bg-emerald-600 p-1 md:p-1.5 rounded-lg group-hover:bg-emerald-500 transition-colors">
+                            <Shield className="w-5 h-5 md:w-6 md:h-6 text-white" />
                         </div>
-                        <span className="text-xl font-black text-white tracking-tight">
-                            PoribarGuard <span className="text-emerald-500">BD</span>
+                        <span className="text-lg md:text-xl font-black text-white tracking-tight">
+                            PoribarGuard <span className="text-white">BD</span>
                         </span>
                     </Link>
 
@@ -79,11 +79,10 @@ export default function Navbar() {
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center gap-4">
-                        <LanguageSwitcher />
+                    <div className="md:hidden flex items-center gap-6">
                         <Link
                             href="/register"
-                            className="text-xs font-bold bg-emerald-600 text-white px-4 py-2 rounded-lg"
+                            className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg transition-colors"
                         >
                             Free Trial
                         </Link>
@@ -107,6 +106,11 @@ export default function Navbar() {
                         className="md:hidden fixed inset-0 top-[60px] bg-gray-900 border-t border-gray-800"
                     >
                         <div className="flex flex-col p-6 space-y-6">
+                            <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+                                <span className="text-xl font-bold text-gray-300">Language</span>
+                                <LanguageSwitcher />
+                            </div>
+
                             {navLinks.map((link) => (
                                 <a
                                     key={link.name}
