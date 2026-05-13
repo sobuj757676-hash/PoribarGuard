@@ -2,41 +2,35 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PlayCircle } from "lucide-react";
+import { Monitor, Camera, Mic, BellRing } from "lucide-react";
 import { Link } from '@/i18n/routing';
 import { useTranslations } from "next-intl";
 import LandingDemo from "../onboarding/LandingDemo";
 
-const defaultLocations = [
-    { host: "Dubai", home: "Jessore" },
-    { host: "Riyadh", home: "Sylhet" },
-    { host: "London", home: "Dhaka" },
-    { host: "Malaysia", home: "Comilla" },
-    { host: "Oman", home: "Chittagong" },
-    { host: "Singapore", home: "Barisal" }
+const features = [
+    { id: 'screen', title: 'Screen View', icon: Monitor, color: 'text-blue-500', bg: 'bg-blue-500/20', border: 'border-blue-500/50', glow: 'shadow-[0_0_20px_rgba(59,130,246,0.6)]', appTitle: 'Live Screen', appDesc: 'Mirroring Device Display' },
+    { id: 'camera', title: 'Front Camera', icon: Camera, color: 'text-emerald-500', bg: 'bg-emerald-500/20', border: 'border-emerald-500/50', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.6)]', appTitle: 'Live Camera Ready', appDesc: 'Tap to connect securely' },
+    { id: 'mic', title: 'Ambient Mic', icon: Mic, color: 'text-amber-500', bg: 'bg-amber-500/20', border: 'border-amber-500/50', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.6)]', appTitle: 'Audio Monitoring', appDesc: 'Listening to Surroundings' },
+    { id: 'alarm', title: 'Send Alarm', icon: BellRing, color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500/50', glow: 'shadow-[0_0_20px_rgba(239,68,68,0.6)]', appTitle: 'SOS Alert', appDesc: 'High Volume Alarm Triggered' }
 ];
 
 export default function Hero({ config }) {
     const t = useTranslations("Landing");
-    const locations = config?.locations?.length > 0 ? config.locations : defaultLocations;
-    const badgeText = config?.badgeText || 'BD EDITION — #1 PARENTAL CONTROL APP';
     const ctaText = config?.ctaText || 'Start Free 7-Day Trial';
     const ctaLink = config?.ctaLink || '/dashboard';
-    const videoBtnText = config?.videoBtnText || 'Watch 45-sec Video';
     const trustBadges = config?.trustBadges || ['Trusted by 2,347+ BD families', '100% Legal', 'bKash/Nagad Accepted'];
     const heroTheme = config?.heroTheme || 'dark';
 
-    const [locIndex, setLocIndex] = useState(0);
+    const [activeFeatureIdx, setActiveFeatureIdx] = useState(0);
 
     useEffect(() => {
         const timer = setInterval(() => {
-            setLocIndex((prev) => (prev + 1) % locations.length);
-        }, 4000);
+            setActiveFeatureIdx((prev) => (prev + 1) % features.length);
+        }, 3000);
         return () => clearInterval(timer);
-    }, [locations.length]);
+    }, []);
 
-    const currentLoc = locations[locIndex];
-
+    const activeFeature = features[activeFeatureIdx];
     const isLight = heroTheme === 'light';
 
     return (
@@ -63,76 +57,41 @@ export default function Hero({ config }) {
                     transition={{ duration: 0.8 }}
                     className="w-full md:w-3/5 text-center md:text-left"
                 >
-                    <div className={`inline-block border rounded-full px-4 py-1.5 mb-6 backdrop-blur-sm ${isLight ? 'bg-emerald-100/50 border-emerald-300' : 'bg-emerald-500/20 border-emerald-500/30'}`}>
-                        <span className={`font-bold text-sm tracking-wide ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>{badgeText}</span>
+                    <div className={`inline-block border rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm ${isLight ? 'bg-emerald-100/50 border-emerald-300' : 'bg-emerald-500/20 border-emerald-500/30'}`}>
+                        <span className={`font-bold text-xs sm:text-sm tracking-wide whitespace-nowrap ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`}>বাংলাদেশের পরিবারের জন্য #১ বিশ্বস্ত নিরাপত্তা অ্যাপ</span>
                     </div>
 
-                    <h1 className={`text-4xl md:text-6xl lg:text-7xl font-black leading-tight mb-4 drop-shadow-lg flex flex-wrap justify-center md:justify-start items-center gap-x-3 gap-y-1 ${isLight ? 'text-gray-900' : 'text-white'}`} style={{ fontFamily: 'Noto Sans Bengali, sans-serif' }}>
-                        <div className="relative inline-flex items-center min-w-[5.5em] h-[1.2em] overflow-hidden align-bottom">
-                            <AnimatePresence mode="popLayout">
-                                <motion.span
-                                    key={currentLoc.host}
-                                    initial={{ y: 50, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    exit={{ y: -50, opacity: 0 }}
-                                    transition={{ duration: 0.5, ease: "easeOut" }}
-                                    className={`absolute left-0 bottom-0 ${isLight ? 'text-gray-900' : 'text-white'}`}
+                    {/* Feature Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-8 max-w-xl mx-auto md:mx-0">
+                        {features.map((feature, idx) => {
+                            const isActive = idx === activeFeatureIdx;
+                            const Icon = feature.icon;
+                            return (
+                                <motion.div
+                                    key={feature.id}
+                                    animate={{
+                                        scale: isActive ? 1.05 : 1,
+                                    }}
+                                    transition={{
+                                        type: "spring",
+                                        stiffness: 300,
+                                        damping: 25
+                                    }}
+                                    className={`flex items-center gap-3 p-4 rounded-2xl border backdrop-blur-md transition-colors ${
+                                        isActive
+                                        ? `${isLight ? 'bg-white' : 'bg-gray-800'} ${feature.border} ${feature.glow}`
+                                        : `${isLight ? 'bg-white/50 border-gray-200' : 'bg-gray-800/50 border-gray-700'}`
+                                    }`}
                                 >
-                                    {currentLoc.host}
-                                </motion.span>
-                            </AnimatePresence>
-                        </div>
-                        <span>থেকে</span>
-                        <div className={`relative inline-flex items-center min-w-[6.5em] h-[1.2em] overflow-hidden align-bottom ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>
-                            <AnimatePresence mode="popLayout">
-                                <motion.span
-                                    key={currentLoc.home}
-                                    initial={{ y: 50, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    exit={{ y: -50, opacity: 0 }}
-                                    transition={{ duration: 0.5, ease: "easeOut" }}
-                                    className={`absolute left-0 bottom-0 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}
-                                >
-                                    {currentLoc.home}
-                                </motion.span>
-                            </AnimatePresence>
-                        </div>
-                        <span>বাড়িতে আপনার সন্তানকে দেখুন</span>
-                        <span className="mt-2 md:mt-0">— ২৪ ঘণ্টা নিরাপদে</span>
-                    </h1>
-
-                    <div className={`text-lg md:text-xl font-medium mb-6 flex flex-wrap justify-center md:justify-start items-center gap-x-2 ${isLight ? 'text-gray-600' : 'text-emerald-50'}`}>
-                        <span>From</span>
-                        <div className="relative inline-flex overflow-hidden min-w-[5.5em] h-[1.5em]">
-                            <AnimatePresence mode="popLayout">
-                                <motion.span
-                                    key={currentLoc.host}
-                                    initial={{ y: 20, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    exit={{ y: -20, opacity: 0 }}
-                                    transition={{ duration: 0.5 }}
-                                    className={`absolute left-0 ${isLight ? 'text-emerald-700 font-bold' : 'text-emerald-200'}`}
-                                >
-                                    {currentLoc.host}
-                                </motion.span>
-                            </AnimatePresence>
-                        </div>
-                        <span>to Your</span>
-                        <div className="relative inline-flex overflow-hidden min-w-[6.5em] h-[1.5em]">
-                            <AnimatePresence mode="popLayout">
-                                <motion.span
-                                    key={currentLoc.home}
-                                    initial={{ y: 20, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    exit={{ y: -20, opacity: 0 }}
-                                    transition={{ duration: 0.5 }}
-                                    className={`absolute left-0 ${isLight ? 'text-emerald-700 font-bold' : 'text-emerald-200'}`}
-                                >
-                                    {currentLoc.home}
-                                </motion.span>
-                            </AnimatePresence>
-                        </div>
-                        <span>{t("heroSubtitle")}</span>
+                                    <div className={`p-2.5 rounded-xl ${isActive ? feature.bg : (isLight ? 'bg-gray-100' : 'bg-gray-700')}`}>
+                                        <Icon className={`w-6 h-6 ${isActive ? feature.color : (isLight ? 'text-gray-400' : 'text-gray-500')}`} />
+                                    </div>
+                                    <span className={`font-bold text-sm sm:text-base ${isActive ? (isLight ? 'text-gray-900' : 'text-white') : (isLight ? 'text-gray-500' : 'text-gray-400')}`}>
+                                        {feature.title}
+                                    </span>
+                                </motion.div>
+                            );
+                        })}
                     </div>
 
                     <p className={`text-base md:text-lg font-medium mb-8 max-w-2xl mx-auto md:mx-0 leading-relaxed ${isLight ? 'text-gray-500' : 'text-gray-300'}`}>
@@ -183,7 +142,7 @@ export default function Hero({ config }) {
                         </div>
 
                         <div className="w-full h-full bg-gray-50 flex flex-col relative pt-8">
-                            <div className="px-5 py-4 bg-emerald-600 text-white flex justify-between items-center shadow-lg pb-5 pt-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] relative overflow-hidden">
+                            <div className="px-5 py-4 bg-emerald-600 text-white flex justify-between items-center shadow-lg pb-5 pt-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] relative overflow-hidden transition-colors duration-500">
                                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-500 opacity-90"></div>
                                 <div className="relative z-10 flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center font-bold text-lg shadow-sm">
@@ -198,31 +157,52 @@ export default function Hero({ config }) {
                                     <div className="w-3 h-3 bg-green-400 border-2 border-white rounded-full animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.8)]"></div>
                                 </div>
                             </div>
-                            <div className="flex-1 relative bg-emerald-50/50">
+                            <div className="flex-1 relative bg-emerald-50/50 flex flex-col items-center justify-center overflow-hidden">
                                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cartographer.png')] opacity-20 mix-blend-multiply"></div>
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                                    <div className="w-24 h-24 bg-emerald-500/20 rounded-full animate-ping absolute"></div>
-                                    <div className="w-12 h-12 bg-emerald-500/40 rounded-full animate-pulse absolute"></div>
-                                    <div className="w-8 h-8 bg-emerald-600 border-2 border-white rounded-full shadow-[0_0_20px_rgba(5,150,105,0.6)] relative z-10 flex items-center justify-center">
-                                        <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
-                                    </div>
-                                </div>
+
+                                {/* Magic Mirror Sync Visual */}
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={activeFeature.id}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        transition={{ duration: 0.4 }}
+                                        className="relative z-10 flex flex-col items-center"
+                                    >
+                                        <div className={`w-24 h-24 ${activeFeature.bg} rounded-full animate-ping absolute`}></div>
+                                        <div className={`w-16 h-16 ${activeFeature.bg} rounded-full absolute mix-blend-multiply`}></div>
+                                        <div className={`w-12 h-12 bg-white border-4 ${activeFeature.border} rounded-full ${activeFeature.glow} relative z-10 flex items-center justify-center`}>
+                                            {(() => {
+                                                const ActiveIcon = activeFeature.icon;
+                                                return <ActiveIcon className={`w-6 h-6 ${activeFeature.color}`} />;
+                                            })()}
+                                        </div>
+                                    </motion.div>
+                                </AnimatePresence>
 
                                 {/* Floating Alert Card Mock */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 1, duration: 0.5 }}
-                                    className="absolute bottom-6 left-4 right-4 bg-white/90 backdrop-blur-md p-3.5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 flex items-center gap-3"
-                                >
-                                    <div className="bg-red-50 p-2.5 rounded-xl border border-red-100">
-                                        <PlayCircle className="w-5 h-5 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-extrabold text-gray-900">Live Camera Ready</p>
-                                        <p className="text-[10px] font-medium text-gray-500 mt-0.5">Tap to connect securely</p>
-                                    </div>
-                                </motion.div>
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={`alert-${activeFeature.id}`}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        transition={{ duration: 0.4 }}
+                                        className="absolute bottom-6 left-4 right-4 bg-white/90 backdrop-blur-md p-3.5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 flex items-center gap-3"
+                                    >
+                                        <div className={`p-2.5 rounded-xl border bg-white ${activeFeature.border} ${activeFeature.bg}`}>
+                                            {(() => {
+                                                const ActiveIcon = activeFeature.icon;
+                                                return <ActiveIcon className={`w-5 h-5 ${activeFeature.color}`} />;
+                                            })()}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-extrabold text-gray-900">{activeFeature.appTitle}</p>
+                                            <p className="text-[10px] font-medium text-gray-500 mt-0.5">{activeFeature.appDesc}</p>
+                                        </div>
+                                    </motion.div>
+                                </AnimatePresence>
                             </div>
 
                             {/* App Nav Bar */}
