@@ -85,7 +85,7 @@ export default function AdminActionsBlock({ parent, mutate, parentMutation, isMu
                 <div>
                     <p className="font-semibold text-slate-900 dark:text-slate-200">Reset Password</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Send a password reset email to the parent's registered email address.
+                        Send a password reset email to the parent&apos;s registered email address.
                     </p>
                 </div>
                 <button

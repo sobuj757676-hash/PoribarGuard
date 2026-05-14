@@ -29,7 +29,9 @@ export const SocketProvider = ({ children }) => {
             }
         });
 
-        setSocket(socketInstance);
+        setTimeout(() => {
+            setSocket(socketInstance);
+        }, 0);
 
         return () => {
             if (socketInstance) {

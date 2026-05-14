@@ -15,7 +15,7 @@ export default function LiveScreenModal({ childId, childName, onClose }) {
     const [frameCount, setFrameCount] = useState(0);
     const [fps, setFps] = useState(0);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
-    const lastFrameTime = useRef(Date.now());
+    const lastFrameTime = useRef(0);
     const noFrameTimer = useRef(null);
     const timerInterval = useRef(null);
     const fpsInterval = useRef(null);
@@ -26,12 +26,15 @@ export default function LiveScreenModal({ childId, childName, onClose }) {
     // --- Start screen view on mount ---
     useEffect(() => {
         isMounted.current = true;
+        lastFrameTime.current = Date.now();
 
         if (!socket || !childId) return;
 
         // Request screen view
         socket.emit("start_screen_view", { childId });
-        setStatus('connecting');
+        setTimeout(() => {
+            setStatus('connecting');
+        }, 0);
 
         // Listen for screen frames
         const handleFrame = (data) => {
